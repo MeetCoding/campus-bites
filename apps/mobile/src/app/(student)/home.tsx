@@ -7,6 +7,8 @@ import { Badge, Card, Screen, SectionHeader } from '@/components/ui';
 import { AccountPanel } from '@/features/auth/AccountPanel';
 import { useSession } from '@/features/auth/session';
 import { useBhawans } from '@/features/campus/queries';
+import { OpenStatusPill } from '@/features/canteens/components';
+import { useLiveStatus } from '@/features/canteens/queries';
 import { MealStatusCard, OverrideBanner } from '@/features/mess/components';
 import {
   MEAL_LABEL,
@@ -23,9 +25,9 @@ type IconName = ComponentProps<typeof MaterialIcons>['name'];
 
 const QUICK_LINKS: { title: string; icon: IconName; href?: Href }[] = [
   { title: 'Mess Hub', icon: 'restaurant', href: '/mess' },
-  { title: 'Hostel canteens', icon: 'storefront' },
-  { title: 'Campus eateries', icon: 'local-cafe' },
-  { title: 'Mess rebates', icon: 'event-busy' },
+  { title: 'Hostel canteens', icon: 'storefront', href: '/canteens' },
+  { title: 'Campus eateries', icon: 'local-cafe', href: '/eateries' },
+  { title: 'Mess rebates', icon: 'event-busy', href: '/rebates' },
   { title: 'Complaints', icon: 'report' },
 ];
 
@@ -41,6 +43,8 @@ export default function StudentHome() {
   const overrides = useActiveOverrides(messOutlet?.id);
   const menu = useWeeklyMenu(claims?.bhawan_id, weekStart(today.date));
   const todaysMenu = menu.data?.items[today.dayKey];
+  const status = useLiveStatus();
+  const myCanteens = status.data?.filter((s) => s.bhawan_id === claims?.bhawan_id) ?? [];
 
   return (
     <Screen>
@@ -64,6 +68,21 @@ export default function StudentHome() {
           />
         </Pressable>
       </Link>
+
+      {myCanteens.length > 0 ? (
+        <Card className="gap-space-sm">
+          {myCanteens.map((c) => (
+            <Link key={c.outlet_id} href={{ pathname: '/canteens', params: { outlet: c.outlet_id } }} asChild>
+              <Pressable accessibilityRole="link" className="gap-space-xs active:opacity-80">
+                <Text className="font-label-bold text-label-md text-primary">
+                  {c.type === 'day_canteen' ? 'Day canteen' : 'Night canteen'}
+                </Text>
+                <OpenStatusPill status={c} />
+              </Pressable>
+            </Link>
+          ))}
+        </Card>
+      ) : null}
 
       <SectionHeader title="Campus food directory" />
       <View className="flex-row flex-wrap gap-space-sm">

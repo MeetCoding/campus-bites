@@ -61,6 +61,12 @@ export function formatWindow(opensAt: string, closesAt: string): string {
   return `${formatTime(opensAt)} – ${formatTime(closesAt)}`;
 }
 
+/** IST wall-clock time of an instant: "2026-10-19T17:00:00Z" → "10:30 PM". */
+export function formatInstant(iso: string): string {
+  const { minutes } = istNow(new Date(iso));
+  return formatTime(`${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`);
+}
+
 /** 45 → "45 min", 125 → "2 h 5 min" */
 export function formatDuration(minutes: number): string {
   const m = Math.max(0, Math.round(minutes));
@@ -157,4 +163,23 @@ export function currentMeal<T extends MealWindow>(windows: T[], nowMinutes: numb
     next,
     minutesLeft: next ? (parseTime(next.opens_at) - nowMinutes + MINUTES_PER_DAY) % MINUTES_PER_DAY : null,
   };
+}
+
+// ─── Override date presets (mess timings + canteen shift changes) ────────────
+export type DatePreset = 'today' | 'tomorrow' | 'weekend' | 'custom';
+
+export const DATE_PRESET_LABEL: Record<DatePreset, string> = {
+  today: 'Today',
+  tomorrow: 'Tomorrow',
+  weekend: 'This weekend',
+  custom: 'Custom dates',
+};
+
+export function presetRange(preset: Exclude<DatePreset, 'custom'>, today: string): [string, string] {
+  if (preset === 'today') return [today, today];
+  if (preset === 'tomorrow') return [addDays(today, 1), addDays(today, 1)];
+  // The coming (or current) Saturday–Sunday.
+  const dayIndex = DAY_KEYS.indexOf(dayKeyOf(today)); // 0 = Monday … 6 = Sunday
+  const saturday = dayIndex === 6 ? addDays(today, -1) : addDays(today, 5 - dayIndex);
+  return [dayIndex === 6 ? today : saturday, addDays(saturday, 1)];
 }

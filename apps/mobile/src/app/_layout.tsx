@@ -75,10 +75,18 @@ function SplashGate({ fontsReady }: { fontsReady: boolean }) {
     }
   }, [ready]);
 
-  // Tapping a timing-change alert opens the Mess Hub.
+  // Tapping an alert opens the related screen: rebates, the Mess Hub, or the changed canteen.
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      if (response.notification.request.content.data?.type === 'timing_override') {
+      const data = response.notification.request.content.data;
+      if (data?.type === 'rebate') {
+        router.push('/rebates');
+        return;
+      }
+      if (data?.type !== 'timing_override') return;
+      if (data.outlet_type === 'day_canteen' || data.outlet_type === 'night_canteen') {
+        router.push({ pathname: '/canteens', params: { outlet: String(data.outlet_id) } });
+      } else {
         router.push('/mess');
       }
     });

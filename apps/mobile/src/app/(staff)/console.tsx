@@ -7,17 +7,13 @@ import { Badge, Card, Screen, SectionHeader } from '@/components/ui';
 import { AccountPanel } from '@/features/auth/AccountPanel';
 import { ROLE_LABEL } from '@/features/auth/modes';
 import { useSession } from '@/features/auth/session';
-import { useBhawans, useOutlets } from '@/features/campus/queries';
+import { useBhawans } from '@/features/campus/queries';
+import { OpenStatusPill } from '@/features/canteens/components';
+import { OUTLET_TYPE_LABEL, useLiveStatus, useLiveUpdates } from '@/features/canteens/queries';
+import { useManagedOutlets } from '@/features/canteens/useManagedOutlets';
 import { colors } from '@/theme/tokens';
 
 type IconName = ComponentProps<typeof MaterialIcons>['name'];
-
-const OUTLET_TYPE_LABEL = {
-  mess: 'Mess',
-  day_canteen: 'Day canteen',
-  night_canteen: 'Night canteen',
-  eatery: 'Campus eatery',
-} as const;
 
 const MESS_TOOLS: { href: Href; title: string; detail: string; icon: IconName }[] = [
   {
@@ -39,11 +35,13 @@ const MESS_TOOLS: { href: Href; title: string; detail: string; icon: IconName }[
 /** Vendor + secretary console per stitch-reference/vendor_secretary_upload_portal. */
 export default function StaffConsole() {
   const { claims } = useSession();
-  const outlets = useOutlets();
   const bhawans = useBhawans();
+  const managed = useManagedOutlets();
+  const status = useLiveStatus();
+  useLiveUpdates();
 
   const isMessSecretary = claims?.roles.includes('mess_secretary') ?? false;
-  const myOutlets = outlets.data?.filter((o) => claims?.outlet_ids.includes(o.id)) ?? [];
+  const myOutlets = managed.data ?? [];
   const myBhawans = bhawans.data?.filter((b) => claims?.scope_bhawan_ids.includes(b.id)) ?? [];
   const staffRoles = (claims?.roles ?? []).filter((r) =>
     ['vendor', 'mess_secretary', 'bhawan_secretary'].includes(r),
@@ -85,22 +83,45 @@ export default function StaffConsole() {
         </>
       ) : null}
 
+      {managed.isBhawanSecretary ? (
+        <>
+          <SectionHeader title="Bhawan Secretary tools" />
+          <Link href="/rate-card" asChild>
+            <Pressable accessibilityRole="link" className="active:opacity-80">
+              <Card className="flex-row items-center gap-space-md">
+                <MaterialIcons name="verified" size={24} color={colors.tertiary} />
+                <View className="flex-1 gap-space-xs">
+                  <Text className="font-body-semibold text-body-md text-on-surface">Institute fixed-rate card</Text>
+                  <Text className="font-body text-body-sm text-on-surface-variant">
+                    Official ceiling prices for both canteens. Shift timings are under each canteen below.
+                  </Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={22} color={colors.outline} />
+              </Card>
+            </Pressable>
+          </Link>
+        </>
+      ) : null}
+
       {myOutlets.length > 0 ? (
         <>
           <SectionHeader title={`Your outlets (${myOutlets.length})`} />
           <View className="gap-space-sm">
             {myOutlets.map((o) => (
-              <Card key={o.id} className="flex-row items-center justify-between gap-space-sm">
-                <Text className="flex-1 font-body-semibold text-body-md text-on-surface">{o.name}</Text>
-                <Badge label={OUTLET_TYPE_LABEL[o.type]} />
-              </Card>
+              <Link key={o.id} href={{ pathname: '/outlet/[id]', params: { id: o.id } }} asChild>
+                <Pressable accessibilityRole="link" className="active:opacity-80">
+                  <Card className="flex-row items-center gap-space-sm">
+                    <View className="flex-1 gap-space-xs">
+                      <Text className="font-body-semibold text-body-md text-on-surface">{o.name}</Text>
+                      <OpenStatusPill status={status.data?.find((st) => st.outlet_id === o.id)} />
+                    </View>
+                    <Badge label={OUTLET_TYPE_LABEL[o.type]} />
+                    <MaterialIcons name="chevron-right" size={22} color={colors.outline} />
+                  </Card>
+                </Pressable>
+              </Link>
             ))}
           </View>
-          <Card tone="low">
-            <Text className="font-body text-body-sm text-on-surface-variant">
-              Menu, stock, open/closed and shift tools for canteens and eateries arrive in the next milestone.
-            </Text>
-          </Card>
         </>
       ) : null}
 

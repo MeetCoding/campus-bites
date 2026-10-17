@@ -23,6 +23,7 @@ export type Database = {
           min_rebate_days: number
           nudge_cooldown_hours: number
           nudge_eligible_after_hours: number
+          rebate_backdate_days: number
           updated_at: string
         }
         Insert: {
@@ -31,6 +32,7 @@ export type Database = {
           min_rebate_days?: number
           nudge_cooldown_hours?: number
           nudge_eligible_after_hours?: number
+          rebate_backdate_days?: number
           updated_at?: string
         }
         Update: {
@@ -39,6 +41,7 @@ export type Database = {
           min_rebate_days?: number
           nudge_cooldown_hours?: number
           nudge_eligible_after_hours?: number
+          rebate_backdate_days?: number
           updated_at?: string
         }
         Relationships: []
@@ -583,6 +586,303 @@ export type Database = {
           },
         ]
       }
+      fixed_rate_items: {
+        Row: {
+          bhawan_id: string
+          ceiling_price_paise: number
+          circular_ref: string | null
+          created_at: string
+          description: string | null
+          effective_from: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          bhawan_id: string
+          ceiling_price_paise: number
+          circular_ref?: string | null
+          created_at?: string
+          description?: string | null
+          effective_from?: string
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          bhawan_id?: string
+          ceiling_price_paise?: number
+          circular_ref?: string | null
+          created_at?: string
+          description?: string | null
+          effective_from?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_rate_items_bhawan_id_fkey"
+            columns: ["bhawan_id"]
+            isOneToOne: false
+            referencedRelation: "bhawans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_rate_items_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_items: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          in_stock: boolean
+          name: string
+          outlet_id: string
+          price_paise: number
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          in_stock?: boolean
+          name: string
+          outlet_id: string
+          price_paise: number
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          in_stock?: boolean
+          name?: string
+          outlet_id?: string
+          price_paise?: number
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "outlet_live_status"
+            referencedColumns: ["outlet_id"]
+          },
+          {
+            foreignKeyName: "menu_items_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_items_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outlet_shifts: {
+        Row: {
+          closes_at: string
+          created_at: string
+          id: string
+          opens_at: string
+          outlet_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          closes_at: string
+          created_at?: string
+          id?: string
+          opens_at: string
+          outlet_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          closes_at?: string
+          created_at?: string
+          id?: string
+          opens_at?: string
+          outlet_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outlet_shifts_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: true
+            referencedRelation: "outlet_live_status"
+            referencedColumns: ["outlet_id"]
+          },
+          {
+            foreignKeyName: "outlet_shifts_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: true
+            referencedRelation: "outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outlet_shifts_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rebate_applications: {
+        Row: {
+          authority_remarks: string | null
+          bhawan_id: string
+          created_at: string
+          days: number | null
+          document_path: string | null
+          end_date: string
+          id: string
+          reason: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["rebate_status"]
+          student_email: string | null
+          student_id: string
+          student_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          authority_remarks?: string | null
+          bhawan_id: string
+          created_at?: string
+          days?: number | null
+          document_path?: string | null
+          end_date: string
+          id?: string
+          reason: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["rebate_status"]
+          student_email?: string | null
+          student_id: string
+          student_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          authority_remarks?: string | null
+          bhawan_id?: string
+          created_at?: string
+          days?: number | null
+          document_path?: string | null
+          end_date?: string
+          id?: string
+          reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["rebate_status"]
+          student_email?: string | null
+          student_id?: string
+          student_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rebate_applications_bhawan_id_fkey"
+            columns: ["bhawan_id"]
+            isOneToOne: false
+            referencedRelation: "bhawans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rebate_applications_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rebate_applications_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rebate_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          from_status: Database["public"]["Enums"]["rebate_status"] | null
+          id: string
+          rebate_id: string
+          remarks: string | null
+          to_status: Database["public"]["Enums"]["rebate_status"]
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["rebate_status"] | null
+          id?: string
+          rebate_id: string
+          remarks?: string | null
+          to_status: Database["public"]["Enums"]["rebate_status"]
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["rebate_status"] | null
+          id?: string
+          rebate_id?: string
+          remarks?: string | null
+          to_status?: Database["public"]["Enums"]["rebate_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rebate_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rebate_events_rebate_id_fkey"
+            columns: ["rebate_id"]
+            isOneToOne: false
+            referencedRelation: "rebate_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       mess_schedule_today: {
@@ -597,6 +897,31 @@ export type Database = {
           status: string | null
         }
         Relationships: []
+      }
+      outlet_live_status: {
+        Row: {
+          bhawan_id: string | null
+          closes_at: string | null
+          is_open: boolean | null
+          location_tag: string | null
+          name: string | null
+          next_opens_at: string | null
+          outlet_id: string | null
+          shift_ends_at: string | null
+          shift_starts_at: string | null
+          source: string | null
+          status_updated_at: string | null
+          type: Database["public"]["Enums"]["outlet_type"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outlets_bhawan_id_fkey"
+            columns: ["bhawan_id"]
+            isOneToOne: false
+            referencedRelation: "bhawans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
@@ -626,9 +951,46 @@ export type Database = {
           status: string
         }[]
       }
+      outlet_shift_occurrences: {
+        Args: { p_from: string; p_outlet: string; p_to: string }
+        Returns: {
+          ends_at: string
+          is_closed: boolean
+          override_id: string
+          override_reason: string
+          service_date: string
+          starts_at: string
+        }[]
+      }
+      outlet_status_at: {
+        Args: { p_at: string; p_outlet: string }
+        Returns: {
+          closes_at: string
+          is_open: boolean
+          next_opens_at: string
+          shift_ends_at: string
+          shift_starts_at: string
+          source: string
+          status_updated_at: string
+        }[]
+      }
       register_push_token: {
         Args: { p_platform: string; p_token: string }
         Returns: undefined
+      }
+      search_food: {
+        Args: { p_query: string }
+        Returns: {
+          bhawan_id: string
+          in_stock: boolean
+          item_id: string
+          item_name: string
+          outlet_id: string
+          outlet_name: string
+          outlet_type: Database["public"]["Enums"]["outlet_type"]
+          price_paise: number
+          score: number
+        }[]
       }
     }
     Enums: {

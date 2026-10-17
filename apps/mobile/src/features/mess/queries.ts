@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useOutlets } from '@/features/campus/queries';
+import { canteenKeys } from '@/features/canteens/queries';
 import { api } from '@/lib/api';
 import type { Enums, Json, Tables, TablesInsert } from '@/lib/database.types';
 import { uploadMenuPhoto } from '@/lib/images';
@@ -37,7 +38,7 @@ export const messKeys = {
   photoReports: (photoId: string) => ['mess', 'photo-reports', photoId] as const,
   menu: (bhawanId: string, weekStart: string) => ['mess', 'menu', bhawanId, weekStart] as const,
   extras: (bhawanId: string) => ['mess', 'extras', bhawanId] as const,
-  secretaryBhawans: ['mess', 'secretary-bhawans'] as const,
+  secretaryBhawans: (role: SecretaryRole) => ['mess', 'secretary-bhawans', role] as const,
 };
 
 /** The mess outlet of a Bhawan (from the cached outlet list). */
@@ -171,15 +172,17 @@ export function useExtraItems(bhawanId: string | null | undefined) {
 
 // ─── Mess Secretary ──────────────────────────────────────────────────────────
 
-/** Bhawans where the signed-in user is Mess Secretary (live from role_assignments). */
-export function useSecretaryBhawans() {
+export type SecretaryRole = 'mess_secretary' | 'bhawan_secretary';
+
+/** Bhawans where the signed-in user holds `role` (live from role_assignments, not the JWT). */
+export function useSecretaryBhawans(role: SecretaryRole = 'mess_secretary') {
   return useQuery({
-    queryKey: messKeys.secretaryBhawans,
+    queryKey: messKeys.secretaryBhawans(role),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('role_assignments')
         .select('bhawan_id, bhawans(name)')
-        .eq('role', 'mess_secretary');
+        .eq('role', role);
       if (error) throw error;
       return data
         .filter((row): row is typeof row & { bhawan_id: string } => row.bhawan_id !== null)
@@ -254,7 +257,8 @@ export type OverrideInput = {
   notify?: boolean;
 };
 
-/** FastAPI: validates and broadcasts the change to residents (ARCHITECTURE.md §5.6). */
+/** FastAPI: validates and broadcasts the change to residents (ARCHITECTURE.md §5.6). Also used
+ * for canteen/eatery shift changes (slot null, optional `notify`). */
 export function useCreateOverride() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -263,7 +267,11 @@ export function useCreateOverride() {
         method: 'POST',
         body: params.body,
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: messKeys.all }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: messKeys.all }),
+        queryClient.invalidateQueries({ queryKey: canteenKeys.all }),
+      ]),
   });
 }
 
@@ -272,6 +280,10 @@ export function useRevokeOverride() {
   return useMutation({
     mutationFn: (overrideId: string) =>
       api<void>(`/v1/timing-overrides/${overrideId}`, { method: 'DELETE' }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: messKeys.all }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: messKeys.all }),
+        queryClient.invalidateQueries({ queryKey: canteenKeys.all }),
+      ]),
   });
 }

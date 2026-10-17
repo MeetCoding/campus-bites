@@ -31,14 +31,8 @@ class Notifier:
         data: dict[str, Any],
         channel: Channel = "mess-updates",
     ) -> PushReport:
-        tokens = unique_tokens(await self._tokens.tokens_for_bhawan_residents(bhawan_id))
-        messages = [
-            PushMessage(to=token, title=title, body=body, data=data, channel_id=channel)
-            for token in tokens
-        ]
-        report = await self._push.send(messages)
-        if report.invalid_tokens:
-            await self._tokens.delete_tokens(report.invalid_tokens)
+        tokens = await self._tokens.tokens_for_bhawan_residents(bhawan_id)
+        report = await self._send(tokens, title, body, data, channel)
         logger.info(
             "Notified bhawan %s: %d sent, %d failed, %d pruned",
             bhawan_id,
@@ -46,6 +40,31 @@ class Notifier:
             report.failed,
             len(report.invalid_tokens),
         )
+        return report
+
+    async def notify_user(
+        self,
+        user_id: UUID,
+        *,
+        title: str,
+        body: str,
+        data: dict[str, Any],
+        channel: Channel = "mess-updates",
+    ) -> PushReport:
+        """Every device the user is signed in on (e.g. their rebate decision)."""
+        tokens = await self._tokens.tokens_for_user(user_id)
+        return await self._send(tokens, title, body, data, channel)
+
+    async def _send(
+        self, tokens: list[str], title: str, body: str, data: dict[str, Any], channel: Channel
+    ) -> PushReport:
+        messages = [
+            PushMessage(to=token, title=title, body=body, data=data, channel_id=channel)
+            for token in unique_tokens(tokens)
+        ]
+        report = await self._push.send(messages)
+        if report.invalid_tokens:
+            await self._tokens.delete_tokens(report.invalid_tokens)
         return report
 
 

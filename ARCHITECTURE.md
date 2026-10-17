@@ -63,16 +63,17 @@ Timezone for all business rules: **`Asia/Kolkata`**. Times of day are stored as 
 | Phone OTP / passcode sign-in | Auth `signInWithOtp({ phone })` / `verifyOtp({ type: 'sms' })` — V1 uses Supabase **test phone numbers** (static passcode, no SMS gateway) | Vendors / staff | `before_user_created` hook rejects numbers not in `whitelisted_vendors` |
 | Session refresh / sign-out | Auth | All | — |
 | Onboarding: choose own Bhawan | `update profiles set bhawan_id` (own row, once) | Student | RLS: `id = auth.uid()`; column-level grant on `bhawan_id` only |
-| Read bhawans, outlets, timings, overrides, weekly menus, menu photos, extra items, canteen menus, fixed-rate cards, eatery directory | PostgREST `select` / views | All authenticated | RLS `select` for `authenticated` |
+| Read bhawans, outlets, timings, overrides, weekly menus, menu photos, extra items, canteen menus, fixed-rate cards, eatery directory | PostgREST `select` / views (`outlet_live_status`) | All authenticated | RLS `select` for `authenticated` |
+| Food search across canteens + eateries | RPC `search_food(p_query)` (pg_trgm: trigram-indexed ILIKE + `word_similarity` for typos; messes excluded) | All authenticated | Invoker rights; reads only what RLS allows |
 | Read complaint board (public issue list per Bhawan) | view `complaint_board` | All authenticated | View exposes no complainant identity |
 | Read own complaints & own rebates | PostgREST | Student | RLS `created_by = auth.uid()` |
 | Read assigned complaint / rebate queues | PostgREST | Secretaries, authorities, ADoSW | RLS via JWT scope claims |
-| Live open/closed, stock, complaint status | Realtime (Postgres Changes) | All authenticated | RLS applies to Realtime |
+| Live open/closed, stock, complaint status | Realtime (Postgres Changes) on `outlets`, `outlet_shifts`, `menu_items` (publication `supabase_realtime`); subscriptions only invalidate TanStack queries | All authenticated | RLS applies to Realtime |
 | **Noticeboard / menu photo upload** (client-compressed with `expo-image-manipulator`) | Storage bucket `noticeboard-photos` + insert `menu_photos` row | Mess secretary (own Bhawan), vendor (own outlet), Bhawan secretary (canteens of own Bhawan) | Storage policy on path prefix `{outlet_id}/…` matched to JWT scope |
 | Complaint / rebate attachment upload | Storage buckets `complaint-attachments`, `rebate-documents` (private) | Student | Path prefix `{auth.uid()}/…`; read via signed URLs |
-| Vendor: edit own menu items, price, stock, open/closed toggle | `menu_items`, `outlets.is_open` | Vendor (own outlet) | RLS `outlet_id = any(jwt.outlet_ids)` |
+| Vendor / Bhawan secretary: menu items, price, stock, open/closed toggle, regular shift hours, eatery location tag | `menu_items`, `outlets.is_open` / `status_updated_at` / `location_tag` (column grants), `outlet_shifts` | Whitelisted vendor (own canteen/eatery); Bhawan secretary (both canteens of own Bhawan) | RLS `app.can_run_outlet(outlet)` = `can_manage_outlet` minus messes (live DB check, not JWT) |
 | Mess secretary: weekly structured menu, extra-items rate card | `weekly_menus`, `extra_items` | Mess secretary (own Bhawan) | RLS scoped by Bhawan |
-| Bhawan secretary: institute fixed-cost menu | `fixed_rate_items` | Bhawan & Maintenance secretary (own Bhawan) | RLS scoped by Bhawan; vendors have **no** write policy (tamper-proof) |
+| Bhawan secretary: institute fixed-cost menu | `fixed_rate_items` | Bhawan & Maintenance secretary (own Bhawan) | RLS `app.has_bhawan_role('bhawan_secretary', bhawan_id)`; vendors have **no** write policy (tamper-proof) |
 | Raise a complaint | insert `complaints` (status forced to `open` by column default + trigger) | Student | RLS `created_by = auth.uid()`; trigger derives `domain` & `assignee_role` from outlet |
 | Register / remove own Expo push token | RPC `register_push_token(p_token, p_platform)` (moves a device token to the current user) / `delete from push_tokens` | All | RPC scoped to `auth.uid()`; RLS `user_id = auth.uid()` for read/delete |
 | "Report outdated/blurry photo" flag | insert `photo_reports` | Student | RLS `reported_by = auth.uid()`, unique per photo per user |
@@ -83,8 +84,8 @@ All endpoints are under `/v1`, require `Authorization: Bearer <supabase access t
 
 | Endpoint | Purpose | Rules enforced server-side | Side effects |
 | --- | --- | --- | --- |
-| `POST /v1/rebates` | Submit mess rebate | `start_date ≤ end_date`; length ≥ `app_settings.min_rebate_days` (**3**) consecutive days; start not in the past beyond grace window; no overlap with caller's non-rejected rebates; caller has a Bhawan | Insert `rebate_applications` (`pending_verification`) + `rebate_events` |
-| `POST /v1/rebates/{id}/transition` | Authority workflow | Caller is `mess_authority` for the rebate's Bhawan; legal transitions only: `pending_verification → biometric_cross_checked → approved \| rejected`; remarks required for `rejected` | Event row; push to student |
+| `POST /v1/rebates` | Submit mess rebate | Caller has the student role and a Bhawan (live profile); `start_date ≤ end_date`; length ≥ `app_settings.min_rebate_days` (**3**) consecutive days and ≤ 180; start ≥ today (IST) − `app_settings.rebate_backdate_days` (default **0**); `document_path` inside `{caller}/`; no overlap with caller's non-rejected rebates (pre-check + exclusion constraint). Codes: `STUDENTS_ONLY`, `REBATE_NO_BHAWAN`, `REBATE_INVALID_RANGE`, `REBATE_TOO_SHORT`, `REBATE_TOO_LONG`, `REBATE_PAST_DATE`, `REBATE_BAD_DOCUMENT`, `REBATE_OVERLAP` | Insert `rebate_applications` (`pending_verification`, name/email snapshot); trigger writes `rebate_events` |
+| `POST /v1/rebates/{id}/transition` | Authority workflow | Caller is `mess_authority` for the rebate's Bhawan (JWT + live DB); legal transitions only: `pending_verification → biometric_cross_checked \| rejected`, `biometric_cross_checked → approved \| rejected` (409 `ILLEGAL_TRANSITION`); remarks required for `rejected` (`REMARKS_REQUIRED`); conditional update on the expected status (409 `REBATE_STALE`) | Trigger writes the event row; push to the student (`data.type = 'rebate'`) |
 | `POST /v1/complaints/{id}/transition` | Complaint state machine | See §5.2; handler-only vs student-only transitions; reply text required for `in_progress`; optional proof photo path for `awaiting_confirmation` | Event row; push to the other party |
 | `POST /v1/complaints/{id}/nudge` | Nudge the handler | Caller is the complainant; `status <> 'resolved'` and `now() - created_at ≥ 168 h` (**7 days**); **24 h cooldown** between nudges; atomic counter increment | `complaint_nudges` row, `nudge_count += 1`, **high-priority** push to handler(s) |
 | `POST /v1/outlets/{id}/timing-overrides` | Mess timing override / canteen shift change | Caller is mess secretary (mess outlets) or Bhawan secretary / outlet vendor (canteens); valid IST window, overnight allowed; reason note required for mess | Insert `timing_overrides`; **mess: push to all Bhawan residents**; canteen: push only if `notify=true` |
@@ -116,7 +117,7 @@ All endpoints are under `/v1`, require `Authorization: Bearer <supabase access t
 7. **Session storage on device**: `expo-secure-store` adapter (chunked for large sessions); never AsyncStorage for tokens.
 8. **Internal endpoints** (`/internal/*`) check a shared secret stored in Supabase Vault (read by `pg_net` call) and in the API env; rotate together.
 9. **Advisors**: run Supabase security advisors after every DDL migration; zero `ERROR`-level findings is a merge gate. Accepted WARN: `public.register_push_token` is a SECURITY DEFINER RPC callable by `authenticated` by design (it must reassign a device token between users; it only ever writes `auth.uid()`).
-10. **Write-scope helpers** (private `app` schema, migration `004_mess`): `app.has_bhawan_role(role, bhawan)` and `app.can_manage_outlet(outlet)` check `role_assignments` / `whitelisted_vendors` **live**, so a removed secretary or vendor loses write access immediately rather than at JWT expiry. Mess → Mess Secretary of that Bhawan; hostel canteens → Bhawan Secretary or whitelisted vendor; eateries → whitelisted vendor. FastAPI mirrors the same rule in `services/timings.py`.
+10. **Write-scope helpers** (private `app` schema, migration `004_mess`): `app.has_bhawan_role(role, bhawan)` and `app.can_manage_outlet(outlet)` check `role_assignments` / `whitelisted_vendors` **live**, so a removed secretary or vendor loses write access immediately rather than at JWT expiry. Mess → Mess Secretary of that Bhawan; hostel canteens → Bhawan Secretary or whitelisted vendor; eateries → whitelisted vendor. FastAPI mirrors the same rule in `services/timings.py`. Migration `005_canteens` adds `app.can_run_outlet(outlet)` (same rule, messes excluded) for day-to-day canteen/eatery writes.
 
 ## 4. Data model (outline — SQL lives in `supabase/migrations/`)
 
@@ -131,29 +132,29 @@ Enums
 
 | Table | Key columns | Notes |
 | --- | --- | --- |
-| `app_settings` | single row: `min_rebate_days`, `long_standing_after_hours`, `nudge_eligible_after_hours`, `nudge_cooldown_hours` | Business constants (§8.1); read by app + FastAPI; service-role writes only |
+| `app_settings` | single row: `min_rebate_days`, `rebate_backdate_days`, `long_standing_after_hours`, `nudge_eligible_after_hours`, `nudge_cooldown_hours` | Business constants (§8.1); read by app + FastAPI; service-role writes only |
 | `bhawans` | `id`, `name`, `slug`, `sort_order` | 11 Bhawans (§4.1) |
 | `outlets` | `id`, `type`, `bhawan_id?`, `name`, `location_tag`, `is_open`, `status_updated_at` | Each Bhawan has 1 mess + day + night canteen; eateries have `bhawan_id null` |
 | `profiles` | `id → auth.users`, `email?`, `phone?`, `full_name`, `bhawan_id?`, `onboarded_at` | Created by `on auth.users insert` trigger |
 | `role_assignments` | `user_id`, `role`, `bhawan_id?`, `assigned_by` | Source of JWT claims; `bhawan_id` required for Bhawan-scoped roles; one mess secretary per Bhawan. Vendor outlet scope comes from `whitelisted_vendors` |
 | `whitelisted_vendors` | `phone_e164`, `outlet_id`, `label`, `active`, `added_by` | Unique (`phone_e164`, `outlet_id`) — one phone may own many outlets. Admin-only |
 | `meal_timings` | `bhawan_id?` (null = institute default), `slot`, `day_type`, `opens_at`, `closes_at` | Defaults from PRD §3A.1 |
-| `outlet_shifts` | `outlet_id`, `opens_at`, `closes_at` | Canteen defaults; overnight when `closes_at < opens_at` |
+| `outlet_shifts` | `outlet_id` (unique), `opens_at`, `closes_at`, `updated_by` | Regular daily hours; overnight when `closes_at <= opens_at`. Defaults created by trigger: Day 10:30–22:30, Night 22:30–10:30, eateries 10:00–22:00 (owner decision, migration `008`; adjust later). Deleting the row = toggle only |
 | `timing_overrides` | `outlet_id`, `slot?`, `starts_on`, `ends_on`, `opens_at`, `closes_at`, `reason`, `created_by` | Seasonal/daily; covers holidays |
 | `weekly_menus` | `bhawan_id`, `week_start` (Monday), `items jsonb` (day × slot → dishes) | Unique (`bhawan_id`, `week_start`) |
 | `menu_photos` | `outlet_id`, `week_start?`, `storage_path`, `width`, `height`, `uploaded_by`, `is_current` | Noticeboard + canteen menu boards |
 | `photo_reports` | `photo_id`, `reported_by`, `reason` | "Report outdated / blurry" |
 | `extra_items` | `bhawan_id`, `name`, `unit`, `price_paise`, `available` | Read-only for students in V1 |
-| `menu_items` | `outlet_id`, `name`, `description`, `price_paise`, `in_stock`, `category` | Custom vendor menu |
-| `fixed_rate_items` | `bhawan_id?`, `name`, `ceiling_price_paise`, `circular_ref`, `effective_from` | Institute rate card; vendor cannot write |
-| `rebate_applications` | `student_id`, `bhawan_id`, `start_date`, `end_date`, `reason`, `document_path?`, `status`, `authority_remarks?` | API-only writes |
-| `rebate_events` | `rebate_id`, `from_status`, `to_status`, `actor_id`, `remarks`, `at` | Audit trail |
+| `menu_items` | `outlet_id`, `name` (unique per outlet, trigram index), `description`, `category`, `price_paise`, `in_stock`, `sort_order` | Custom vendor menu (canteens + eateries, never messes) |
+| `fixed_rate_items` | `bhawan_id`, `name` (unique per Bhawan), `description`, `ceiling_price_paise`, `circular_ref`, `effective_from` | Institute rate card for both canteens of a Bhawan; vendor cannot write |
+| `rebate_applications` | `student_id`, `bhawan_id`, `student_name`/`student_email` (snapshot for the authority — profiles are private), `start_date`, `end_date`, `days` (generated, inclusive), `reason`, `document_path?`, `status`, `authority_remarks?`, `reviewed_by`, `reviewed_at` | API-only writes. Exclusion constraint (btree_gist): no overlapping non-rejected rebates per student. Trigger guards legal transitions |
+| `rebate_events` | `rebate_id`, `from_status`, `to_status`, `actor_id`, `remarks`, `created_at` | Audit trail, written by trigger on insert/status change (atomic with the change) |
 | `complaints` | `created_by`, `outlet_id`, `bhawan_id?`, `domain`, `category`, `title`, `body`, `status`, `assignee_role`, `nudge_count`, `last_nudged_at`, `long_standing_at?`, `escalated_at?`, `opened_at` | `opened_at` resets on `reopened` |
 | `complaint_events` | `complaint_id`, `from_status`, `to_status`, `actor_id`, `message`, `attachment_path?` | Timeline UI |
 | `complaint_nudges` | `complaint_id`, `nudged_by`, `at` | Cooldown source |
 | `push_tokens` | `user_id`, `expo_token` (unique), `platform`, `last_seen_at` | Pruned on `DeviceNotRegistered` |
 
-Money is stored as integer **paise** (`price_paise`). Views: `complaint_board` (public, anonymised, includes computed `is_long_standing`), `mess_schedule_today` (per Bhawan × meal: effective window + `status` upcoming/serving/done/closed, computed in IST by `public.mess_schedule_at(bhawan, instant)` over `public.mess_day_schedule(bhawan, date)`), and in M4 `outlet_live_status` for canteens/eateries ("OPEN NOW • Closes at …"). Business constants: single-row `app_settings`.
+Money is stored as integer **paise** (`price_paise`). Views: `complaint_board` (public, anonymised, includes computed `is_long_standing`), `mess_schedule_today` (per Bhawan × meal: effective window + `status` upcoming/serving/done/closed, computed in IST by `public.mess_schedule_at(bhawan, instant)` over `public.mess_day_schedule(bhawan, date)`), and `outlet_live_status` for canteens/eateries (`is_open`, `source`, `closes_at`, `next_opens_at`, current/next shift; see §5.7). Business constants: single-row `app_settings`.
 
 ### 4.1 Official seed roster (`supabase/seed.sql`)
 This roster supersedes the PRD's "18 hostels".
@@ -217,11 +218,25 @@ Complainant taps **Nudge Secretary** → `POST /v1/complaints/{id}/nudge` → ch
 ### 5.6 Mess timing override
 Secretary saves override → FastAPI validates → inserts `timing_overrides` → resolves residents (`profiles.bhawan_id`) → batched Expo push (100 / request) → stores tickets, prunes dead tokens on receipts.
 
+Canteen/eatery **temporary** shift changes use the same endpoint with `slot = null` (overnight windows allowed); canteens push only when `notify = true`, eateries never. Push data carries `outlet_type` so a tap opens the canteen instead of the Mess Hub. **Regular** hours are a direct RLS write to `outlet_shifts` (no push).
+
+### 5.7 Canteen / eatery live status (`public.outlet_status_at(outlet, instant)`, migration `005_canteens`)
+1. **Shift occurrences** (`outlet_shift_occurrences`): one per IST service date — the newest active slot-less override for that date, else `outlet_shifts`. An occurrence starting on D ends on D+1 when it crosses midnight; a closed override yields none.
+2. **Schedule**: open iff an occurrence contains the instant (end-exclusive); `closes_at` = its end, `next_opens_at` = the next start within 7 days.
+3. **Manual toggle** (`outlets.is_open`): counts only if `status_updated_at` is after the latest shift boundary (a start or end) — it lasts until the schedule next changes, so a forgotten toggle never sticks. Clients may "touch" `status_updated_at` so re-asserting the stored value still counts; a trigger pins it to `now()` (migration `006`).
+4. The app renders `OpenStatusPill` ("OPEN NOW • Closes at 10:30 PM" / "OPENS TOMORROW 10:30 AM" / "CLOSED"), refetches every 60 s and on Realtime changes, and applies boundaries passed since the last fetch locally.
+
+### 5.8 Mess rebate (migration `009_rebates`)
+1. Student fills dates + reason; optional document → photo compressed to ≤ 1600 px (or PDF ≤ 5 MB) → `rebate-documents/{uid}/{date}-{random}.{jpg|pdf}` (private bucket, insert only into own folder).
+2. `POST /v1/rebates` validates (§3.2) and inserts; the trigger logs `pending_verification`.
+3. Mess Authority queue = `rebate_applications` filtered by RLS (`app.has_bhawan_role('mess_authority', bhawan_id)`); document opened via a 10-min signed URL — storage RLS lets the authority read a file only while a visible application cites it.
+4. Authority marks **Biometric cross-checked** (after checking the mess register), then **Approve**, or **Reject** with remarks at either step. Each step pushes the student; the app shows a 3-step timeline from `rebate_events`.
+
 ## 6. Environments
 
 | Env | Supabase | API | App |
 | --- | --- | --- | --- |
-| dev | `sdjghovuyhsiyufhmlga` | `uv run fastapi dev` locally | Expo Go (`exp://`) for UI; a **development build** (`campusbites://`) for push — Expo Go on Android has no remote push, and push tokens need `extra.eas.projectId` from `eas init` |
+| dev | `sdjghovuyhsiyufhmlga` | Render `https://campus-bites-0dim.onrender.com` (free tier: ~40 s cold start) or `uv run fastapi dev` locally | Expo Go (`exp://`) for UI; a **development build** (`campusbites://`) for push — Expo Go on Android has no remote push, and push tokens need `extra.eas.projectId` from `eas init` |
 | prod | separate project (created at M6) | Render web service (created in M0.2) | EAS production build |
 
 Environment variables
@@ -243,7 +258,7 @@ In-app payments for extra items; automated biometric integration (authority cros
 | M0.1 | Vendor phone auth | Supabase built-in **Phone numbers for testing** with a static passcode; **no Twilio / SMS gateway** in V1. Client flow unchanged (`signInWithOtp` → `verifyOtp`). Shared V1 owner number `+919510709195` whitelisted for all canteens & eateries (§4.1). Passcode kept in the Supabase dashboard only. |
 | M0.2 | FastAPI hosting | **Render** web service (native Python runtime, no Docker) — created and configured. Free-tier sleep means `pg_cron` calls must tolerate cold starts (retry, 30 s timeout). |
 | M0.3 | Google OAuth | Google Cloud **Web** OAuth client connected to Supabase Auth. Supabase redirect allow-list: `campusbites://**`, `exp://**`. App uses the browser-based `signInWithOAuth` PKCE flow (§5.1), so no Android/iOS client IDs are needed. Consent-screen links point at `PRIVACY.md` and `TERMS.md` in this repo. |
-| M0.4 | `min_rebate_days` | **3** consecutive days (`app_settings`) |
+| M0.4 | `min_rebate_days` | **3** consecutive days (`app_settings`); `rebate_backdate_days` = **0** (no backdating) chosen in M5 — change the setting if the Warden office allows late applications |
 | M0.4 | Long-standing badge | **48 h** after `opened_at` (PRD §3D.3) — `app_settings.long_standing_after_hours` |
 | M0.4 | Nudge eligibility | complaint `status <> 'resolved'` for **168 h (7 days)** after `created_at`; then **24 h cooldown** between nudges — `app_settings.nudge_eligible_after_hours`, `nudge_cooldown_hours` |
 | M0.4 | Seed roster | 11 Bhawans + 4 campus eateries (§4.1) |

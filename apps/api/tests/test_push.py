@@ -105,6 +105,9 @@ class FakeTokens:
     async def tokens_for_bhawan_residents(self, bhawan_id: uuid.UUID) -> list[str]:
         return self.tokens
 
+    async def tokens_for_user(self, user_id: uuid.UUID) -> list[str]:
+        return self.tokens
+
     async def delete_tokens(self, tokens: set[str]) -> None:
         self.deleted |= tokens
 
@@ -142,3 +145,20 @@ async def test_notifier_dedupes_and_prunes(channel: str) -> None:
     assert sent_to == [token(1), token(2)]
     assert tokens.deleted == {token(2)}
     assert report.sent == 1
+
+
+async def test_notify_user_sends_to_each_device_once() -> None:
+    sent_to: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content)
+        sent_to.extend(m["to"] for m in body)
+        return httpx.Response(200, json={"data": [{"status": "ok", "id": m["to"]} for m in body]})
+
+    notifier = Notifier(
+        FakeTokens([token(1), token(1), token(3)]), make_service(httpx.MockTransport(handler))
+    )
+    report = await notifier.notify_user(uuid.uuid4(), title="Rebate approved", body="b", data={})
+
+    assert sent_to == [token(1), token(3)]
+    assert report.sent == 2

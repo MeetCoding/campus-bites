@@ -313,6 +313,8 @@ def test_bhawan_secretary_can_notify_canteen_change(
 
     assert response.status_code == 201
     assert len(notifier.calls) == 1
+    # The app opens the canteen (not the Mess Hub) when the alert is tapped.
+    assert notifier.calls[0]["data"]["outlet_type"] == "night_canteen"
 
 
 def test_canteen_override_cannot_target_a_meal(

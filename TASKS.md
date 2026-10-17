@@ -41,7 +41,7 @@ Legend: `[ ]` todo · `[~]` built, awaiting live verification · `[x]` done · *
 - [x] **M2.4** (live-verified 17 Oct against a real Supabase ES256 token: genuine → 403 without admin, tampered → 401) `core/auth.py`: JWKS-verified `CurrentUser` dependency exposing claims; `require_role()` helper. **dep:** M1.7, M2.3. ✅ tests: valid token 200, expired/forged 401, wrong role 403.
 - [~] **M2.5** Configure `app.json` `scheme: "campusbites"`; `lib/auth.ts` Google helper: `signInWithOAuth` (PKCE, `skipBrowserRedirect`, `hd=iitr.ac.in`) → `WebBrowser.openAuthSessionAsync` → `exchangeCodeForSession`. **dep:** M1.14. ✅ works in Expo Go (`exp://`) and dev build (`campusbites://`).
 - [~] **M2.6** `(auth)/sign-in` screen per `dual_login_onboarding` design: "Continue with IITR Google Account" button. **dep:** M2.5, M1.5. ✅ IITR account signs in on device; non-IITR shows friendly error.
-- [~] **M2.7** (17 Oct: test number + passcode returns a session ✅; token had no custom claims → hooks not yet enabled; rejection check pending) Verify Supabase test-number phone auth end-to-end from SQL/REST (`signInWithOtp` then `verifyOtp` with the dashboard passcode) after M2.1 hook is live. **dep:** M2.1. ✅ whitelisted test number gets a session; non-whitelisted number rejected.
+- [x] **M2.7** (live-verified 17 Oct with hooks enabled: test number + passcode → session whose JWT has `app_role: vendor` + 26 `outlet_ids`; `+911234500001` → 403 "This number is not registered…") Verify Supabase test-number phone auth end-to-end from SQL/REST (`signInWithOtp` then `verifyOtp` with the dashboard passcode) after M2.1 hook is live. **dep:** M2.1. ✅ whitelisted test number gets a session; non-whitelisted number rejected.
 - [~] **M2.8** Vendor OTP flow on sign-in screen: `+91` phone input → field labelled **"6-Digit Vendor OTP / Passcode"** → `verifyOtp({ type: 'sms' })`. **dep:** M2.7, M2.6. ✅ whitelisted vendor lands in `(staff)`.
 - [~] **M2.9** Session provider + role-group redirects in `_layout.tsx` files; role switcher for multi-role users. **dep:** M2.6. ✅ each role lands in its group; deep-linking into another group redirects.
 - [x] **M2.10** Student onboarding: Bhawan picker (11 pills) writes `profiles.bhawan_id` once (column grant + RLS). ✅ second write rejected by DB.
@@ -51,7 +51,7 @@ Legend: `[ ]` todo · `[~]` built, awaiting live verification · `[x]` done · *
 - [x] **M2.14** RLS test script `supabase/tests/auth_rls_test.sql` (rolled-back transaction; `set local role` + `request.jwt.claims`) covering both hooks, profiles/roles/whitelist/settings, anon. ✅ script passes; advisors return zero lints.
 
 ## M3 — Mess Hub (Module A, minus rebates) — ✅ code complete · ⏳ device checks pending
-> Verified: `supabase/tests/mess_test.sql` (schedule/IST/override precedence, menu JSON, RLS for secretary/student/vendor, photo rotation, storage path policy, push-token handover), API pytest (push batching/receipts/pruning, override rules + broadcast), Jest (IST helpers, money, menu draft), tsc/lint, Android bundle. **Owner actions:** `eas init` in `apps/mobile` (push needs `extra.eas.projectId`) and a development build (Expo Go on Android has no remote push); deploy the API for overrides/push.
+> Verified: `supabase/tests/mess_test.sql` (schedule/IST/override precedence, menu JSON, RLS for secretary/student/vendor, photo rotation, storage path policy, push-token handover), API pytest (push batching/receipts/pruning, override rules + broadcast), Jest (IST helpers, money, menu draft), tsc/lint, Android bundle. **Owner actions:** `eas init` in `apps/mobile` (push needs `extra.eas.projectId`) and a development build (Expo Go on Android has no remote push). API deployed to Render 17 Oct; override create/revoke verified live there.
 
 - [x] **M3.1** Migration `push_tokens` + RLS (own rows). ✅ pushed, types regenerated.
 - [~] **M3.2** App: request notification permission, register Expo push token on login, delete on sign-out. **dep:** M3.1, M2.9. ✅ row appears per device.
@@ -69,23 +69,27 @@ Legend: `[ ]` todo · `[~]` built, awaiting live verification · `[x]` done · *
 - [~] **M3.14** `(staff)` Mess Secretary console per `vendor_secretary_upload_portal`: upload noticeboard photo, edit weekly menu, edit extra items, publish timing override (calls API). **dep:** M3.7, M3.10, M3.13. ✅ override reaches a resident's device as a push.
 - [~] **M3.15** Home dashboard per `campus_bites_home_dashboard`: today's meal status, quick links (mess, canteens, eateries, rebates, complaints). **dep:** M3.12. ✅ renders live slot correctly across a day.
 
-## M4 — Hostel Canteens & Campus Eateries (Modules B, C)
-- [ ] **M4.1** Migration `outlet_shifts` + seed Day (10:30–22:30) / Night (22:30–10:30) defaults; extend `outlet_live_status` for canteens/eateries + `outlets.is_open` manual toggle. ✅ overnight shift tests pass.
-- [ ] **M4.2** Migration `menu_items` + RLS (vendor own outlet; Bhawan secretary for own Bhawan canteens). ✅ cross-outlet write rejected.
-- [ ] **M4.3** Migration `fixed_rate_items` + RLS (Bhawan secretary write; vendors none; all read). ✅ vendor write rejected.
-- [ ] **M4.4** `OpenStatusPill` component: "OPEN NOW • Closes at [time]" / "OPENS AT …" / "CLOSED". **dep:** M3.6, M4.1. ✅ snapshot cases incl. overnight.
-- [ ] **M4.5** Canteen screen per `hostel_canteen_photo_ceiling_rates`: Day/Night switch, Tab 1 full menu (+ menu photo lightbox), Tab 2 Institute Fixed-Rate Card (gold "official" styling, circular ref). **dep:** M4.2, M4.3, M4.4, M3.11. ✅ both tabs render seeded data.
-- [ ] **M4.6** Realtime subscription on `outlets` / `menu_items` invalidating queries. ✅ vendor toggle reflects on another device < 3 s.
-- [ ] **M4.7** Vendor console: open/closed toggle, item add/edit, price, In Stock/Sold Out, menu photo upload, shift change (via timing-override API with `notify` flag). **dep:** M4.2, M3.7, M3.10. ✅ vendor can run a full shift update end-to-end.
-- [ ] **M4.8** Bhawan secretary console: canteen shift timings + fixed-rate card editor. **dep:** M4.3, M3.7. ✅ edits visible to students.
-- [ ] **M4.9** Eateries directory: list with location tags + live status, `pg_trgm`-backed search across outlets and menu items, eatery detail menu. **dep:** M4.4. ✅ search "maggi" finds items across outlets.
+## M4 — Hostel Canteens & Campus Eateries (Modules B, C) — ✅ code complete · ⏳ device checks pending
+> Verified: `supabase/tests/canteens_test.sql` (overnight shifts, 22:30 boundary, overrides incl. closed days, manual toggle expiry, eatery without hours, default shift trigger, RLS for vendor / Bhawan secretary / student, search), live REST with a real vendor JWT (menu insert/delete, `search_food`, rate-card write → 42501), live Render API (eatery shift change created + revoked; eatery `notify` ignored), API pytest, Jest (`describeLiveStatus`), tsc/lint, Android bundle. Migrations `005_canteens`, `006_outlet_toggle`, `007_outlet_location_check`.
 
-## M5 — Mess Rebates (Module A.4)
-- [ ] **M5.1** Migration `rebate_applications`, `rebate_events` + RLS (student reads own; authority reads scoped Bhawans; **no client writes**) + private bucket `rebate-documents`. ✅ direct insert from app rejected.
-- [ ] **M5.2** API `services/rebates.py` submit validation (dates, `app_settings.min_rebate_days` = 3, overlap, Bhawan set) + `POST /v1/rebates`. **dep:** M2.4, M5.1. ✅ pytest covers each rule with stable error codes.
-- [ ] **M5.3** API `POST /v1/rebates/{id}/transition` (legal transitions, remarks required on reject, scope check) + student push. **dep:** M5.2, M3.3. ✅ illegal transitions return 409.
-- [ ] **M5.4** Student rebate form (date range, reason, optional document via `compressForUpload` or PDF) + history with status timeline. **dep:** M5.2. ✅ error codes map to friendly copy.
-- [ ] **M5.5** `(authority)` rebate queue: filter by status/Bhawan, detail, "Biometric cross-checked", approve/reject with remarks. **dep:** M5.3. ✅ full lifecycle works on device.
+- [x] **M4.1** Migration `outlet_shifts` + seed Day (10:30–22:30) / Night (22:30–10:30) defaults; extend `outlet_live_status` for canteens/eateries + `outlets.is_open` manual toggle. ✅ overnight shift tests pass.
+- [x] **M4.2** Migration `menu_items` + RLS (vendor own outlet; Bhawan secretary for own Bhawan canteens). ✅ cross-outlet write rejected.
+- [x] **M4.3** Migration `fixed_rate_items` + RLS (Bhawan secretary write; vendors none; all read). ✅ vendor write rejected.
+- [x] **M4.4** `OpenStatusPill` component: "OPEN NOW • Closes at [time]" / "OPENS AT …" / "CLOSED". **dep:** M3.6, M4.1. ✅ snapshot cases incl. overnight. (Cases are unit tests of `describeLiveStatus` in `features/canteens/__tests__/status.test.ts`.)
+- [~] **M4.5** Canteen screen per `hostel_canteen_photo_ceiling_rates`: Day/Night switch, Tab 1 full menu (+ menu photo lightbox), Tab 2 Institute Fixed-Rate Card (gold "official" styling, circular ref). **dep:** M4.2, M4.3, M4.4, M3.11. ✅ both tabs render seeded data.
+- [~] **M4.6** Realtime subscription on `outlets` / `menu_items` invalidating queries. ✅ vendor toggle reflects on another device < 3 s.
+- [~] **M4.7** Vendor console: open/closed toggle, item add/edit, price, In Stock/Sold Out, menu photo upload, shift change (via timing-override API with `notify` flag). **dep:** M4.2, M3.7, M3.10. ✅ vendor can run a full shift update end-to-end.
+- [~] **M4.8** Bhawan secretary console: canteen shift timings + fixed-rate card editor. **dep:** M4.3, M3.7. ✅ edits visible to students.
+- [x] **M4.9** Eateries directory: list with location tags + live status, `pg_trgm`-backed search across outlets and menu items, eatery detail menu. **dep:** M4.4. ✅ search "maggi" finds items across outlets.
+
+## M5 — Mess Rebates (Module A.4) — ✅ code complete · ⏳ API redeploy + device checks pending
+> Verified: `supabase/tests/rebates_test.sql` (exclusion constraint, transition guard, audit trigger, RLS for student / other student / both authorities, private bucket upload + cited-document read), API pytest (every submit rule with its code, full 4×4 transition matrix, remarks, scope incl. revoked role, stale race, push copy), Jest (error-code copy), tsc/lint, Android bundle, advisors. Migrations `008_eatery_default_hours` (eateries default 10:00–22:00), `009_rebates`, `010_rebate_select_policy`. Render must be redeployed before the app can submit.
+
+- [x] **M5.1** Migration `rebate_applications`, `rebate_events` + RLS (student reads own; authority reads scoped Bhawans; **no client writes**) + private bucket `rebate-documents`. ✅ direct insert from app rejected.
+- [x] **M5.2** API `services/rebates.py` submit validation (dates, `app_settings.min_rebate_days` = 3, overlap, Bhawan set) + `POST /v1/rebates`. **dep:** M2.4, M5.1. ✅ pytest covers each rule with stable error codes.
+- [x] **M5.3** API `POST /v1/rebates/{id}/transition` (legal transitions, remarks required on reject, scope check) + student push. **dep:** M5.2, M3.3. ✅ illegal transitions return 409.
+- [~] **M5.4** Student rebate form (date range, reason, optional document via `compressForUpload` or PDF) + history with status timeline. **dep:** M5.2. ✅ error codes map to friendly copy.
+- [~] **M5.5** `(authority)` rebate queue: filter by status/Bhawan, detail, "Biometric cross-checked", approve/reject with remarks. **dep:** M5.3. ✅ full lifecycle works on device.
 
 ## M6 — Complaints, Accountability & Release (Module D)
 - [ ] **M6.1** Migration `complaints`, `complaint_events`, `complaint_nudges` + RLS (student inserts own; handler reads by scope; status/nudge/escalation columns not client-writable) + private bucket `complaint-attachments`. ✅ client status update rejected.
@@ -100,7 +104,7 @@ Legend: `[ ]` todo · `[~]` built, awaiting live verification · `[x]` done · *
 - [ ] **M6.10** Public Bhawan issue board (pinned long-standing). **dep:** M6.3. ✅ ordering correct.
 - [ ] **M6.11** Handler consoles: mess secretary, Bhawan secretary, ADoSW (eatery complaints + cross-Bhawan long-standing view); reply, mark fixed with optional proof photo. **dep:** M6.4. ✅ each handler only sees their domain.
 - [ ] **M6.12** Hardening: security + performance advisors clean, indexes on FK/status/`opened_at`, RLS test script extended to all tables. ✅ zero ERROR advisors.
-- [ ] **M6.13** Deploy FastAPI to host (native Python build, env vars set, `/healthz` monitored). **dep:** M0.2. ✅ prod URL healthy.
+- [~] **M6.13** (17 Oct: dev API live on Render `campus-bites-0dim.onrender.com`, `/healthz` 200, verified with a real vendor JWT; prod env pending M6.14) Deploy FastAPI to host (native Python build, env vars set, `/healthz` monitored). **dep:** M0.2. ✅ prod URL healthy.
 - [ ] **M6.14** Create prod Supabase project, `db push` migrations, seed, configure auth hooks/providers/SMS. ✅ smoke test login on prod.
 - [ ] **M6.15** EAS: `eas.json` profiles (development / preview / production), app icons with IITR crest, production build + internal test track. ✅ installable build passes the end-to-end checklist below.
 

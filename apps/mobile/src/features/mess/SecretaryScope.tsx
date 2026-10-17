@@ -2,16 +2,22 @@ import { useState, type ReactNode } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 
 import { Card, Pill } from '@/components/ui';
-import { useSecretaryBhawans } from '@/features/mess/queries';
+import { useSecretaryBhawans, type SecretaryRole } from '@/features/mess/queries';
 
 type Bhawan = { id: string; name: string };
 
 /**
- * Resolves which Bhawan a Mess Secretary is editing (live from role_assignments, so a revoked
+ * Resolves which Bhawan a Mess (or Bhawan) Secretary is editing (live from role_assignments, so a revoked
  * secretary sees nothing even with a stale JWT). Shows a picker in the rare multi-Bhawan case.
  */
-export function SecretaryScope({ children }: { children: (bhawan: Bhawan) => ReactNode }) {
-  const bhawans = useSecretaryBhawans();
+export function SecretaryScope({
+  role = 'mess_secretary',
+  children,
+}: {
+  role?: SecretaryRole;
+  children: (bhawan: Bhawan) => ReactNode;
+}) {
+  const bhawans = useSecretaryBhawans(role);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   if (bhawans.isPending) return <ActivityIndicator />;
@@ -22,7 +28,7 @@ export function SecretaryScope({ children }: { children: (bhawan: Bhawan) => Rea
     return (
       <Card tone="low">
         <Text className="font-body text-body-md text-on-surface-variant">
-          You are not a Mess Secretary for any Bhawan.
+          You are not a {role === 'mess_secretary' ? 'Mess' : 'Bhawan'} Secretary for any Bhawan.
         </Text>
       </Card>
     );

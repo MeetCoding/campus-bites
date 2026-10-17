@@ -49,6 +49,7 @@ async def create_timing_override(
             data={
                 "type": "timing_override",
                 "outlet_id": str(outlet.id),
+                "outlet_type": outlet.type.value,
                 "override_id": str(created.id),
             },
         )

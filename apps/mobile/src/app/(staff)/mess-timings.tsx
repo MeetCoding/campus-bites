@@ -14,19 +14,16 @@ import {
   type MealSlot,
 } from '@/features/mess/queries';
 import { SecretaryScope } from '@/features/mess/SecretaryScope';
-import { addDays, DAY_KEYS, dayKeyOf, isValidDateInput, isValidTimeInput, istNow, parseTime } from '@/lib/time';
+import {
+  DATE_PRESET_LABEL,
+  isValidDateInput,
+  isValidTimeInput,
+  istNow,
+  parseTime,
+  presetRange,
+  type DatePreset,
+} from '@/lib/time';
 import { colors } from '@/theme/tokens';
-
-type DatePreset = 'today' | 'tomorrow' | 'weekend' | 'custom';
-
-function presetRange(preset: Exclude<DatePreset, 'custom'>, today: string): [string, string] {
-  if (preset === 'today') return [today, today];
-  if (preset === 'tomorrow') return [addDays(today, 1), addDays(today, 1)];
-  // The coming (or current) Saturday–Sunday.
-  const dayIndex = DAY_KEYS.indexOf(dayKeyOf(today)); // 0 = Monday … 6 = Sunday
-  const saturday = dayIndex === 6 ? addDays(today, -1) : addDays(today, 5 - dayIndex);
-  return [dayIndex === 6 ? today : saturday, addDays(saturday, 1)];
-}
 
 export default function MessTimingsScreen() {
   return (
@@ -131,7 +128,7 @@ function TimingsEditor({ bhawanId, bhawanName }: { bhawanId: string; bhawanName:
             {(['today', 'tomorrow', 'weekend', 'custom'] as const).map((p) => (
               <Pill
                 key={p}
-                label={{ today: 'Today', tomorrow: 'Tomorrow', weekend: 'This weekend', custom: 'Custom dates' }[p]}
+                label={DATE_PRESET_LABEL[p]}
                 selected={p === preset}
                 onPress={() => setPreset(p)}
               />
