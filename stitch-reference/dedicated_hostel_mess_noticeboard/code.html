@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Hostel Mess Hub - Campus Bites IIT Roorkee</title>
+<!-- Fonts & Material Icons -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;500;700&amp;family=Inter:wght@400;500;700&amp;family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {"surface-bright": "#faf9fa", "on-surface": "#1b1c1d", "on-primary-container": "#e7ebff", "primary-container": "#3366cc", "on-tertiary-fixed": "#211b00", "on-primary-fixed": "#001946", outline: "#737784", "outline-variant": "#c3c6d5", error: "#ba1a1a", "on-error-container": "#93000a", "on-secondary-fixed": "#171c20", "surface-tint": "#2259bf", "tertiary-container": "#bfab49", "surface-container": "#efedee", "inverse-surface": "#303031", "on-secondary": "#ffffff", secondary: "#5a5f63", "surface-variant": "#e3e2e3", "secondary-fixed": "#dfe3e8", "surface-container-highest": "#e3e2e3", "surface-dim": "#dbdadb", "on-secondary-fixed-variant": "#42474b", "primary-fixed-dim": "#b1c5ff", tertiary: "#6d5e00", "on-surface-variant": "#434653", "secondary-container": "#dfe3e8", "on-primary-fixed-variant": "#00419d", "on-secondary-container": "#606569", "error-container": "#ffdad6", "surface-container-high": "#e9e8e9", "on-background": "#1b1c1d", "on-tertiary": "#ffffff", surface: "#faf9fa", "inverse-on-surface": "#f2f0f1", primary: "#094cb2", "secondary-fixed-dim": "#c2c7cc", "tertiary-fixed": "#f9e37a", "surface-container-lowest": "#ffffff", "on-primary": "#ffffff", "on-error": "#ffffff", "inverse-primary": "#b1c5ff", "primary-fixed": "#d9e2ff", background: "#faf9fa", "surface-container-low": "#f5f3f4", "tertiary-fixed-dim": "#dcc661", "on-tertiary-fixed-variant": "#524600", "on-tertiary-container": "#4a3f00"}, borderRadius: {DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem"}, spacing: {"gutter-desktop": "1.5rem", "space-sm": "0.5rem", "space-lg": "1.5rem", "margin-desktop": "2rem", "space-xs": "0.25rem", gutter: "1rem", "space-xl": "2rem", margin: "1rem", "space-md": "1rem"}, fontFamily: {"headline-lg": ["Plus Jakarta Sans"], "headline-sm": ["Plus Jakarta Sans"], "label-lg": ["Inter"], "headline-xl-mobile": ["Plus Jakarta Sans"], "body-md": ["Inter"], "headline-md": ["Plus Jakarta Sans"], "label-md": ["Inter"], "body-lg": ["Inter"], "headline-xl": ["Plus Jakarta Sans"], "label-sm": ["Inter"], "body-sm": ["Inter"], "headline-lg-mobile": ["Plus Jakarta Sans"], headline: ["Noto Serif"], display: ["Noto Serif"], body: ["Inter"], label: ["Public Sans"]}, fontSize: {"headline-lg": ["32px", {lineHeight: "40px", fontWeight: "700"}], "headline-sm": ["18px", {lineHeight: "24px", fontWeight: "600"}], "label-lg": ["14px", {lineHeight: "20px", fontWeight: "600"}], "headline-xl-mobile": ["30px", {lineHeight: "38px", fontWeight: "700"}], "body-md": ["14px", {lineHeight: "20px", fontWeight: "400"}], "headline-md": ["22px", {lineHeight: "28px", fontWeight: "600"}], "label-md": ["12px", {lineHeight: "16px", fontWeight: "600"}], "body-lg": ["16px", {lineHeight: "24px", fontWeight: "400"}], "headline-xl": ["40px", {lineHeight: "48px", fontWeight: "700"}], "label-sm": ["11px", {lineHeight: "14px", letterSpacing: "0.05em", fontWeight: "700"}], "body-sm": ["12px", {lineHeight: "18px", fontWeight: "400"}], "headline-lg-mobile": ["24px", {lineHeight: "32px", fontWeight: "700"}]}}}};</script>
+<style>
+    /* Pinboard texture styling */
+    .pinboard-canvas {
+      background-color: #f1f3f7;
+      background-image: radial-gradient(#cbd5e1 0.75px, transparent 0.75px);
+      background-size: 12px 12px;
+    }
+    .cork-tack {
+      box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    }
+    /* Hide scrollbar for clean pill list */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface antialiased font-body-md min-h-screen flex flex-col selection:bg-primary selection:text-on-primary pb-44">
+<!-- ================= TOP APP BAR (Shared Component Anchor) ================= -->
+<header class="sticky top-0 z-50 flex flex-col w-full bg-surface-container-lowest shadow-sm">
+<div class="flex justify-between items-center w-full px-4 py-2.5">
+<div class="flex items-center space-x-3">
+<div class="w-9 h-9 rounded-full overflow-hidden border border-outline-variant flex-shrink-0 bg-surface-container-low flex items-center justify-center shadow-xs">
+<img alt="Official circular IIT Roorkee crest emblem" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtfJ1AmT0zkGof5eVI9Pc2b84Dk9ukKbzmMyVXsz0G4XK6cuDXXIm2TqtSlm_435u8azkofpNQLStjWKm6v8OwZSc2Ps9CiKrCxLt4-l00JiOimzkAucCEFJ9u8Pr0GulKyHZdtcWHwhI_q9RNOwV38O-AhKD9jUf5N5V8t62o161QYs8VzSOFyZv9KZIs2j47pYz5Cy6MpTHGRtVkfeS8lx3ARGCSO70JXHItR_sJ_fDTyIQacHfPSqlvYGNcuOhH0w"/>
+</div>
+<div>
+<span class="block text-headline-sm font-headline-sm font-bold text-primary tracking-tight leading-tight">Campus Bites</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary-container animate-pulse"></span>
+            Hostel Mess Hub
+          </span>
+</div>
+</div>
+<div class="flex items-center gap-1.5">
+<button aria-label="Notifications" class="w-9 h-9 flex items-center justify-center rounded-full text-primary hover:bg-surface-container transition-colors duration-150 active:scale-95">
+<span class="material-symbols-outlined text-[22px]">notifications</span>
+</button>
+</div>
+</div>
+<!-- Bhawan Horizontal Pill Selector (18 Bhawans) -->
+<div class="w-full overflow-x-auto no-scrollbar px-3 py-2 bg-surface-container-low/70 border-t border-outline-variant/30 flex items-center space-x-2">
+<!-- Active Pill -->
+<button class="flex-shrink-0 px-3.5 py-1.5 rounded-full bg-primary text-on-primary text-label-md font-label-md shadow-sm flex items-center gap-1.5 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">check</span>
+        Rajendra
+      </button>
+<!-- Inactive Pills -->
+<button class="flex-shrink-0 px-3.5 py-1.5 rounded-full bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:text-primary text-label-md font-label-md hover:bg-surface-container transition-colors active:scale-95">Govind</button>
+<button class="flex-shrink-0 px-3.5 py-1.5 rounded-full bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:text-primary text-label-md font-label-md hover:bg-surface-container transition-colors active:scale-95">Kasturba</button>
+<button class="flex-shrink-0 px-3.5 py-1.5 rounded-full bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:text-primary text-label-md font-label-md hover:bg-surface-container transition-colors active:scale-95">Rajiv</button>
+<button class="flex-shrink-0 px-3.5 py-1.5 rounded-full bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:text-primary text-label-md font-label-md hover:bg-surface-container transition-colors active:scale-95">Cautley</button>
+<button class="flex-shrink-0 px-3.5 py-1.5 rounded-full bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:text-primary text-label-md font-label-md hover:bg-surface-container transition-colors active:scale-95">Sarojini</button>
+<button class="flex-shrink-0 px-3.5 py-1.5 rounded-full bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:text-primary text-label-md font-label-md hover:bg-surface-container transition-colors active:scale-95">Jawahar</button>
+<button class="flex-shrink-0 px-3.5 py-1.5 rounded-full bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:text-primary text-label-md font-label-md hover:bg-surface-container transition-colors active:scale-95">Ravindra</button>
+<button class="flex-shrink-0 px-3.5 py-1.5 rounded-full bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:text-primary text-label-md font-label-md hover:bg-surface-container transition-colors active:scale-95">Ganga</button>
+<button class="flex-shrink-0 px-3.5 py-1.5 rounded-full bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:text-primary text-label-md font-label-md hover:bg-surface-container transition-colors active:scale-95">Radhakrishnan</button>
+</div>
+</header>
+<!-- ================= MAIN CONTENT WRAPPER ================= -->
+<main class="w-full max-w-md mx-auto px-4 pt-3 flex flex-col gap-4">
+<!-- Timing Override Alert Banner -->
+<div class="w-full bg-[#FFFBEB] border-l-4 border-secondary-container rounded-r-lg p-3 shadow-sm flex items-start gap-2.5">
+<span class="material-symbols-outlined text-secondary-container text-[20px] flex-shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">warning</span>
+<div class="flex-1">
+<p class="text-body-sm font-body-sm font-semibold text-[#78350F] leading-snug">
+          Breakfast on Saturday &amp; Sunday starts at 8:00 AM <span class="font-normal text-[#92400E]">(Special Schedule)</span>
+</p>
+<span class="text-[10px] text-[#B45309] block mt-0.5 font-medium">Regular Weekday Window: 7:30 AM – 9:15 AM</span>
+</div>
+</div>
+<!-- Active Serving Status Badge -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-3 flex items-center justify-between shadow-sm">
+<div class="flex items-center space-x-2.5">
+<div class="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-ping"></div>
+<div>
+<div class="flex items-center gap-2">
+<span class="text-label-md font-label-md text-primary font-bold">Rajendra Bhawan Mess</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+              SERVING DINNER
+            </span>
+</div>
+<span class="text-body-sm font-body-sm text-on-surface-variant">Live slot: 8:00 PM – 9:45 PM • Hall Occupancy: 68%</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline text-[20px]">schedule</span>
+</div>
+<!-- Noticeboard Photo Canvas Card -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm flex flex-col">
+<!-- Pin-up Header Board Bar -->
+<div class="bg-[#1E293B] text-surface-container-lowest px-3.5 py-2 flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-secondary-fixed">push_pin</span>
+<span class="text-label-md font-label-md uppercase tracking-wider text-surface-bright font-bold">Official Physical Noticeboard</span>
+</div>
+<span class="px-2 py-0.5 bg-primary-container text-on-primary-container rounded text-[10px] font-bold tracking-tight">VERIFIED ROSTER</span>
+</div>
+<!-- Photo Display Area (Authentic Signed Document Framing) -->
+<div class="pinboard-canvas p-3 relative flex flex-col items-center justify-center">
+<!-- Pushpins on corners -->
+<div class="absolute top-2 left-2 w-3.5 h-3.5 rounded-full bg-error border-2 border-white cork-tack z-10"></div>
+<div class="absolute top-2 right-2 w-3.5 h-3.5 rounded-full bg-primary border-2 border-white cork-tack z-10"></div>
+<!-- The Document Sheet Container -->
+<div class="w-full bg-white rounded shadow-md border border-slate-300 p-2.5 flex flex-col relative transition-transform">
+<!-- Document Header Simulation -->
+<div class="border-b border-dashed border-slate-300 pb-2 mb-2 text-center">
+<div class="text-[9px] font-bold tracking-widest text-slate-500 uppercase">Indian Institute of Technology Roorkee</div>
+<div class="text-label-md font-bold text-slate-800">RAJENDRA BHAWAN MESS COUNCIL — WEEKLY DIETARY ROSTER</div>
+<div class="text-[10px] text-slate-500 font-medium">Valid from Oct 19 to Oct 25, 2025 • Approved by Chief Warden</div>
+</div>
+<!-- Document Timetable Grid Preview -->
+<div class="overflow-x-auto text-[11px] leading-tight text-slate-700">
+<table class="w-full border-collapse border border-slate-200">
+<thead class="bg-slate-100 text-slate-800 font-semibold text-[10px]">
+<tr>
+<th class="border border-slate-200 p-1 text-left">Day</th>
+<th class="border border-slate-200 p-1 text-left">Breakfast</th>
+<th class="border border-slate-200 p-1 text-left">Lunch</th>
+<th class="border border-slate-200 p-1 text-left">Dinner</th>
+</tr>
+</thead>
+<tbody>
+<tr class="bg-white">
+<td class="border border-slate-200 p-1 font-bold text-primary">Mon</td>
+<td class="border border-slate-200 p-1 text-[10px]">Poha, Sprouts, Milk/Tea</td>
+<td class="border border-slate-200 p-1 text-[10px]">Rajma, Rice, Roti, Raita</td>
+<td class="border border-slate-200 p-1 text-[10px]">Shahi Paneer, Dal Fry, Kheer</td>
+</tr>
+<tr class="bg-slate-50">
+<td class="border border-slate-200 p-1 font-bold text-primary">Tue</td>
+<td class="border border-slate-200 p-1 text-[10px]">Aloo Paratha, Curd, Pickle</td>
+<td class="border border-slate-200 p-1 text-[10px]">Chole, Bhature/Rice, Salad</td>
+<td class="border border-slate-200 p-1 text-[10px]">Mix Veg, Dal Makhani, Gulab J.</td>
+</tr>
+<tr class="bg-white">
+<td class="border border-slate-200 p-1 font-bold text-primary">Wed</td>
+<td class="border border-slate-200 p-1 text-[10px]">Idli, Sambar, Coconut Chutney</td>
+<td class="border border-slate-200 p-1 text-[10px]">Kadhi Pakoda, Jeera Rice</td>
+<td class="border border-slate-200 p-1 text-[10px]">Dum Aloo, Moong Dal, Halwa</td>
+</tr>
+<tr class="bg-primary/5">
+<td class="border border-slate-200 p-1 font-bold text-secondary">Today</td>
+<td class="border border-slate-200 p-1 text-[10px] font-medium">Masala Dosa, Sambhar, Fruit</td>
+<td class="border border-slate-200 p-1 text-[10px] font-medium">Dal Tadka, Bhindi Do Pyaza</td>
+<td class="border border-slate-200 p-1 text-[10px] font-semibold text-primary">Kadhai Paneer, Matar Pulao</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Stamped Signatory Mark Simulation -->
+<div class="mt-2 pt-1 border-t border-slate-200 flex justify-between items-end">
+<span class="text-[9px] text-slate-400 italic">Physical stamped circular copy</span>
+<div class="flex items-center gap-1.5">
+<span class="inline-block border border-blue-700 text-blue-700 text-[8px] font-bold px-1 py-0.5 rounded uppercase tracking-tighter rotate-[-3deg]">
+                VERIFIED &amp; STAMPED
+              </span>
+<span class="text-[9px] font-semibold text-slate-600">Mess Secy. Sig.</span>
+</div>
+</div>
+</div>
+<!-- Floating Document Quick Controls -->
+<div class="flex items-center justify-center gap-2 mt-3 w-full">
+<button class="flex-1 bg-surface-container-lowest/90 backdrop-blur-xs border border-outline-variant hover:bg-surface-container text-primary px-2.5 py-1.5 rounded-lg text-label-sm font-label-sm flex items-center justify-center gap-1 shadow-xs active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[16px]">zoom_in</span>
+            Pinch-to-Zoom
+          </button>
+<button class="bg-surface-container-lowest/90 backdrop-blur-xs border border-outline-variant hover:bg-surface-container text-primary px-3 py-1.5 rounded-lg text-label-sm font-label-sm flex items-center justify-center gap-1 shadow-xs active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[16px]">rotate_right</span>
+            Rotate
+          </button>
+<button class="bg-primary hover:bg-primary-container text-on-primary px-3 py-1.5 rounded-lg text-label-sm font-label-sm flex items-center justify-center gap-1 shadow-xs active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[16px]">download</span>
+            PDF
+          </button>
+</div>
+</div>
+<!-- Noticeboard Metadata Footer -->
+<div class="bg-surface-container-low px-3.5 py-2.5 border-t border-outline-variant/50 text-[11px] text-on-surface-variant flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-outline text-[16px]">account_box</span>
+<span>Rajendra Bhawan Mess Secy • Updated Mon 7:45 AM</span>
+</div>
+<span class="font-semibold text-primary">Valid till Oct 25</span>
+</div>
+</section>
+<!-- Noticeboard Verification Strip -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-2.5 flex items-center justify-between text-body-sm font-body-sm shadow-xs">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[18px]">verified</span>
+<span class="text-on-surface-variant text-[12px]">Is this menu outdated?</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="text-secondary font-semibold hover:underline text-[12px] flex items-center gap-0.5 active:scale-95">
+<span class="material-symbols-outlined text-[14px]">flag</span>
+          Report Outdated Photo
+        </button>
+<span class="text-[11px] text-outline font-medium">(0 reports)</span>
+</div>
+</div>
+<!-- Collapsible Section: Extra Items Rate Card (Pay at Counter) -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+<div class="p-3.5 bg-surface-container-low/60 border-b border-outline-variant/60 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">receipt_long</span>
+<div>
+<h2 class="text-headline-sm font-headline-sm text-on-surface leading-tight">Extra Items Rate Card</h2>
+<span class="text-label-sm font-label-sm text-secondary font-bold uppercase tracking-wider">Pay at Counter Only</span>
+</div>
+</div>
+<span class="px-2 py-0.5 bg-surface-container-highest text-primary rounded-full text-[11px] font-semibold">Fixed Wardenship Tariff</span>
+</div>
+<!-- Tabular Price List -->
+<div class="divide-y divide-outline-variant/40">
+<!-- Item 1 -->
+<div class="px-3.5 py-2.5 flex items-center justify-between hover:bg-surface-container-low/40 transition-colors">
+<div class="flex flex-col">
+<span class="text-body-md font-body-md font-semibold text-on-surface">Extra Paneer</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant">Standard portion (100g)</span>
+</div>
+<div class="text-right">
+<span class="text-label-lg font-label-lg text-primary font-bold">₹40</span>
+<span class="block text-[10px] text-outline">Inclusive of GST</span>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="px-3.5 py-2.5 flex items-center justify-between hover:bg-surface-container-low/40 transition-colors bg-surface-bright/50">
+<div class="flex flex-col">
+<span class="text-body-md font-body-md font-semibold text-on-surface">Boiled Eggs</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant">Farm fresh (2 pcs)</span>
+</div>
+<div class="text-right">
+<span class="text-label-lg font-label-lg text-primary font-bold">₹20</span>
+<span class="block text-[10px] text-outline">Fixed subsidy</span>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="px-3.5 py-2.5 flex items-center justify-between hover:bg-surface-container-low/40 transition-colors">
+<div class="flex flex-col">
+<span class="text-body-md font-body-md font-semibold text-on-surface">Fresh Curd Bowl</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant">Chilled (150g)</span>
+</div>
+<div class="text-right">
+<span class="text-label-lg font-label-lg text-primary font-bold">₹15</span>
+<span class="block text-[10px] text-outline">Daily fermented</span>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="px-3.5 py-2.5 flex items-center justify-between hover:bg-surface-container-low/40 transition-colors bg-surface-bright/50">
+<div class="flex flex-col">
+<span class="text-body-md font-body-md font-semibold text-on-surface">Amul Butter Cube</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant">Sealed pack (20g)</span>
+</div>
+<div class="text-right">
+<span class="text-label-lg font-label-lg text-primary font-bold">₹10</span>
+<span class="block text-[10px] text-outline">MRP Capped</span>
+</div>
+</div>
+<!-- Item 5 -->
+<div class="px-3.5 py-2.5 flex items-center justify-between hover:bg-surface-container-low/40 transition-colors">
+<div class="flex flex-col">
+<span class="text-body-md font-body-md font-semibold text-on-surface">Extra Sweet / Gulab Jamun</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant">Warm standard piece (1 pc)</span>
+</div>
+<div class="text-right">
+<span class="text-label-lg font-label-lg text-primary font-bold">₹15</span>
+<span class="block text-[10px] text-outline">Chef's daily special</span>
+</div>
+</div>
+</div>
+<!-- Institutional Direct-Pay Notice -->
+<div class="p-3 bg-surface-container-low border-t border-outline-variant/60 flex items-start gap-2 text-[11px] text-on-surface-variant">
+<span class="material-symbols-outlined text-primary text-[16px] flex-shrink-0 mt-0.5">info</span>
+<p class="leading-relaxed">
+          Pay directly via UPI QR at the mess counter. No app commissions or cart checkouts. Official mess receipt issued instantaneously.
+        </p>
+</div>
+</section>
+<!-- Hygiene & Committee Inspection Footer Stamp -->
+<div class="border border-dashed border-outline-variant rounded-lg p-3 bg-white/70 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary-container text-[20px]" style="font-variation-settings: 'FILL' 1;">health_and_safety</span>
+<div>
+<span class="block text-label-md font-label-md text-on-surface">Mess Inspection Score: 4.8 / 5.0</span>
+<span class="text-[11px] text-on-surface-variant">Inspected on Oct 20 by Joint Mess Council</span>
+</div>
+</div>
+<button class="text-label-sm font-label-sm text-primary font-bold hover:underline">View Log</button>
+</div>
+</main>
+<!-- ================= FLOATING ACTION & REBATE DOCK CONTAINER ================= -->
+<div class="fixed bottom-14 left-0 w-full z-40 px-3 pb-2 pointer-events-none">
+<div class="max-w-md mx-auto pointer-events-auto">
+<!-- Floating Mess Rebate Tracker Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-3 shadow-lg flex items-center justify-between gap-2.5 backdrop-blur-md">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded-full bg-secondary-fixed flex items-center justify-center flex-shrink-0 text-secondary">
+<span class="material-symbols-outlined text-[18px]">event_repeat</span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="text-label-md font-label-md font-bold text-on-surface truncate">1 Application Pending</span>
+<span class="w-1.5 h-1.5 rounded-full bg-secondary-container"></span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant truncate">Oct 21–25 • Diwali Break</p>
+</div>
+</div>
+<!-- Primary Warm Amber Button (+ Apply for Rebate) -->
+<button class="flex-shrink-0 px-3 py-2 bg-[#EA580C] hover:bg-[#C2410C] active:scale-95 text-white rounded-lg text-label-sm font-label-sm font-bold flex items-center gap-1 shadow-sm transition-all duration-150">
+<span class="material-symbols-outlined text-[16px]">add</span>
+          Apply for Rebate
+        </button>
+</div>
+</div>
+</div>
+<!-- ================= DOCKED BOTTOM NAVIGATION BAR (Shared Component Anchor) ================= -->
+<!-- 
+    Authority: JSON definition
+    Active Tab: 'Mess Hub' (Index 1) based on current page intent.
+    Separation Logic: style_separation_logic = "border-t border-outline-variant"
+  -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-space-xs py-2 bg-surface-container-lowest shadow-md border-t border-outline-variant">
+<!-- Destination 1: Dining Home -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors duration-150 active:scale-95 py-1 px-3 rounded-lg" href="#">
+<span class="material-symbols-outlined text-[20px]">restaurant</span>
+<span class="text-label-sm font-label-sm mt-0.5">Dining Home</span>
+</a>
+<!-- Destination 2: Mess Hub (ACTIVE) -->
+<a class="flex flex-col items-center justify-center text-primary font-bold hover:bg-surface-container-low transition-colors duration-150 active:scale-95 py-1 px-3 rounded-lg" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">lunch_dining</span>
+<span class="text-label-sm font-label-sm mt-0.5">Mess Hub</span>
+</a>
+<!-- Destination 3: Complaints -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors duration-150 active:scale-95 py-1 px-3 rounded-lg" href="#">
+<span class="material-symbols-outlined text-[20px]">report_problem</span>
+<span class="text-label-sm font-label-sm mt-0.5">Complaints</span>
+</a>
+<!-- Destination 4: Rebates & Profile -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors duration-150 active:scale-95 py-1 px-3 rounded-lg" href="#">
+<span class="material-symbols-outlined text-[20px]">account_circle</span>
+<span class="text-label-sm font-label-sm mt-0.5">Rebates &amp; Profile</span>
+</a>
+</nav>
+<!-- Interactive script for quick hostel selector switching -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const pills = document.querySelectorAll('.no-scrollbar button');
+      pills.forEach(pill => {
+        pill.addEventListener('click', (e) => {
+          // Visual selection feedback
+          pills.forEach(p => {
+            p.className = 'flex-shrink-0 px-3.5 py-1.5 rounded-full bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:text-primary text-label-md font-label-md hover:bg-surface-container transition-colors active:scale-95';
+            const checkIcon = p.querySelector('span.material-symbols-outlined');
+            if (checkIcon) checkIcon.remove();
+          });
+          pill.className = 'flex-shrink-0 px-3.5 py-1.5 rounded-full bg-primary text-on-primary text-label-md font-label-md shadow-sm flex items-center gap-1.5 active:scale-95 transition-all';
+          const icon = document.createElement('span');
+          icon.className = 'material-symbols-outlined text-[15px]';
+          icon.style.fontVariationSettings = "'FILL' 1";
+          icon.textContent = 'check';
+          pill.prepend(icon);
+        });
+      });
+    });
+  </script>
+</body></html>

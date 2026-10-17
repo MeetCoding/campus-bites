@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv run pytest*)",
+      "Bash(npx tsc*)",
+      "Bash(npx supabase gen types*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)"
+    ],
+    "deny": [
+      "Read(./.env*)",
+      "Bash(rm -rf *)",
+      "Bash(npx supabase db reset --linked*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$CLAUDE_FILE_PATHS\" | grep -q '\\.tsx\\?$'; then cd apps/mobile && npx tsc --noEmit --pretty; fi"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "curl -s -d \"Campus Bites: Claude finished task and is waiting for input\" https://ntfy.sh/campus-bites-dev-alerts >/dev/null 2>&1 || true"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-surface-bright" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Campus Bites - IIT Roorkee</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;500;700&amp;family=Inter:wght@400;500;700&amp;family=Public+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Plus Jakarta Sans & Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {"surface-bright": "#faf9fa", "on-surface": "#1b1c1d", "on-primary-container": "#e7ebff", "primary-container": "#3366cc", "on-tertiary-fixed": "#211b00", "on-primary-fixed": "#001946", outline: "#737784", "outline-variant": "#c3c6d5", error: "#ba1a1a", "on-error-container": "#93000a", "on-secondary-fixed": "#171c20", "surface-tint": "#2259bf", "tertiary-container": "#bfab49", "surface-container": "#efedee", "inverse-surface": "#303031", "on-secondary": "#ffffff", secondary: "#5a5f63", "surface-variant": "#e3e2e3", "secondary-fixed": "#dfe3e8", "surface-container-highest": "#e3e2e3", "surface-dim": "#dbdadb", "on-secondary-fixed-variant": "#42474b", "primary-fixed-dim": "#b1c5ff", tertiary: "#6d5e00", "on-surface-variant": "#434653", "secondary-container": "#dfe3e8", "on-primary-fixed-variant": "#00419d", "on-secondary-container": "#606569", "error-container": "#ffdad6", "surface-container-high": "#e9e8e9", "on-background": "#1b1c1d", "on-tertiary": "#ffffff", surface: "#faf9fa", "inverse-on-surface": "#f2f0f1", primary: "#094cb2", "secondary-fixed-dim": "#c2c7cc", "tertiary-fixed": "#f9e37a", "surface-container-lowest": "#ffffff", "on-primary": "#ffffff", "on-error": "#ffffff", "inverse-primary": "#b1c5ff", "primary-fixed": "#d9e2ff", background: "#faf9fa", "surface-container-low": "#f5f3f4", "tertiary-fixed-dim": "#dcc661", "on-tertiary-fixed-variant": "#524600", "on-tertiary-container": "#4a3f00"}, borderRadius: {DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem"}, spacing: {"gutter-desktop": "1.5rem", "space-sm": "0.5rem", "space-lg": "1.5rem", "margin-desktop": "2rem", "space-xs": "0.25rem", gutter: "1rem", "space-xl": "2rem", margin: "1rem", "space-md": "1rem"}, fontFamily: {"headline-lg": ["Plus Jakarta Sans"], "headline-sm": ["Plus Jakarta Sans"], "label-lg": ["Inter"], "headline-xl-mobile": ["Plus Jakarta Sans"], "body-md": ["Inter"], "headline-md": ["Plus Jakarta Sans"], "label-md": ["Inter"], "body-lg": ["Inter"], "headline-xl": ["Plus Jakarta Sans"], "label-sm": ["Inter"], "body-sm": ["Inter"], "headline-lg-mobile": ["Plus Jakarta Sans"], headline: ["Noto Serif"], display: ["Noto Serif"], body: ["Inter"], label: ["Public Sans"]}, fontSize: {"headline-lg": ["32px", {lineHeight: "40px", fontWeight: "700"}], "headline-sm": ["18px", {lineHeight: "24px", fontWeight: "600"}], "label-lg": ["14px", {lineHeight: "20px", fontWeight: "600"}], "headline-xl-mobile": ["30px", {lineHeight: "38px", fontWeight: "700"}], "body-md": ["14px", {lineHeight: "20px", fontWeight: "400"}], "headline-md": ["22px", {lineHeight: "28px", fontWeight: "600"}], "label-md": ["12px", {lineHeight: "16px", fontWeight: "600"}], "body-lg": ["16px", {lineHeight: "24px", fontWeight: "400"}], "headline-xl": ["40px", {lineHeight: "48px", fontWeight: "700"}], "label-sm": ["11px", {lineHeight: "14px", letterSpacing: "0.05em", fontWeight: "700"}], "body-sm": ["12px", {lineHeight: "18px", fontWeight: "400"}], "headline-lg-mobile": ["24px", {lineHeight: "32px", fontWeight: "700"}]}}}};</script>
+<style>
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .pinned-shadow {
+      box-shadow: 0 4px 20px -2px rgba(11, 28, 48, 0.12);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface-bright text-on-surface antialiased min-h-screen flex flex-col font-body-md text-body-md select-none">
+<!-- TOP APP BAR (from Shared Components JSON) -->
+<header class="sticky top-0 z-50 flex justify-between items-center w-full px-4 py-2.5 bg-surface-container-lowest shadow-sm border-b border-outline-variant">
+<div class="flex items-center gap-2.5">
+<!-- Official circular IIT Roorkee crest emblem -->
+<div class="w-9 h-9 rounded-full overflow-hidden border border-outline-variant flex-shrink-0 bg-surface-container-low shadow-sm">
+<img alt="Official circular IIT Roorkee crest emblem" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtfJ1AmT0zkGof5eVI9Pc2b84Dk9ukKbzmMyVXsz0G4XK6cuDXXIm2TqtSlm_435u8azkofpNQLStjWKm6v8OwZSc2Ps9CiKrCxLt4-l00JiOimzkAucCEFJ9u8Pr0GulKyHZdtcWHwhI_q9RNOwV38O-AhKD9jUf5N5V8t62o161QYs8VzSOFyZv9KZIs2j47pYz5Cy6MpTHGRtVkfeS8lx3ARGCSO70JXHItR_sJ_fDTyIQacHfPSqlvYGNcuOhH0w"/>
+</div>
+<div>
+<h1 class="text-headline-sm font-headline-sm font-bold text-primary tracking-tight leading-tight">Campus Bites</h1>
+<p class="text-[10px] font-label-md text-on-surface-variant leading-none tracking-wider">IIT ROORKEE</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<!-- Bhawan selector pill -->
+<button class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-surface-container-low border border-outline-variant text-primary hover:bg-surface-container active:scale-95 transition-all text-xs font-semibold">
+<span class="material-symbols-outlined text-sm leading-none text-primary">domain</span>
+<span class="font-label-md text-label-md">Rajendra Bhawan</span>
+<span class="material-symbols-outlined text-sm leading-none text-on-surface-variant">arrow_drop_down</span>
+</button>
+<!-- Notification button with badge -->
+<button class="relative p-2 rounded-full text-on-surface hover:bg-surface-container active:scale-95 transition-all flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px] leading-none text-primary">notifications</span>
+<span class="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-error text-[9px] font-bold text-on-error">2</span>
+</button>
+</div>
+</header>
+<!-- MAIN SCROLLABLE CANVAS -->
+<main class="flex-1 pb-24 overflow-y-auto w-full max-w-md mx-auto px-4 pt-3 space-y-4">
+<!-- LIVE TIMING STATUS BANNER -->
+<section class="rounded-xl p-3.5 bg-gradient-to-r from-[#ECFDF5] via-[#E6F8F0] to-[#D1FAE5] border border-[#10B981]/30 shadow-sm flex flex-col gap-2 relative overflow-hidden">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#059669]"></span>
+</span>
+<span class="text-[11px] font-bold tracking-wider uppercase text-[#065F46] font-label-sm">LUNCH IN PROGRESS • 12:30 PM – 2:30 PM</span>
+</div>
+<span class="text-[10px] font-semibold text-[#065F46] bg-white/70 px-2 py-0.5 rounded-full border border-[#10B981]/20">Today is Thursday</span>
+</div>
+<div class="flex items-center justify-between pt-0.5">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-base text-[#047857]">schedule</span>
+<span class="text-xs font-semibold text-[#065F46]">Next: Snacks at 5:00 PM</span>
+</div>
+<span class="inline-flex items-center gap-1 bg-[#065F46] text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-xs">
+<span class="material-symbols-outlined text-[12px] leading-none">timer</span>
+          Closes in 45 mins
+        </span>
+</div>
+</section>
+<!-- PRIMARY HERO CARD: This Week's Mess Menu Noticeboard -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden flex flex-col">
+<!-- Card Header -->
+<div class="px-3.5 py-2.5 border-b border-outline-variant flex items-center justify-between bg-surface-container-low">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">push_pin</span>
+<div>
+<h2 class="text-headline-sm-mobile font-headline-sm font-bold text-primary tracking-tight leading-snug">This Week's Mess Menu</h2>
+<p class="text-[11px] text-on-surface-variant font-body-sm">Rajendra Bhawan Central Dining Hall</p>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-[#ECFDF5] text-[#065F46] border border-[#10B981]/30">
+<span class="material-symbols-outlined text-xs">verified</span>
+          Verified
+        </span>
+</div>
+<!-- Photographed Pinboard Noticeboard Viewer -->
+<div class="relative bg-slate-100 p-2 border-b border-outline-variant">
+<!-- Pin Clips Decoration -->
+<div class="absolute top-3 left-4 z-10 w-3 h-3 rounded-full bg-red-600 shadow-md border border-white"></div>
+<div class="absolute top-3 right-4 z-10 w-3 h-3 rounded-full bg-blue-600 shadow-md border border-white"></div>
+<!-- Realistic Photographed Timetable Document -->
+<div class="relative rounded-lg overflow-hidden border border-slate-300 shadow bg-white">
+<img class="w-full h-52 object-cover object-top" data-alt="A clean, high-resolution authentic photograph of a physical university hostel weekly mess timetable printed on official institutional letterhead pinned firmly to a soft cork noticeboard. The paper shows crisp tabulated meal plans for Breakfast, Lunch, Snacks, and Dinner with day columns Monday to Sunday, stamped with a deep blue official IIT Roorkee warden seal and sign-off. Soft overhead fluorescent institutional lighting casts gentle shadows across the document texture." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDANeRjgfre_Hhg7AvxKqPlCvngdFZRUqXMheoW4WJK0GaJrtzJ6e1x9zHz-hmKHkxmAiP0TwykWyIW9qGyFc7eyf569FjRUB3mtIz8RAs9u_OOqGdVFDx9bWsW4JHfn7MUXCWOP17NvaAunkTYv5dFzdGnplJEZEG6DvUlgMtqoR_a2VHV5HHeh51vUcZF9ePUNJMUB7V-9PpLdhOl8PfIytqDa_h68N5e755oT6cJ0uOjIeaZw9Vb"/>
+<!-- Noticeboard Overlay Tag -->
+<div class="absolute top-2 left-2 bg-on-surface/85 backdrop-blur-sm text-surface-container-lowest px-2 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-xs text-amber-300">event_note</span>
+            Uploaded Oct 19, 8:00 AM by Mess Secy
+          </div>
+<!-- Bottom Action Buttons Overlaid on Document -->
+<div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950/90 via-slate-900/60 to-transparent p-2.5 pt-6 flex items-center justify-between gap-1.5 text-white">
+<button class="flex items-center gap-1 px-2.5 py-1 rounded bg-white/20 hover:bg-white/30 backdrop-blur-sm text-xs font-semibold active:scale-95 transition-all text-white">
+<span class="material-symbols-outlined text-sm">zoom_in</span>
+<span>Tap to Zoom</span>
+</button>
+<div class="flex items-center gap-1">
+<button class="p-1.5 rounded bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white active:scale-95 transition-all" title="Save to Device">
+<span class="material-symbols-outlined text-base">download</span>
+</button>
+<button class="flex items-center gap-1 px-2 py-1 rounded bg-red-600/80 hover:bg-red-600 backdrop-blur-sm text-[11px] font-medium text-white active:scale-95 transition-all" title="Report Outdated Photo">
+<span class="material-symbols-outlined text-xs">flag</span>
+<span>Report</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Action CTAs Below Hero Card -->
+<div class="p-2.5 grid grid-cols-2 gap-2 bg-surface-container-lowest">
+<button class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container border border-outline-variant text-primary text-xs font-semibold active:scale-95 transition-all">
+<span class="material-symbols-outlined text-sm text-secondary-container">receipt_long</span>
+<span>Extra Items Rate Card</span>
+</button>
+<button class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-primary-container text-white hover:bg-primary text-xs font-semibold active:scale-95 transition-all shadow-xs">
+<span class="material-symbols-outlined text-sm">history_edu</span>
+<span>Mess Rebates</span>
+</button>
+</div>
+</section>
+<!-- SEGMENTED DIRECTORY TABS -->
+<section class="space-y-3">
+<div class="flex items-center justify-between">
+<h3 class="text-headline-sm font-headline-sm text-on-surface font-bold tracking-tight">Campus Food Directory</h3>
+<span class="text-xs text-on-surface-variant font-label-sm">Active Hours</span>
+</div>
+<!-- Segmented Buttons -->
+<div class="grid grid-cols-3 p-1 rounded-xl bg-surface-container border border-outline-variant text-center font-label-md text-xs">
+<button class="py-2 rounded-lg text-on-surface-variant hover:text-on-surface font-medium transition-all">
+          Hostel Mess <span class="text-[10px] text-on-surface-variant/80 font-normal">(18)</span>
+</button>
+<button class="py-2 rounded-lg bg-surface-container-lowest text-primary font-bold shadow-xs border border-outline-variant/60 transition-all">
+          Hostel Canteens
+        </button>
+<button class="py-2 rounded-lg text-on-surface-variant hover:text-on-surface font-medium transition-all">
+          Campus Eateries
+        </button>
+</div>
+<!-- HOSTEL CANTEENS ROW (Active Tab Content) -->
+<div class="grid grid-cols-1 gap-3">
+<!-- Day Canteen Card -->
+<div class="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant shadow-sm flex items-center justify-between gap-3 hover:border-primary/40 transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-16 h-16 rounded-lg overflow-hidden border border-outline-variant flex-shrink-0 bg-slate-100 relative">
+<img class="w-full h-full object-cover" data-alt="A close-up high-resolution photograph of a handwritten chalkboard canteen daily menu board propped against a whitewashed brick wall. Crisp chalk cursive writing lists hot samosas, veg patties, cutting chai, and express student thali with rupee rates clearly visible. Morning sunbeams illuminate the blackboard with authentic institutional simplicity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtrMZhLwf0JDoj6ZXm_wRdkzq3G7Pzld1XAD99o02cTkYxVMRynhWLcGJx7GXXKwnNV3jmhK1hVTuJTcoZ44yw-NJ3Yc9ZmR396VQJduv7f6Bcq3Xm7HjW3hxLIv55xcUbD6KXocElXuHZupkrx5RqWqA9IYTvMhFrwnyQI8dHMVOFLoWzNXB7wmP9ahHdAS10Yw6W8xjMz9TRE8s1dv1rtfvN_nUCaE2420z8-AHC5V2-_YQB151a"/>
+<div class="absolute inset-0 bg-black/10"></div>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<h4 class="font-bold text-on-surface text-sm">Day Canteen</h4>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#065F46] border border-[#10B981]/30">
+<span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
+                  OPEN
+                </span>
+</div>
+<p class="text-[11px] text-on-surface-variant font-medium mt-0.5">10:30 AM – 10:30 PM • Ground Floor</p>
+<div class="flex items-center gap-1 text-[11px] text-primary font-semibold mt-1">
+<span class="material-symbols-outlined text-xs">fastfood</span>
+<span>Chai, Patties, Thali</span>
+</div>
+</div>
+</div>
+<button class="p-2 rounded-lg bg-surface-container-low text-primary hover:bg-surface-container border border-outline-variant active:scale-95 transition-all">
+<span class="material-symbols-outlined text-lg leading-none">arrow_forward</span>
+</button>
+</div>
+<!-- Night Canteen Card -->
+<div class="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant shadow-sm flex items-center justify-between gap-3 hover:border-primary/40 transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-16 h-16 rounded-lg overflow-hidden border border-outline-variant flex-shrink-0 bg-slate-100 relative">
+<img class="w-full h-full object-cover" data-alt="A focused photographic shot of an authentic institutional night canteen rate board hanging on a stainless steel counter. Neat white printed letters on a dark acrylic sign display late-night student staples including Maggi noodles, cheese omelette, egg roll, paratha, and cold coffee. Ambient warm interior cafeteria lighting reflects gently on the menu surface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGriN0ZAfNrq6KTuuJfYxnH8ABcFUn7-VUq3chB4_omPL7nwy8eTtYNicjlJ6i0TPRCi-MCIIcGD-iwVos3QhnB5u04jjZYQcuexkm7jp71MUi-7tiFSs6mLHh_8BSWpTBAUg1l8fURRSfAdrt-LBchhvNU-jH4qgsWEkxNAm7PXlWq9PnzfuwYRUA-2HS0HhNwkHQPAPDTLYr50UyTy9CRYTqg_jAqoXMxD8tRjH192urijo231GE"/>
+<div class="absolute inset-0 bg-black/10"></div>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<h4 class="font-bold text-on-surface text-sm">Night Canteen</h4>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[#FFFBEB] text-[#92400E] border border-[#F59E0B]/30">
+<span class="w-1.5 h-1.5 rounded-full bg-[#F59E0B]"></span>
+                  OPENS AT 10:30 PM
+                </span>
+</div>
+<p class="text-[11px] text-on-surface-variant font-medium mt-0.5">Dynamic Shift • 10:30 PM – 3:30 AM</p>
+<div class="flex items-center gap-1 text-[11px] text-on-surface-variant mt-1">
+<span class="material-symbols-outlined text-xs">ramen_dining</span>
+<span>Maggi, Parathas, Egg Bhurji</span>
+</div>
+</div>
+</div>
+<button class="p-2 rounded-lg bg-surface-container-low text-primary hover:bg-surface-container border border-outline-variant active:scale-95 transition-all">
+<span class="material-symbols-outlined text-lg leading-none">arrow_forward</span>
+</button>
+</div>
+</div>
+</section>
+<!-- CAMPUS EATERIES HORIZONTAL SCROLL -->
+<section class="space-y-2.5 pt-1">
+<div class="flex items-center justify-between">
+<div>
+<h3 class="text-headline-sm font-headline-sm text-on-surface font-bold tracking-tight">Campus Eateries</h3>
+<p class="text-[11px] text-on-surface-variant">Central outlets &amp; cafeterias across campus</p>
+</div>
+<a class="text-xs font-semibold text-primary hover:underline flex items-center gap-0.5" href="#">
+          View all
+          <span class="material-symbols-outlined text-xs">chevron_right</span>
+</a>
+</div>
+<!-- Horizontal Scroll Track -->
+<div class="flex gap-3 overflow-x-auto no-scrollbar pb-1 -mx-4 px-4">
+<!-- Eatery 1: CCD MAC -->
+<div class="min-w-[220px] max-w-[220px] bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden shadow-sm flex flex-col flex-shrink-0">
+<div class="h-24 w-full relative bg-slate-100">
+<img class="w-full h-full object-cover" data-alt="A crisp, vibrant daytime photograph of Cafe Coffee Day branch at the modern Multi-Activity Centre at IIT Roorkee campus. Large floor-to-ceiling glass windows show students seated with laptops enjoying espresso coffee and sandwiches. Clean manicured red brick walkways and green Ashoka trees frame the modern cafe facade in high-definition sunlight." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCdjqM3_Ov3ZRubx_SRfEBZ31xnGlbWhnu0Fhe50ogz7EK8WxgK06TKANAkzlLUzzJidsVm-V3Hd9uPPSZLzbXm03CRyI378eTspyYEicy_Gz9RL0COiZ83bIpzuq7ehH9eUOOTt23Vx4RMzSvG_ICXiTNrjbya71KMVLboriEMaSLIlDv1ex1im0cQhaIukvRlxlfzeHKgIereE34LsEltce3TwEjr5fnNh89jeCrXo8VJQilNTZZ2"/>
+<span class="absolute top-2 left-2 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-[#ECFDF5] text-[#065F46] border border-[#10B981]/30">
+              OPEN
+            </span>
+</div>
+<div class="p-2.5 flex flex-col justify-between flex-1">
+<div>
+<h5 class="font-bold text-xs text-on-surface truncate">Cafe Coffee Day</h5>
+<p class="text-[10px] text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[11px]">location_on</span>
+                MAC Building • 400m
+              </p>
+</div>
+<div class="pt-2 mt-2 border-t border-outline-variant/50 flex items-center justify-between text-[10px]">
+<span class="text-on-surface-variant font-medium">Closes 11:00 PM</span>
+<span class="font-semibold text-primary">Menu photo ▾</span>
+</div>
+</div>
+</div>
+<!-- Eatery 2: Amul Canteen -->
+<div class="min-w-[220px] max-w-[220px] bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden shadow-sm flex flex-col flex-shrink-0">
+<div class="h-24 w-full relative bg-slate-100">
+<img class="w-full h-full object-cover" data-alt="A clean daytime photo of the official Amul ice cream parlour and dairy kiosk near the student hostel area at IIT Roorkee. Colorful ice cream freezers and milk cartons are displayed neatly behind glass. Students gathered around the order counter under a shaded canvas canopy on a bright sunny afternoon." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVvNsJFnTexdQKtf3lsFazGboE8jgiLgK9UIdk5dgFIWnOpXfarR4r__ac68XnCLubN6YgyuH9qEnfUmDRMeTgs6rXtds8I1FmdpO-jXaaV8tjroUgnuHFvvZwgEHoQ45FlxuJHtMdlWDDjT-zNHxF39NDdQkYHANoUh_VYB5GJ739jLC7b5nv3Nyiu4I8kvxiHvnrzZQNLpTlG8ViWNcH6gsObCCSFHMdmVz-4qSy-xaRcU3ELZRf"/>
+<span class="absolute top-2 left-2 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-[#ECFDF5] text-[#065F46] border border-[#10B981]/30">
+              OPEN
+            </span>
+</div>
+<div class="p-2.5 flex flex-col justify-between flex-1">
+<div>
+<h5 class="font-bold text-xs text-on-surface truncate">Amul Canteen</h5>
+<p class="text-[10px] text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[11px]">location_on</span>
+                Near Ravindra Bhawan • 250m
+              </p>
+</div>
+<div class="pt-2 mt-2 border-t border-outline-variant/50 flex items-center justify-between text-[10px]">
+<span class="text-on-surface-variant font-medium">Closes 12:00 AM</span>
+<span class="font-semibold text-primary">Menu photo ▾</span>
+</div>
+</div>
+</div>
+<!-- Eatery 3: CBRI Canteen -->
+<div class="min-w-[220px] max-w-[220px] bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden shadow-sm flex flex-col flex-shrink-0">
+<div class="h-24 w-full relative bg-slate-100">
+<img class="w-full h-full object-cover" data-alt="An authentic institutional cafeteria counter photograph showing South Indian breakfast service at CBRI Canteen in IIT Roorkee. Freshly prepared crisp dosas, steamed idlis, and hot filter coffee in stainless steel tumblers rest on a granite serving counter with orderly queue signage in clean light mode." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvhNCyVH2TbyKSm5eWeTAIkalg8w1MCVK4DpAwkWc8OsbecS61z2qGQf_2nDdjxv8B2jmqQqVPz1qzGEqqSpoLS6voUS_xg0rZ4kWu8B8WZOko2IdbDzPpT9nTp1Kx1lz-m4S3xNJVQsGYiH6k56Yih8Rq5gtSOedMJoYzcq1rTQJ9FdxgZjGNX8_rQlISHor51PLboN_3B2ERK4q-Bf3lW4L4VhICqiZAiYXrHcGPAyzBRuMG7_Jq"/>
+<span class="absolute top-2 left-2 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-[#FEF2F2] text-[#991B1B] border border-[#EF4444]/30">
+              CLOSED
+            </span>
+</div>
+<div class="p-2.5 flex flex-col justify-between flex-1">
+<div>
+<h5 class="font-bold text-xs text-on-surface truncate">CBRI Canteen</h5>
+<p class="text-[10px] text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[11px]">location_on</span>
+                CBRI Colony Gate • 750m
+              </p>
+</div>
+<div class="pt-2 mt-2 border-t border-outline-variant/50 flex items-center justify-between text-[10px]">
+<span class="text-on-surface-variant font-medium">Opens 4:00 PM</span>
+<span class="font-semibold text-primary">Menu photo ▾</span>
+</div>
+</div>
+</div>
+<!-- Eatery 4: Yippee Kiosk -->
+<div class="min-w-[220px] max-w-[220px] bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden shadow-sm flex flex-col flex-shrink-0">
+<div class="h-24 w-full relative bg-slate-100">
+<img class="w-full h-full object-cover" data-alt="A high quality real-life photograph of a fast-food noodle kiosk on an Indian engineering university campus quadrangle surrounded by lush green trees. A bright red menu board showcases hot noodle bowls, coffee cups, and quick fried snacks with students sitting on nearby stone benches in soft evening daylight." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCteAFi5FXlx3qq2fIl9eI8oVW8-DwPXJABMNFPTWlp-15bNrmeNUlCr4Who80STFWeHSKqshWqHYzz_h1pNKMPt6l6OeqKPs1CQlBpjZG_qk5LXsm5bc2f8QIq3tSqQ3aXJsWtT5OPJIoE0tYEJVc-oNxmwcW_KLTY5XIex8038fa2m4QnbyilA9W-dqU2oWyZ8EuTFxZ3pfCbKy-arVG78ZqKPCGkVFyu-dZTQvm9Z72GPMzXNpl7"/>
+<span class="absolute top-2 left-2 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-[#ECFDF5] text-[#065F46] border border-[#10B981]/30">
+              OPEN
+            </span>
+</div>
+<div class="p-2.5 flex flex-col justify-between flex-1">
+<div>
+<h5 class="font-bold text-xs text-on-surface truncate">Yippee Kiosk</h5>
+<p class="text-[10px] text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[11px]">location_on</span>
+                Govind Bhawan Circle • 300m
+              </p>
+</div>
+<div class="pt-2 mt-2 border-t border-outline-variant/50 flex items-center justify-between text-[10px]">
+<span class="text-on-surface-variant font-medium">Closes 2:00 AM</span>
+<span class="font-semibold text-primary">Menu photo ▾</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- OFFICIAL CIRCULAR NOTICE CALLOUT -->
+<section class="rounded-xl border border-outline-variant bg-surface-container-low p-3 flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-xl mt-0.5">campaign</span>
+<div class="space-y-1">
+<h4 class="text-xs font-bold text-on-surface">Dean of Student Welfare Notification</h4>
+<p class="text-[11px] text-on-surface-variant leading-relaxed">
+          Diwali Special Feast coupon distribution commences Friday at respective Bhawan supervisor offices. Please carry valid Institute ID.
+        </p>
+</div>
+</section>
+</main>
+<!-- DOCKED BOTTOM NAVIGATION BAR (from Shared Components JSON) -->
+<!-- Strict semantic mapping: Screen is "Campus Bites Home Dashboard", exact match with tab "Dining Home" -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-space-xs py-2 bg-surface-container-lowest shadow-md border-t border-outline-variant">
+<!-- Tab 1: Dining Home (ACTIVE) -->
+<a class="flex flex-col items-center justify-center text-primary font-bold px-3 py-1 rounded-lg hover:bg-surface-container-low transition-colors duration-150 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-2xl leading-none" style="font-variation-settings: 'FILL' 1;">restaurant</span>
+<span class="text-label-sm font-label-sm mt-1">Dining Home</span>
+</a>
+<!-- Tab 2: Mess Hub (INACTIVE) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 rounded-lg hover:bg-surface-container-low transition-colors duration-150 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-2xl leading-none">lunch_dining</span>
+<span class="text-label-sm font-label-sm mt-1">Mess Hub</span>
+</a>
+<!-- Tab 3: Complaints (INACTIVE) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 rounded-lg hover:bg-surface-container-low transition-colors duration-150 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-2xl leading-none">report_problem</span>
+<span class="text-label-sm font-label-sm mt-1">Complaints</span>
+</a>
+<!-- Tab 4: Rebates & Profile (INACTIVE) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 rounded-lg hover:bg-surface-container-low transition-colors duration-150 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-2xl leading-none">account_circle</span>
+<span class="text-label-sm font-label-sm mt-1">Rebates &amp; Profile</span>
+</a>
+</nav>
+</body></html>
