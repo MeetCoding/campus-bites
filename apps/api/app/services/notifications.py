@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 # Android notification channels the app creates (apps/mobile/src/features/notifications).
 Channel = Literal["mess-updates", "nudges"]
+Priority = Literal["default", "normal", "high"]
 
 
 class Notifier:
@@ -52,14 +53,37 @@ class Notifier:
         channel: Channel = "mess-updates",
     ) -> PushReport:
         """Every device the user is signed in on (e.g. their rebate decision)."""
-        tokens = await self._tokens.tokens_for_user(user_id)
-        return await self._send(tokens, title, body, data, channel)
+        return await self.notify_users(
+            [user_id], title=title, body=body, data=data, channel=channel
+        )
+
+    async def notify_users(
+        self,
+        user_ids: list[UUID],
+        *,
+        title: str,
+        body: str,
+        data: dict[str, Any],
+        channel: Channel = "mess-updates",
+        priority: Priority = "default",
+    ) -> PushReport:
+        """Every device of each user, e.g. a complaint's handlers (nudges use priority 'high')."""
+        tokens = await self._tokens.tokens_for_users(user_ids) if user_ids else []
+        return await self._send(tokens, title, body, data, channel, priority)
 
     async def _send(
-        self, tokens: list[str], title: str, body: str, data: dict[str, Any], channel: Channel
+        self,
+        tokens: list[str],
+        title: str,
+        body: str,
+        data: dict[str, Any],
+        channel: Channel,
+        priority: Priority = "default",
     ) -> PushReport:
         messages = [
-            PushMessage(to=token, title=title, body=body, data=data, channel_id=channel)
+            PushMessage(
+                to=token, title=title, body=body, data=data, channel_id=channel, priority=priority
+            )
             for token in unique_tokens(tokens)
         ]
         report = await self._push.send(messages)

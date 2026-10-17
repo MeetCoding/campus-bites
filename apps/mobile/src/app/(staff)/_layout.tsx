@@ -18,6 +18,7 @@ export default function StaffLayout() {
       <Stack.Screen name="mess-timings" options={{ title: 'Mess timings' }} />
       <Stack.Screen name="outlet/[id]" options={{ title: 'Outlet console' }} />
       <Stack.Screen name="rate-card" options={{ title: 'Institute rate card' }} />
+      <Stack.Screen name="complaints" options={{ title: 'Complaints' }} />
     </Stack>
   );
 }

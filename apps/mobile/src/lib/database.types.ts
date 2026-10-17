@@ -883,6 +883,191 @@ export type Database = {
           },
         ]
       }
+      complaint_events: {
+        Row: {
+          actor_id: string | null
+          actor_role: string
+          attachment_path: string | null
+          complaint_id: string
+          created_at: string
+          from_status: Database["public"]["Enums"]["complaint_status"] | null
+          id: string
+          kind: string
+          message: string | null
+          to_status: Database["public"]["Enums"]["complaint_status"] | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_role: string
+          attachment_path?: string | null
+          complaint_id: string
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["complaint_status"] | null
+          id?: string
+          kind: string
+          message?: string | null
+          to_status?: Database["public"]["Enums"]["complaint_status"] | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_role?: string
+          attachment_path?: string | null
+          complaint_id?: string
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["complaint_status"] | null
+          id?: string
+          kind?: string
+          message?: string | null
+          to_status?: Database["public"]["Enums"]["complaint_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaint_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaint_events_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      complaint_nudges: {
+        Row: {
+          complaint_id: string
+          created_at: string
+          id: string
+          nudged_by: string | null
+        }
+        Insert: {
+          complaint_id: string
+          created_at?: string
+          id?: string
+          nudged_by?: string | null
+        }
+        Update: {
+          complaint_id?: string
+          created_at?: string
+          id?: string
+          nudged_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaint_nudges_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaint_nudges_nudged_by_fkey"
+            columns: ["nudged_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      complaints: {
+        Row: {
+          assignee_role: Database["public"]["Enums"]["app_role"]
+          attachment_paths: string[]
+          bhawan_id: string | null
+          body: string
+          category: Database["public"]["Enums"]["complaint_category"]
+          created_at: string
+          created_by: string
+          domain: Database["public"]["Enums"]["complaint_domain"]
+          escalated_at: string | null
+          id: string
+          last_nudged_at: string | null
+          long_standing_at: string | null
+          nudge_count: number
+          opened_at: string
+          outlet_id: string
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["complaint_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_role: Database["public"]["Enums"]["app_role"]
+          attachment_paths?: string[]
+          bhawan_id?: string | null
+          body: string
+          category: Database["public"]["Enums"]["complaint_category"]
+          created_at?: string
+          created_by?: string
+          domain: Database["public"]["Enums"]["complaint_domain"]
+          escalated_at?: string | null
+          id?: string
+          last_nudged_at?: string | null
+          long_standing_at?: string | null
+          nudge_count?: number
+          opened_at?: string
+          outlet_id: string
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["complaint_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_role?: Database["public"]["Enums"]["app_role"]
+          attachment_paths?: string[]
+          bhawan_id?: string | null
+          body?: string
+          category?: Database["public"]["Enums"]["complaint_category"]
+          created_at?: string
+          created_by?: string
+          domain?: Database["public"]["Enums"]["complaint_domain"]
+          escalated_at?: string | null
+          id?: string
+          last_nudged_at?: string | null
+          long_standing_at?: string | null
+          nudge_count?: number
+          opened_at?: string
+          outlet_id?: string
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["complaint_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaints_bhawan_id_fkey"
+            columns: ["bhawan_id"]
+            isOneToOne: false
+            referencedRelation: "bhawans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "outlet_live_status"
+            referencedColumns: ["outlet_id"]
+          },
+          {
+            foreignKeyName: "complaints_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       mess_schedule_today: {
@@ -925,6 +1110,127 @@ export type Database = {
       }
     }
     Functions: {
+      complaint_board: {
+        Args: {
+          p_bhawan?: string
+          p_domain?: Database["public"]["Enums"]["complaint_domain"]
+        }
+        Returns: {
+          bhawan_id: string
+          category: Database["public"]["Enums"]["complaint_category"]
+          created_at: string
+          domain: Database["public"]["Enums"]["complaint_domain"]
+          id: string
+          is_escalated: boolean
+          is_long_standing: boolean
+          is_mine: boolean
+          nudge_count: number
+          opened_at: string
+          outlet_id: string
+          outlet_name: string
+          resolved_at: string
+          status: Database["public"]["Enums"]["complaint_status"]
+          title: string
+        }[]
+      }
+      complaint_escalate_due: {
+        Args: never
+        Returns: {
+          assignee_role: Database["public"]["Enums"]["app_role"]
+          attachment_paths: string[]
+          bhawan_id: string | null
+          body: string
+          category: Database["public"]["Enums"]["complaint_category"]
+          created_at: string
+          created_by: string
+          domain: Database["public"]["Enums"]["complaint_domain"]
+          escalated_at: string | null
+          id: string
+          last_nudged_at: string | null
+          long_standing_at: string | null
+          nudge_count: number
+          opened_at: string
+          outlet_id: string
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["complaint_status"]
+          title: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "complaints"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      complaint_nudge: {
+        Args: { p_complaint: string; p_student: string }
+        Returns: {
+          assignee_role: Database["public"]["Enums"]["app_role"]
+          attachment_paths: string[]
+          bhawan_id: string | null
+          body: string
+          category: Database["public"]["Enums"]["complaint_category"]
+          created_at: string
+          created_by: string
+          domain: Database["public"]["Enums"]["complaint_domain"]
+          escalated_at: string | null
+          id: string
+          last_nudged_at: string | null
+          long_standing_at: string | null
+          nudge_count: number
+          opened_at: string
+          outlet_id: string
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["complaint_status"]
+          title: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "complaints"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      complaint_transition: {
+        Args: {
+          p_actor: string
+          p_actor_role: string
+          p_attachment: string
+          p_complaint: string
+          p_from: Database["public"]["Enums"]["complaint_status"]
+          p_message: string
+          p_to: Database["public"]["Enums"]["complaint_status"]
+        }
+        Returns: {
+          assignee_role: Database["public"]["Enums"]["app_role"]
+          attachment_paths: string[]
+          bhawan_id: string | null
+          body: string
+          category: Database["public"]["Enums"]["complaint_category"]
+          created_at: string
+          created_by: string
+          domain: Database["public"]["Enums"]["complaint_domain"]
+          escalated_at: string | null
+          id: string
+          last_nudged_at: string | null
+          long_standing_at: string | null
+          nudge_count: number
+          opened_at: string
+          outlet_id: string
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["complaint_status"]
+          title: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "complaints"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       hook_before_user_created: { Args: { event: Json }; Returns: Json }
       mess_day_schedule: {

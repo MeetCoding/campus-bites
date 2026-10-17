@@ -83,6 +83,23 @@ export default function StaffConsole() {
         </>
       ) : null}
 
+      {isMessSecretary || managed.isBhawanSecretary ? (
+        <Link href="/complaints" asChild>
+          <Pressable accessibilityRole="link" className="active:opacity-80">
+            <Card className="flex-row items-center gap-space-md">
+              <MaterialIcons name="report" size={24} color={colors.error} />
+              <View className="flex-1 gap-space-xs">
+                <Text className="font-body-semibold text-body-md text-on-surface">Complaints routed to you</Text>
+                <Text className="font-body text-body-sm text-on-surface-variant">
+                  Reply, mark fixed with a proof photo. Unresolved after 48 h → escalated to the Warden office.
+                </Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={22} color={colors.outline} />
+            </Card>
+          </Pressable>
+        </Link>
+      ) : null}
+
       {managed.isBhawanSecretary ? (
         <>
           <SectionHeader title="Bhawan Secretary tools" />

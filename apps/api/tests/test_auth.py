@@ -1,3 +1,4 @@
+import time
 import uuid
 from typing import Annotated
 
@@ -76,10 +77,20 @@ def test_unknown_roles_are_dropped(probe: TestClient, make_token: TokenFactory) 
 
 
 def test_expired_token_is_401(probe: TestClient, make_token: TokenFactory) -> None:
-    response = probe.get("/_probe/me", headers=bearer(make_token(expires_in=-10)))
+    # Beyond the 60 s clock-skew leeway.
+    response = probe.get("/_probe/me", headers=bearer(make_token(expires_in=-120)))
 
     assert response.status_code == 401
     assert response.json()["detail"]["code"] == "TOKEN_EXPIRED"
+
+
+def test_small_clock_skew_is_tolerated(probe: TestClient, make_token: TokenFactory) -> None:
+    """Found in the M6 end-to-end run: this host's clock was 9 s behind Supabase Auth, so a
+    freshly issued token looked "issued in the future" and was rejected."""
+    issued_ahead = int(time.time()) + 20
+    token = make_token(iat=issued_ahead, nbf=issued_ahead)
+
+    assert probe.get("/_probe/me", headers=bearer(token)).status_code == 200
 
 
 @pytest.mark.parametrize(

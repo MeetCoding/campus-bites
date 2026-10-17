@@ -114,7 +114,7 @@ export function OverrideBanner({ overrides }: { overrides: TimingOverride[] | un
   return (
     <View className="gap-space-xs rounded-xl bg-status-warning-container p-space-md" accessibilityRole="alert">
       <View className="flex-row items-center gap-space-xs">
-        <MaterialIcons name="warning" size={18} color="#b45309" />
+        <MaterialIcons name="warning" size={18} color={colors['on-status-warning-container']} />
         <Text className="font-label-bold text-label-md uppercase text-on-status-warning-container">
           Special schedule
         </Text>
@@ -183,7 +183,7 @@ export function NoticeboardCard({
         className="mx-space-md overflow-hidden rounded-lg bg-surface-container-low active:opacity-90">
         <Image source={{ uri }} style={{ width: '100%', aspectRatio: aspect }} contentFit="cover" transition={150} />
         <View className="absolute bottom-2 right-2 flex-row items-center gap-1 rounded-full bg-inverse-surface/80 px-2 py-1">
-          <MaterialIcons name="zoom-in" size={14} color="#ffffff" />
+          <MaterialIcons name="zoom-in" size={14} color={colors['inverse-on-surface']} />
           <Text className="font-label text-label-sm text-inverse-on-surface">Tap to zoom</Text>
         </View>
       </Pressable>

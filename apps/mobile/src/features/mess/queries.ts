@@ -257,7 +257,7 @@ export type OverrideInput = {
   notify?: boolean;
 };
 
-/** FastAPI: validates and broadcasts the change to residents (ARCHITECTURE.md §5.6). Also used
+/** FastAPI: validates and broadcasts the change to residents (ARCHITECTURE.md §6.1). Also used
  * for canteen/eatery shift changes (slot null, optional `notify`). */
 export function useCreateOverride() {
   const queryClient = useQueryClient();

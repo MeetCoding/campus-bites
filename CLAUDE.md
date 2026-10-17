@@ -22,7 +22,7 @@ campus-bites/
 │   │   │   ├── app/                # Expo Router routes only (thin screens)
 │   │   │   │   ├── _layout.tsx     # imports global.css; fonts, splash, QueryClient (+ Session in M2)
 │   │   │   │   ├── (auth)/         # sign-in (Google / vendor OTP), bhawan onboarding
-│   │   │   │   ├── (student)/      # tabs: home, mess, canteens, eateries, complaints, rebates
+│   │   │   │   ├── (student)/      # stack: home, mess, canteens, eateries, eatery/[id], rebates (+ complaints in M6)
 │   │   │   │   ├── (staff)/        # vendor + mess/bhawan secretary consoles
 │   │   │   │   ├── (authority)/    # mess authority (rebates), ADoSW (eatery complaints)
 │   │   │   │   └── (admin)/        # whitelist + role assignment
@@ -39,28 +39,28 @@ campus-bites/
 │   │   │   └── global.css          # @tailwind directives
 │   │   ├── tailwind.config.js      # extends theme from src/theme/tokens.js
 │   │   ├── babel.config.js / metro.config.js / nativewind-env.d.ts
-│   │   └── .env.example            # copy to .env.local
+│   │   └── .env.example            # copy to .env.local (only EXPO_PUBLIC_* values)
 │   └── api/
 │       ├── pyproject.toml          # deps, ruff + pytest config
-│       ├── env.example             # copy to .env
+│       ├── env.example             # copy to .env.local (git-ignored; Render uses its Environment tab)
 │       ├── app/
 │       │   ├── main.py             # app factory, routers, CORS
-│       │   ├── core/               # config.py (pydantic-settings), auth.py (JWKS verify, CurrentUser dep), supabase.py (service client)
+│       │   ├── core/               # config.py (pydantic-settings), auth.py (JWKS verify, CurrentUser dep), supabase.py (service client), time.py (IST)
 │       │   ├── routers/            # rebates.py, complaints.py, timings.py, admin.py, internal.py — thin
-│       │   ├── repositories/       # data access via the service-role client, behind Protocols (tests use in-memory fakes)
+│       │   ├── repositories/       # data access via the service-role client, behind Protocols (tests use in-memory fakes); roles.py = shared live role checks
 │       │   ├── schemas/            # Pydantic v2 request/response models
 │       │   └── services/           # business logic: rebates, complaints, escalation, timings, push
 │       └── tests/                  # pytest; mirrors services/ and routers/
 ├── supabase/
 │   ├── config.toml
 │   ├── migrations/                 # 001_init, 002_grants, 003_auth, then <timestamp>_<name>.sql — the only way schema changes
-│   ├── tests/                      # SQL regression tests, each in a rolled-back transaction (auth_rls_test.sql, mess_test.sql, canteens_test.sql, rebates_test.sql)
+│   ├── tests/                      # SQL regression tests, each in a rolled-back transaction (auth_rls_test.sql, mess_test.sql, canteens_test.sql, rebates_test.sql, complaints_test.sql; plus read-only hardening_test.sql)
 │   └── seed.sql                    # 11 Bhawans × 3 outlets, 4 eateries, V1 vendor whitelist
 ├── stitch-reference/               # design reference — read-only
 ├── PRD.md  ARCHITECTURE.md  CLAUDE.md  TASKS.md
 ```
 
-## Boundary rules (summary of ARCHITECTURE.md §3)
+## Boundary rules (summary of ARCHITECTURE.md §2.1, §3.4)
 - **Direct Expo → Supabase**: auth, all reads, Realtime, Storage uploads, owner-scoped CRUD that RLS fully expresses (vendor menu/stock/open toggle, weekly menu, extra items, fixed-rate card, complaint *creation*, push tokens).
 - **Expo → FastAPI**: rebates (submit + transitions), complaint status transitions, nudges, timing overrides (+ push), admin whitelist/roles. Anything with cross-row validation, a state machine, a cooldown, or a push notification.
 - **pg_cron → FastAPI** `/internal/escalations/run` for the 48 h sweep.

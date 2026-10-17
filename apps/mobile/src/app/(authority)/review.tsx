@@ -7,6 +7,7 @@ import { Card, Pill, Screen, SectionHeader } from '@/components/ui';
 import { AccountPanel } from '@/features/auth/AccountPanel';
 import { useSession } from '@/features/auth/session';
 import { useBhawans } from '@/features/campus/queries';
+import { ComplaintQueue } from '@/features/complaints/ComplaintQueue';
 import { REBATE_STATUS_LABEL, RebateStatusBadge } from '@/features/rebates/components';
 import { useRebateQueue, type RebateStatus } from '@/features/rebates/queries';
 import { formatDateRange, timeAgo } from '@/lib/time';
@@ -15,7 +16,7 @@ import { colors } from '@/theme/tokens';
 type Filter = RebateStatus | 'all';
 const FILTERS: Filter[] = ['pending_verification', 'biometric_cross_checked', 'approved', 'rejected', 'all'];
 
-/** Mess Authority rebate queue (TASKS M5.5); ADoSW complaint queues arrive in M6. */
+/** Mess Authority rebate queue (M5.5) + complaint oversight; ADoSW eatery queue (M6.11). */
 export default function AuthorityHome() {
   const { claims } = useSession();
   const bhawans = useBhawans();
@@ -38,11 +39,12 @@ export default function AuthorityHome() {
       {isMessAuthority ? <RebateQueue /> : null}
 
       {isAdosw ? (
-        <Card tone="low">
-          <Text className="font-body text-body-sm text-on-surface-variant">
-            Eatery complaint queues arrive with the Complaints milestone.
-          </Text>
-        </Card>
+        <>
+          <ComplaintQueue title="Campus eatery complaints" domains={['campus_eatery']} />
+          <ComplaintQueue title="Cross-Bhawan long-standing issues" domains={['mess', 'hostel_canteen']} initialFilter="long" />
+        </>
+      ) : isMessAuthority ? (
+        <ComplaintQueue title="Escalated in your Bhawan" domains={['mess', 'hostel_canteen']} initialFilter="long" />
       ) : null}
 
       <AccountPanel />

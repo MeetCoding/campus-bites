@@ -4,10 +4,10 @@ from uuid import UUID
 
 from app.core.auth import CurrentUser
 from app.core.errors import ApiError
+from app.core.time import format_dates, today_ist
 from app.repositories.rebates import RebateOverlapError, RebateRepository
 from app.schemas.common import AppRole
 from app.schemas.rebates import RebateCreate, RebateOut, RebateStatus, RebateTransition
-from app.services.timings import format_dates, today_ist
 
 MAX_REBATE_DAYS = 180  # sanity cap; mirrors rebate_applications_dates
 
@@ -33,7 +33,7 @@ def describe_transition(rebate: RebateOut) -> tuple[str, str]:
 
 
 class RebateService:
-    """Mess rebate submission and authority workflow (ARCHITECTURE.md §3.2, §5.8)."""
+    """Mess rebate submission and authority workflow (ARCHITECTURE.md §6.5)."""
 
     def __init__(self, repo: RebateRepository, today: Callable[[], date] = today_ist) -> None:
         self._repo = repo

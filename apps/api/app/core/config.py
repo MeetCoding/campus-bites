@@ -6,13 +6,16 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Runtime configuration, read from environment variables (or apps/api/.env locally).
+    """Runtime configuration from environment variables; locally also apps/api/.env and
+    apps/api/.env.local (later files win). On Render, set them in the Environment tab.
 
     Business constants (min rebate days, nudge thresholds) are NOT here — they live in the
     `public.app_settings` table so the app, SQL and API share one source of truth.
     """
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=(".env", ".env.local"), env_file_encoding="utf-8", extra="ignore"
+    )
 
     environment: Literal["development", "test", "production"] = "development"
     supabase_url: AnyHttpUrl

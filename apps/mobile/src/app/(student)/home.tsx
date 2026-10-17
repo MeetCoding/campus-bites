@@ -28,7 +28,7 @@ const QUICK_LINKS: { title: string; icon: IconName; href?: Href }[] = [
   { title: 'Hostel canteens', icon: 'storefront', href: '/canteens' },
   { title: 'Campus eateries', icon: 'local-cafe', href: '/eateries' },
   { title: 'Mess rebates', icon: 'event-busy', href: '/rebates' },
-  { title: 'Complaints', icon: 'report' },
+  { title: 'Complaints', icon: 'report', href: '/complaints' },
 ];
 
 /** Student dashboard per stitch-reference/campus_bites_home_dashboard (TASKS M3.15). */

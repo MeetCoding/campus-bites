@@ -1,8 +1,8 @@
-import { useLocalSearchParams } from 'expo-router';
+import { Link, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
-import { Pill, Screen } from '@/components/ui';
+import { Button, Pill, Screen } from '@/components/ui';
 import { useSession } from '@/features/auth/session';
 import { useBhawans, useOutlets } from '@/features/campus/queries';
 import { FixedRateCard, MenuItemsList, OutletHeader, Segmented } from '@/features/canteens/components';
@@ -87,7 +87,14 @@ export default function CanteenHub() {
               <MenuItemsList outletId={canteen.id} />
             </View>
           ) : activeBhawanId ? (
-            <FixedRateCard bhawanId={activeBhawanId} />
+            <View className="gap-space-md">
+              <FixedRateCard bhawanId={activeBhawanId} />
+              <Link
+                href={{ pathname: '/raise-complaint', params: { outlet: canteen.id, category: 'overcharging' } }}
+                asChild>
+                <Button label="Report overcharging or a hygiene issue" variant="secondary" />
+              </Link>
+            </View>
           ) : null}
         </>
       ) : (

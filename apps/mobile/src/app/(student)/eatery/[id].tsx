@@ -1,6 +1,6 @@
-import { useLocalSearchParams } from 'expo-router';
+import { Link, useLocalSearchParams } from 'expo-router';
 
-import { Screen, SectionHeader } from '@/components/ui';
+import { Button, Screen, SectionHeader } from '@/components/ui';
 import { useSession } from '@/features/auth/session';
 import { MenuItemsList, OutletHeader } from '@/features/canteens/components';
 import { useLiveUpdates } from '@/features/canteens/queries';
@@ -21,6 +21,9 @@ export default function EateryDetail() {
       <NoticeboardCard outletId={id} title="Menu photo" canReport={claims?.roles.includes('student') ?? false} />
       <SectionHeader title="Menu" />
       <MenuItemsList outletId={id} />
+      <Link href={{ pathname: '/raise-complaint', params: { outlet: id } }} asChild>
+        <Button label="Raise a complaint (goes to ADoSW)" variant="secondary" />
+      </Link>
     </Screen>
   );
 }

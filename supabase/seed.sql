@@ -1,4 +1,4 @@
--- Official V1 roster (ARCHITECTURE.md §4.1). Idempotent: safe to re-run.
+-- Official V1 roster (ARCHITECTURE.md §7.1). Idempotent: safe to re-run.
 
 -- 11 Bhawans
 insert into public.bhawans (name, slug, sort_order) values

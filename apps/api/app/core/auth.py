@@ -11,6 +11,9 @@ from app.core.errors import ApiError
 from app.schemas.common import AppRole
 
 ALLOWED_ALGORITHMS = ["ES256", "RS256"]
+# Tolerated clock difference between Supabase Auth and this host (or a phone's fresh token):
+# without it a token issued "in the future" by a few seconds fails as not-yet-valid (iat/nbf).
+CLOCK_SKEW_SECONDS = 60
 
 
 class CurrentUser(BaseModel):
@@ -69,6 +72,7 @@ class TokenVerifier:
                 algorithms=ALLOWED_ALGORITHMS,
                 audience="authenticated",
                 issuer=self._issuer,
+                leeway=CLOCK_SKEW_SECONDS,
                 options={"require": ["exp", "sub", "aud", "iss"]},
             )
         except jwt.PyJWKClientConnectionError as exc:

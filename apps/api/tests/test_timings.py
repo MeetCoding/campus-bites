@@ -7,12 +7,13 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from app.core.time import format_dates, format_time
 from app.repositories.timings import get_timing_repository
 from app.routers.timings import get_timing_service
 from app.schemas.common import AppRole
 from app.schemas.timings import OutletInfo, OutletType, TimingOverrideCreate, TimingOverrideOut
 from app.services.notifications import get_notifier
-from app.services.timings import TimingService, describe_override, format_dates, format_time
+from app.services.timings import TimingService, describe_override
 from tests.conftest import TokenFactory, bearer
 
 TODAY = date(2026, 10, 17)  # Saturday

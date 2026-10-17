@@ -1,8 +1,8 @@
-import { useLocalSearchParams } from 'expo-router';
+import { Link, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
-import { Pill, Screen } from '@/components/ui';
+import { Button, Pill, Screen } from '@/components/ui';
 import { useSession } from '@/features/auth/session';
 import { useBhawans } from '@/features/campus/queries';
 import {
@@ -68,6 +68,12 @@ export default function MessHub() {
       <WeeklyMenuCard bhawanId={bhawanId} />
 
       <ExtraItemsCard bhawanId={bhawanId} />
+
+      {messOutlet ? (
+        <Link href={{ pathname: '/raise-complaint', params: { outlet: messOutlet.id } }} asChild>
+          <Button label="Raise a mess complaint" variant="secondary" />
+        </Link>
+      ) : null}
     </Screen>
   );
 }

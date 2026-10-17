@@ -17,7 +17,7 @@ function readParam(url: URL, name: string): string | null {
   return url.searchParams.get(name) ?? fromFragment;
 }
 
-/** Google sign-in via Supabase PKCE in an in-app browser (ARCHITECTURE.md §5.1). */
+/** Google sign-in via Supabase PKCE in an in-app browser (ARCHITECTURE.md §3.1). */
 export async function signInWithGoogle(): Promise<AuthResult> {
   const redirectTo = Linking.createURL(OAUTH_REDIRECT_PATH);
   const { data, error } = await supabase.auth.signInWithOAuth({

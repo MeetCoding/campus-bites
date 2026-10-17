@@ -1,4 +1,3 @@
-import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
@@ -6,6 +5,7 @@ import { Button, Card, Screen } from '@/components/ui';
 import { NoticeboardCard } from '@/features/mess/components';
 import { SecretaryScope } from '@/features/mess/SecretaryScope';
 import { useCurrentPhoto, useMessOutlet, usePhotoReports, useUploadMenuPhoto } from '@/features/mess/queries';
+import { pickImage } from '@/lib/images';
 import { istNow, weekStart } from '@/lib/time';
 
 export default function MessPhotoScreen() {
@@ -25,35 +25,21 @@ function PhotoUploader({ bhawanId, bhawanName }: { bhawanId: string; bhawanName:
 
   async function pick(source: 'camera' | 'library') {
     setMessage(null);
-    const permission =
-      source === 'camera'
-        ? await ImagePicker.requestCameraPermissionsAsync()
-        : await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      setMessage(source === 'camera' ? 'Camera permission is needed.' : 'Photo library permission is needed.');
-      return;
+    if (!outlet) return;
+    try {
+      const image = await pickImage(source);
+      if (!image) return;
+      const today = istNow().date;
+      upload.mutate(
+        { outletId: outlet.id, source: image, today, weekStart: weekStart(today) },
+        {
+          onSuccess: ({ sizeBytes }) =>
+            setMessage(`Published to students (${(sizeBytes / 1024 / 1024).toFixed(1)} MB after compression).`),
+        },
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : String(error));
     }
-    const options: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 1, exif: false };
-    const result =
-      source === 'camera'
-        ? await ImagePicker.launchCameraAsync(options)
-        : await ImagePicker.launchImageLibraryAsync(options);
-    if (result.canceled || !outlet) return;
-
-    const asset = result.assets[0];
-    const today = istNow().date;
-    upload.mutate(
-      {
-        outletId: outlet.id,
-        source: { uri: asset.uri, width: asset.width, height: asset.height },
-        today,
-        weekStart: weekStart(today),
-      },
-      {
-        onSuccess: ({ sizeBytes }) =>
-          setMessage(`Published to students (${(sizeBytes / 1024 / 1024).toFixed(1)} MB after compression).`),
-      },
-    );
   }
 
   const outdatedReports = reports.data?.length ?? 0;

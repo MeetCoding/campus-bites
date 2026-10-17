@@ -11,6 +11,8 @@ import {
 } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
+import { colors } from '@/theme/tokens';
+
 const MAX_SCALE = 5;
 const DOUBLE_TAP_SCALE = 2.5;
 
@@ -114,7 +116,7 @@ export function ZoomableImage({ uri, visible, onClose, caption, accessibilityLab
   return (
     <Modal visible={visible} animationType="fade" onRequestClose={close} statusBarTranslucent>
       {/* Modals render outside the app root, so they need their own gesture root. */}
-      <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#0b0c0e' }}>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors['inverse-surface'] }}>
         <GestureDetector gesture={gesture}>
           <Animated.View style={[{ flex: 1 }, animatedStyle]}>
             <Image
@@ -135,7 +137,7 @@ export function ZoomableImage({ uri, visible, onClose, caption, accessibilityLab
             onPress={close}
             hitSlop={12}
             className="h-11 w-11 items-center justify-center rounded-full bg-inverse-surface/80">
-            <MaterialIcons name="close" size={24} color="#ffffff" />
+            <MaterialIcons name="close" size={24} color={colors['inverse-on-surface']} />
           </Pressable>
         </View>
 

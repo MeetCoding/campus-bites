@@ -105,7 +105,7 @@ class FakeTokens:
     async def tokens_for_bhawan_residents(self, bhawan_id: uuid.UUID) -> list[str]:
         return self.tokens
 
-    async def tokens_for_user(self, user_id: uuid.UUID) -> list[str]:
+    async def tokens_for_users(self, user_ids: list[uuid.UUID]) -> list[str]:
         return self.tokens
 
     async def delete_tokens(self, tokens: set[str]) -> None:

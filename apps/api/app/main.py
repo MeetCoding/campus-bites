@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.auth import TokenVerifier
 from app.core.config import Settings, get_settings
-from app.routers import admin, health, rebates, timings
+from app.routers import admin, complaints, health, internal, rebates, timings
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -36,6 +36,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(admin.router)
     app.include_router(timings.router)
     app.include_router(rebates.router)
+    app.include_router(complaints.router)
+    app.include_router(internal.router)
     return app
 
 

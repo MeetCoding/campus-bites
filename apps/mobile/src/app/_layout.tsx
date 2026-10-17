@@ -13,6 +13,7 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { SessionProvider, useSession } from '@/features/auth/session';
+import { colors } from '@/theme/tokens';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -21,7 +22,7 @@ const queryClient = new QueryClient({
 });
 
 /**
- * Route access by session state (ARCHITECTURE.md §5.1). A screen whose guard turns false
+ * Route access by session state (ARCHITECTURE.md §3.3). A screen whose guard turns false
  * redirects to `index`, which dispatches to the right home for the current mode.
  */
 function RootNavigator() {
@@ -57,6 +58,20 @@ function RootNavigator() {
       <Stack.Protected guard={ready && mode === 'admin'}>
         <Stack.Screen name="(admin)" />
       </Stack.Protected>
+      {/* Shared by every role; RLS decides who can read a complaint. */}
+      <Stack.Protected guard={ready}>
+        <Stack.Screen
+          name="complaint/[id]"
+          options={{
+            headerShown: true,
+            title: 'Complaint',
+            headerShadowVisible: false,
+            headerStyle: { backgroundColor: colors.background },
+            headerTintColor: colors.primary,
+            headerTitleStyle: { fontFamily: 'NotoSerif_700Bold', color: colors['on-surface'] },
+          }}
+        />
+      </Stack.Protected>
 
       <Stack.Protected guard={__DEV__}>
         <Stack.Screen name="design-preview" />
@@ -75,12 +90,16 @@ function SplashGate({ fontsReady }: { fontsReady: boolean }) {
     }
   }, [ready]);
 
-  // Tapping an alert opens the related screen: rebates, the Mess Hub, or the changed canteen.
+  // Tapping an alert opens the related screen: rebates, a complaint, the Mess Hub, or a canteen.
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data;
       if (data?.type === 'rebate') {
         router.push('/rebates');
+        return;
+      }
+      if (data?.type === 'complaint' && typeof data.complaint_id === 'string') {
+        router.push({ pathname: '/complaint/[id]', params: { id: data.complaint_id } });
         return;
       }
       if (data?.type !== 'timing_override') return;

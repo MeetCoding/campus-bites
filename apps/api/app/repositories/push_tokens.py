@@ -9,7 +9,7 @@ from app.core.supabase import get_supabase
 
 class PushTokenRepository(Protocol):
     async def tokens_for_bhawan_residents(self, bhawan_id: UUID) -> list[str]: ...
-    async def tokens_for_user(self, user_id: UUID) -> list[str]: ...
+    async def tokens_for_users(self, user_ids: list[UUID]) -> list[str]: ...
     async def delete_tokens(self, tokens: set[str]) -> None: ...
 
 
@@ -26,9 +26,12 @@ class SupabasePushTokenRepository:
         )
         return [row["expo_token"] for row in res.data]
 
-    async def tokens_for_user(self, user_id: UUID) -> list[str]:
+    async def tokens_for_users(self, user_ids: list[UUID]) -> list[str]:
         res = await (
-            self._db.table("push_tokens").select("expo_token").eq("user_id", str(user_id)).execute()
+            self._db.table("push_tokens")
+            .select("expo_token")
+            .in_("user_id", [str(u) for u in user_ids])
+            .execute()
         )
         return [row["expo_token"] for row in res.data]
 

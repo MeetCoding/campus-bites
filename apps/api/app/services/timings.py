@@ -1,10 +1,10 @@
 from collections.abc import Callable
-from datetime import date, datetime, time
+from datetime import date
 from uuid import UUID
-from zoneinfo import ZoneInfo
 
 from app.core.auth import CurrentUser
 from app.core.errors import ApiError
+from app.core.time import format_dates, format_time, today_ist
 from app.repositories.timings import TimingRepository
 from app.schemas.common import AppRole
 from app.schemas.timings import (
@@ -14,26 +14,7 @@ from app.schemas.timings import (
     TimingOverrideOut,
 )
 
-IST = ZoneInfo("Asia/Kolkata")
 CANTEEN_TYPES = {OutletType.DAY_CANTEEN, OutletType.NIGHT_CANTEEN}
-
-
-def today_ist() -> date:
-    return datetime.now(IST).date()
-
-
-def format_time(value: time) -> str:
-    """12-hour clock as printed on IIT Roorkee notices: '7:30 AM'."""
-    hour = value.hour % 12 or 12
-    return f"{hour}:{value.minute:02d} {'AM' if value.hour < 12 else 'PM'}"
-
-
-def format_dates(start: date, end: date) -> str:
-    if start == end:
-        return f"on {start.strftime('%a')} {start.day} {start.strftime('%b')}"
-    if start.month == end.month and start.year == end.year:
-        return f"{start.day}–{end.day} {end.strftime('%b')}"
-    return f"{start.day} {start.strftime('%b')} – {end.day} {end.strftime('%b')}"
 
 
 def describe_override(outlet: OutletInfo, body: TimingOverrideCreate) -> tuple[str, str]:
@@ -50,7 +31,7 @@ def describe_override(outlet: OutletInfo, body: TimingOverrideCreate) -> tuple[s
 
 
 class TimingService:
-    """Mess timing overrides and canteen shift changes (ARCHITECTURE.md §3.2, §5.6)."""
+    """Mess timing overrides and canteen shift changes (ARCHITECTURE.md §6.1, §6.2)."""
 
     def __init__(self, repo: TimingRepository, today: Callable[[], date] = today_ist) -> None:
         self._repo = repo

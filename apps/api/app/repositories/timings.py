@@ -6,6 +6,7 @@ from fastapi import Depends
 from supabase import AsyncClient
 
 from app.core.supabase import get_supabase
+from app.repositories.roles import SupabaseRoleChecks
 from app.schemas.common import AppRole
 from app.schemas.timings import OutletInfo, TimingOverrideCreate, TimingOverrideOut
 
@@ -26,7 +27,7 @@ class TimingRepository(Protocol):
     async def revoke_override(self, override_id: UUID) -> None: ...
 
 
-class SupabaseTimingRepository:
+class SupabaseTimingRepository(SupabaseRoleChecks):
     def __init__(self, client: AsyncClient) -> None:
         self._db = client
 
@@ -38,30 +39,6 @@ class SupabaseTimingRepository:
             .execute()
         )
         return OutletInfo(**res.data[0]) if res.data else None
-
-    async def has_bhawan_role(self, user_id: UUID, role: AppRole, bhawan_id: UUID) -> bool:
-        res = await (
-            self._db.table("role_assignments")
-            .select("id")
-            .eq("user_id", str(user_id))
-            .eq("role", role.value)
-            .eq("bhawan_id", str(bhawan_id))
-            .limit(1)
-            .execute()
-        )
-        return bool(res.data)
-
-    async def vendor_owns_outlet(self, phone_e164: str, outlet_id: UUID) -> bool:
-        res = await (
-            self._db.table("whitelisted_vendors")
-            .select("id")
-            .eq("phone_e164", phone_e164)
-            .eq("outlet_id", str(outlet_id))
-            .eq("active", True)
-            .limit(1)
-            .execute()
-        )
-        return bool(res.data)
 
     async def create_override(
         self, outlet_id: UUID, body: TimingOverrideCreate, created_by: UUID

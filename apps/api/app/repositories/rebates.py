@@ -7,6 +7,7 @@ from postgrest.exceptions import APIError
 from supabase import AsyncClient
 
 from app.core.supabase import get_supabase
+from app.repositories.roles import SupabaseRoleChecks
 from app.schemas.common import AppRole
 from app.schemas.rebates import RebateOut, RebateRules, RebateStatus, StudentProfile
 
@@ -47,7 +48,7 @@ class RebateRepository(Protocol):
     ) -> RebateOut | None: ...
 
 
-class SupabaseRebateRepository:
+class SupabaseRebateRepository(SupabaseRoleChecks):
     def __init__(self, client: AsyncClient) -> None:
         self._db = client
 
@@ -119,18 +120,6 @@ class SupabaseRebateRepository:
             .execute()
         )
         return RebateOut(**res.data[0]) if res.data else None
-
-    async def has_bhawan_role(self, user_id: UUID, role: AppRole, bhawan_id: UUID) -> bool:
-        res = await (
-            self._db.table("role_assignments")
-            .select("id")
-            .eq("user_id", str(user_id))
-            .eq("role", role.value)
-            .eq("bhawan_id", str(bhawan_id))
-            .limit(1)
-            .execute()
-        )
-        return bool(res.data)
 
     async def transition(
         self,
