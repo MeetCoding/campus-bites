@@ -1,0 +1,29 @@
+# Secrets — only *.example templates are committed
+.env
+.env.*
+!.env.example
+!env.example
+
+# Node / Expo
+node_modules/
+.expo/
+dist/
+web-build/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Supabase CLI
+supabase/.temp/
+supabase/.branches/
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# OS / editors
+.DS_Store
+Thumbs.db
