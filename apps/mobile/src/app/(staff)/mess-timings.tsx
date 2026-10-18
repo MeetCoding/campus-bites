@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Switch, Text, View } from 'react-native';
 
 import { Button, Card, Pill, Screen, SectionHeader, TextField } from '@/components/ui';
-import { describeOverride, MealStatusCard } from '@/features/mess/components';
+import { describeOverride, MealHero } from '@/features/mess/components';
 import {
   MEAL_LABEL,
   MEAL_SLOTS,
@@ -88,7 +88,7 @@ function TimingsEditor({ bhawanId, bhawanName }: { bhawanId: string; bhawanName:
 
   return (
     <View className="gap-space-md">
-      <MealStatusCard title={`${bhawanName} Mess · today`} schedule={schedule.data} loading={schedule.isPending} />
+      <MealHero eyebrow={`${bhawanName} Mess · today`} schedule={schedule.data} loading={schedule.isPending} />
 
       <SectionHeader title="Live overrides" />
       {overrides.isPending ? (

@@ -39,7 +39,9 @@ const colors = {
   'error-container': '#ffdad6',
   'on-error-container': '#93000a',
 
-  background: '#faf9fa',
+  // Cool off-white canvas (slightly darker than the export's #faf9fa) so lowest-tier cards read
+  // as raised through tonal contrast alone, without borders or shadows.
+  background: '#f1f2f6',
   'on-background': '#1b1c1d',
   surface: '#faf9fa',
   'surface-bright': '#faf9fa',
@@ -63,6 +65,10 @@ const colors = {
   'on-status-open-container': '#065f46',
   'status-warning-container': '#fffbeb',
   'on-status-warning-container': '#78350f',
+  'status-warning': '#f59e0b',
+
+  // Deep end of the hero gradient (hero cards run hero → primary).
+  hero: '#001946',
 };
 
 // Each weight is its own family on Android, so weights are separate font-* utilities.
@@ -102,6 +108,8 @@ const borderRadius = {
   lg: '4px',
   xl: '8px',
   '2xl': '12px',
+  '3xl': '20px',
+  '4xl': '28px',
   full: '9999px',
 };
 

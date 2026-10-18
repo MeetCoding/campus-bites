@@ -1,26 +1,38 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
-import { useState, type ReactNode } from 'react';
+import {
+  Armchair,
+  Check,
+  ChevronsUp,
+  CircleHelp,
+  IndianRupee,
+  Lightbulb,
+  Sparkles,
+  TriangleAlert,
+  UtensilsCrossed,
+  type LucideIcon,
+} from 'lucide-react-native';
+import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
-import { Badge, Button, Card } from '@/components/ui';
+import { Badge, Button, Card, IconBadge, PressableScale } from '@/components/ui';
 import { ZoomableImage } from '@/components/ui/ZoomableImage';
 import { complaintErrorMessage } from '@/features/complaints/errors';
 import {
   CATEGORY_LABEL,
-  DOMAIN_LABEL,
   elapsedLabel,
   HANDLER_LABEL,
   isLongStanding,
   nudgeState,
   STATUS_LABEL,
   trackerStep,
+  type ComplaintCategory,
   type ComplaintRules,
   type ComplaintStatus,
 } from '@/features/complaints/logic';
 import { useAttachmentUrl, useNudge, type BoardRow, type Complaint, type ComplaintEvent } from '@/features/complaints/queries';
 import { cn } from '@/lib/cn';
+import { ImpactFeedbackStyle, impactTap, successTap } from '@/lib/haptics';
 import { formatDuration, timeAgo } from '@/lib/time';
 import { useNow } from '@/lib/useNow';
 import { colors } from '@/theme/tokens';
@@ -40,7 +52,7 @@ export function ComplaintStatusBadge({ status }: { status: ComplaintStatus }) {
 export function LongStandingBadge() {
   return (
     <View className="flex-row items-center gap-1 self-start rounded-full bg-error-container px-2 py-0.5">
-      <MaterialIcons name="warning" size={12} color={colors['on-error-container']} />
+      <TriangleAlert size={12} color={colors['on-error-container']} />
       <Text className="font-label-bold text-label-sm uppercase text-on-error-container">Long-standing issue</Text>
     </View>
   );
@@ -51,7 +63,7 @@ export function ComplaintTracker({ status }: { status: ComplaintStatus }) {
   const { step, done } = trackerStep(status);
   const steps = ['Raised', 'In work', 'Student sign-off'];
   return (
-    <View className="flex-row items-start rounded-lg bg-surface-container-low p-space-sm">
+    <View className="flex-row items-start rounded-2xl bg-surface-container-low p-space-sm">
       {steps.map((label, index) => {
         const n = index + 1;
         const complete = n < step || (n === step && done);
@@ -64,7 +76,7 @@ export function ComplaintTracker({ status }: { status: ComplaintStatus }) {
                 complete ? 'bg-status-open' : current ? 'bg-primary' : 'bg-surface-container-high',
               )}>
               {complete ? (
-                <MaterialIcons name="check" size={16} color={colors['on-primary']} />
+                <Check size={16} color={colors['on-primary']} strokeWidth={3} />
               ) : (
                 <Text className={cn('font-label-bold text-label-md', current ? 'text-on-primary' : 'text-on-surface-variant')}>
                   {n}
@@ -154,10 +166,56 @@ export function AttachmentThumb({ path, label }: { path: string; label: string }
 }
 
 // ─── Cards ───────────────────────────────────────────────────────────────────
-function CardShell({ longStanding, children }: { longStanding: boolean; children: ReactNode }) {
+export const CATEGORY_ICON: Record<ComplaintCategory, LucideIcon> = {
+  hygiene: Sparkles,
+  seating: Armchair,
+  lighting: Lightbulb,
+  food_quality: UtensilsCrossed,
+  overcharging: IndianRupee,
+  other: CircleHelp,
+};
+
+type TicketFields = {
+  category: ComplaintCategory;
+  title: string;
+  outletName: string | null | undefined;
+  status: ComplaintStatus;
+  openedAt: string;
+  nudgeCount: number;
+  longStanding: boolean;
+  mine?: boolean;
+};
+
+/** Linear-style issue card: category anchor, title, then status · clock · nudges. */
+function Ticket({ t }: { t: TicketFields }) {
+  const now = useNow();
   return (
-    <Card className={cn('gap-space-sm', longStanding && 'bg-error-container/40')}>
-      {children}
+    <Card className={cn('gap-space-sm', t.longStanding && 'bg-error-container/50')}>
+      <View className="flex-row items-center gap-space-sm">
+        <IconBadge icon={CATEGORY_ICON[t.category]} tone={t.longStanding ? 'error' : 'primary'} size="sm" />
+        <Text numberOfLines={1} className="flex-1 font-label text-label-md text-on-surface-variant">
+          {CATEGORY_LABEL[t.category]}
+          {t.outletName ? ` · ${t.outletName}` : ''}
+        </Text>
+        {t.status !== 'resolved' ? (
+          <Text className={cn('font-label-bold text-label-sm', t.longStanding ? 'text-error' : 'text-on-surface-variant')}>
+            {elapsedLabel(t.openedAt, now)}
+          </Text>
+        ) : null}
+      </View>
+      <Text numberOfLines={2} className="font-body-semibold text-body-lg text-on-surface">
+        {t.title}
+      </Text>
+      <View className="flex-row flex-wrap items-center gap-space-xs">
+        {t.longStanding ? <LongStandingBadge /> : <ComplaintStatusBadge status={t.status} />}
+        {t.nudgeCount > 0 ? (
+          <View className="flex-row items-center gap-0.5 rounded-full bg-primary/10 px-2 py-0.5">
+            <ChevronsUp size={12} color={colors.primary} />
+            <Text className="font-label-bold text-label-sm text-primary">{t.nudgeCount}</Text>
+          </View>
+        ) : null}
+        {t.mine ? <Badge label="Yours" /> : null}
+      </View>
     </Card>
   );
 }
@@ -168,61 +226,43 @@ export function ComplaintCard({ complaint, rules }: { complaint: Complaint; rule
   const longStanding = rules ? isLongStanding(complaint, rules, now) : false;
   return (
     <Link href={{ pathname: '/complaint/[id]', params: { id: complaint.id } }} asChild>
-      <Pressable accessibilityRole="link" className="active:opacity-80">
-        <CardShell longStanding={longStanding}>
-          <View className="flex-row flex-wrap items-center justify-between gap-space-xs">
-            <Text className="font-label-bold text-label-sm uppercase text-primary">
-              {DOMAIN_LABEL[complaint.domain]} · {CATEGORY_LABEL[complaint.category]}
-            </Text>
-            {complaint.status !== 'resolved' ? (
-              <Text className={cn('font-label-bold text-label-sm', longStanding ? 'text-error' : 'text-on-surface-variant')}>
-                {elapsedLabel(complaint.opened_at, now)}
-              </Text>
-            ) : null}
-          </View>
-          {longStanding ? <LongStandingBadge /> : null}
-          <Text className="font-headline text-headline-sm text-on-surface">{complaint.title}</Text>
-          <Text className="font-body text-body-sm text-on-surface-variant">
-            {complaint.outlets?.name} · raised {timeAgo(complaint.created_at)}
-            {complaint.nudge_count > 0 ? ` · nudged ${complaint.nudge_count}×` : ''}
-          </Text>
-          <ComplaintStatusBadge status={complaint.status} />
-        </CardShell>
-      </Pressable>
+      <PressableScale accessibilityRole="link">
+        <Ticket
+          t={{
+            category: complaint.category,
+            title: complaint.title,
+            outletName: complaint.outlets?.name,
+            status: complaint.status,
+            openedAt: complaint.opened_at,
+            nudgeCount: complaint.nudge_count,
+            longStanding,
+          }}
+        />
+      </PressableScale>
     </Link>
   );
 }
 
 /** Public, anonymised board row. Only the author's own rows open the full ticket. */
 export function BoardCard({ row }: { row: BoardRow }) {
-  const now = useNow();
   const body = (
-    <CardShell longStanding={row.is_long_standing}>
-      <View className="flex-row flex-wrap items-center justify-between gap-space-xs">
-        <Text className="font-label-bold text-label-sm uppercase text-primary">
-          {DOMAIN_LABEL[row.domain]} · {CATEGORY_LABEL[row.category]}
-        </Text>
-        {row.is_escalated ? <Badge label="Escalated" tone="longStanding" /> : null}
-      </View>
-      {row.is_long_standing ? <LongStandingBadge /> : null}
-      <Text className="font-headline text-headline-sm text-on-surface">{row.title}</Text>
-      <Text className="font-body text-body-sm text-on-surface-variant">
-        {row.outlet_name} · filed {timeAgo(row.created_at)}
-        {row.status !== 'resolved' ? ` · ${elapsedLabel(row.opened_at, now)}` : ''}
-        {row.nudge_count > 0 ? ` · nudged ${row.nudge_count}×` : ''}
-      </Text>
-      <View className="flex-row items-center gap-space-sm">
-        <ComplaintStatusBadge status={row.status} />
-        {row.is_mine ? <Badge label="Yours" /> : null}
-      </View>
-    </CardShell>
+    <Ticket
+      t={{
+        category: row.category,
+        title: row.title,
+        outletName: row.outlet_name,
+        status: row.status,
+        openedAt: row.opened_at,
+        nudgeCount: row.nudge_count,
+        longStanding: row.is_long_standing,
+        mine: row.is_mine,
+      }}
+    />
   );
   if (!row.is_mine) return body;
   return (
     <Link href={{ pathname: '/complaint/[id]', params: { id: row.id } }} asChild>
-      <Pressable accessibilityRole="link" className="active:opacity-80">
-        {body}
-      </Pressable>
+      <PressableScale accessibilityRole="link">{body}</PressableScale>
     </Link>
   );
 }
@@ -241,12 +281,18 @@ export function NudgeButton({ complaint, rules }: { complaint: Complaint; rules:
           label={`Nudge ${HANDLER_LABEL[complaint.domain]}${complaint.nudge_count ? ` (nudged ${complaint.nudge_count}×)` : ''}`}
           variant="secondary"
           loading={nudge.isPending}
-          onPress={() => nudge.mutate(complaint.id)}
+          onPress={() => {
+            impactTap(ImpactFeedbackStyle.Medium);
+            nudge.mutate(complaint.id, { onSuccess: successTap });
+          }}
         />
       ) : (
-        <Text className="font-body-semibold text-body-sm text-on-surface-variant">
-          Nudged {complaint.nudge_count}× · next nudge in {formatDuration(state.minutesLeft)}
-        </Text>
+        <View className="flex-row items-center gap-1.5 self-start rounded-full bg-primary/10 px-3 py-1.5">
+          <ChevronsUp size={14} color={colors.primary} />
+          <Text className="font-label-bold text-label-md text-primary">
+            Nudged {complaint.nudge_count}× · again in {formatDuration(state.minutesLeft)}
+          </Text>
+        </View>
       )}
       {nudge.error ? (
         <Text accessibilityRole="alert" className="font-body text-body-sm text-error">

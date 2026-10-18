@@ -2,10 +2,10 @@ import { Link, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
-import { Button, Pill, Screen } from '@/components/ui';
+import { Button, Pill, Screen, Segmented } from '@/components/ui';
 import { useSession } from '@/features/auth/session';
 import { useBhawans, useOutlets } from '@/features/campus/queries';
-import { FixedRateCard, MenuItemsList, OutletHeader, Segmented } from '@/features/canteens/components';
+import { FixedRateCard, MenuItemsList, OutletHeader } from '@/features/canteens/components';
 import { useLiveStatus, useLiveUpdates } from '@/features/canteens/queries';
 import { NoticeboardCard, OverrideBanner } from '@/features/mess/components';
 import { useActiveOverrides } from '@/features/mess/queries';
@@ -47,7 +47,7 @@ export default function CanteenHub() {
         {bhawans.data?.map((b) => (
           <Pill
             key={b.id}
-            label={b.name.replace(' Bhawan', '')}
+            label={b.id === claims?.bhawan_id ? `${b.name.replace(' Bhawan', '')} · Mine` : b.name.replace(' Bhawan', '')}
             selected={b.id === activeBhawanId}
             onPress={() => setBhawanId(b.id)}
           />
@@ -56,8 +56,8 @@ export default function CanteenHub() {
 
       <Segmented
         options={[
-          { value: 'day_canteen', label: 'Day canteen' },
-          { value: 'night_canteen', label: 'Night canteen' },
+          { value: 'day_canteen', label: 'Day' },
+          { value: 'night_canteen', label: 'Night' },
         ]}
         value={shift}
         onChange={setChosenShift}
@@ -65,13 +65,13 @@ export default function CanteenHub() {
 
       {canteen ? (
         <>
-          <OutletHeader key={canteen.id} outletId={canteen.id} eyebrow="Hostel canteen hub" />
+          <OutletHeader key={canteen.id} outletId={canteen.id} />
           <OverrideBanner overrides={overrides.data} />
 
           <Segmented
             options={[
-              { value: 'menu', label: 'Menu & photo' },
-              { value: 'rates', label: 'Institute rate card' },
+              { value: 'menu', label: 'Menu' },
+              { value: 'rates', label: 'Rate card' },
             ]}
             value={tab}
             onChange={setTab}
@@ -81,7 +81,7 @@ export default function CanteenHub() {
             <View className="gap-space-md">
               <NoticeboardCard
                 outletId={canteen.id}
-                title="Uploaded menu photo"
+                title="Menu photo"
                 canReport={claims?.roles.includes('student') ?? false}
               />
               <MenuItemsList outletId={canteen.id} />
@@ -92,7 +92,7 @@ export default function CanteenHub() {
               <Link
                 href={{ pathname: '/raise-complaint', params: { outlet: canteen.id, category: 'overcharging' } }}
                 asChild>
-                <Button label="Report overcharging or a hygiene issue" variant="secondary" />
+                <Button label="Report overcharging" variant="secondary" />
               </Link>
             </View>
           ) : null}

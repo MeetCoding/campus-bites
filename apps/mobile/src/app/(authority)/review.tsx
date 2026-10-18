@@ -1,5 +1,5 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Link } from 'expo-router';
+import { ChevronRight } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 
@@ -109,7 +109,7 @@ function RebateQueue() {
                   </Text>
                   <RebateStatusBadge status={r.status} />
                 </View>
-                <MaterialIcons name="chevron-right" size={22} color={colors.outline} />
+                <ChevronRight size={22} color={colors.outline} />
               </Card>
             </Pressable>
           </Link>

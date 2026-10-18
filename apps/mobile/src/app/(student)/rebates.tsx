@@ -1,11 +1,11 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Image } from 'expo-image';
+import { CalendarX2, FileText, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
-import { Button, Card, Screen, SectionHeader, TextField } from '@/components/ui';
+import { Button, Card, HeroCard, IconBadge, Screen, SectionHeader, TextField } from '@/components/ui';
 import { useSession } from '@/features/auth/session';
-import { RebateDocument, RebateStatusBadge, RebateTimeline } from '@/features/rebates/components';
+import { RebatePass, rebateDays as daysBetween } from '@/features/rebates/components';
 import { rebateErrorMessage } from '@/features/rebates/errors';
 import {
   pickDocument,
@@ -17,52 +17,46 @@ import {
 import { addDays, formatDateRange, isValidDateInput, istNow } from '@/lib/time';
 import { colors } from '@/theme/tokens';
 
-function daysBetween(start: string, end: string): number {
-  return Math.round((Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 86_400_000) + 1;
-}
-
 /** Student mess rebate form + history with status timeline (TASKS M5.4). */
 export default function RebatesScreen() {
   const { claims } = useSession();
   const studentId = claims?.sub;
   const rebates = useMyRebates(studentId);
+  const rules = useRebateRules();
+  const pending = rebates.data?.filter(
+    (r) => r.status === 'pending_verification' || r.status === 'biometric_cross_checked',
+  ).length;
 
   return (
     <Screen>
-      <View className="gap-space-xs">
-        <Text className="font-body text-body-md text-on-surface-variant">
-          Apply before you leave. The Mess Authority checks your dates against biometric attendance,
-          then approves or rejects with remarks.
-        </Text>
-      </View>
+      <HeroCard>
+        <View className="flex-row items-center gap-space-md">
+          <IconBadge icon={CalendarX2} tone="onDark" size="lg" />
+          <View className="flex-1">
+            <Text className="font-headline text-headline-md text-on-primary">Going away?</Text>
+            <Text className="font-body text-body-md text-on-primary-container">
+              Claim a rebate for {rules.data ? `${rules.data.min_rebate_days}+ ` : ''}days off the mess
+            </Text>
+          </View>
+        </View>
+        {pending ? (
+          <View className="self-start rounded-full bg-tertiary-fixed px-3 py-1">
+            <Text className="font-label-bold text-label-sm text-on-tertiary-fixed">{pending} in review</Text>
+          </View>
+        ) : null}
+      </HeroCard>
 
       {studentId ? <RebateForm studentId={studentId} /> : null}
 
-      <SectionHeader title="Your applications" />
+      <SectionHeader title="Your passes" />
       {rebates.isPending ? (
         <ActivityIndicator />
       ) : rebates.isError ? (
         <Text className="font-body text-body-md text-error">{rebates.error.message}</Text>
       ) : rebates.data.length === 0 ? (
-        <Text className="font-body text-body-md text-on-surface-variant">No rebate applications yet.</Text>
+        <Text className="font-body text-body-md text-on-surface-variant">No applications yet.</Text>
       ) : (
-        rebates.data.map((r) => (
-          <Card key={r.id} className="gap-space-sm">
-            <View className="flex-row items-start justify-between gap-space-sm">
-              <View className="flex-1">
-                <Text className="font-body-semibold text-body-lg text-on-surface">
-                  {formatDateRange(r.start_date, r.end_date)}
-                </Text>
-                <Text className="font-body text-body-sm text-on-surface-variant">
-                  {r.days ?? daysBetween(r.start_date, r.end_date)} days · {r.reason}
-                </Text>
-              </View>
-              <RebateStatusBadge status={r.status} />
-            </View>
-            <RebateTimeline status={r.status} events={r.rebate_events} />
-            {r.document_path ? <RebateDocument path={r.document_path} /> : null}
-          </Card>
-        ))
+        rebates.data.map((r) => <RebatePass key={r.id} rebate={r} />)
       )}
     </Screen>
   );
@@ -118,7 +112,7 @@ function RebateForm({ studentId }: { studentId: string }) {
 
   return (
     <Card className="gap-space-md">
-      <Text className="font-headline text-headline-sm text-on-surface">Apply for a mess rebate</Text>
+      <Text className="font-headline text-headline-sm text-on-surface">New application</Text>
       <View className="flex-row gap-space-sm">
         <View className="flex-1">
           <TextField label="From" placeholder="YYYY-MM-DD" value={startDate} onChangeText={setStartDate} />
@@ -142,19 +136,19 @@ function RebateForm({ studentId }: { studentId: string }) {
       />
 
       <View className="gap-space-sm">
-        <Text className="font-label text-label-md text-on-surface-variant">Supporting document (optional)</Text>
+        <Text className="font-label text-label-md text-on-surface-variant">Proof (optional)</Text>
         {document ? (
-          <View className="flex-row items-center gap-space-sm rounded-lg bg-surface-container-low p-space-sm">
+          <View className="flex-row items-center gap-space-sm rounded-2xl bg-surface-container-low p-space-sm">
             {document.kind === 'image' ? (
               <Image source={{ uri: document.uri }} style={{ width: 48, height: 48, borderRadius: 8 }} contentFit="cover" />
             ) : (
-              <MaterialIcons name="picture-as-pdf" size={32} color={colors.error} />
+              <FileText size={28} color={colors.error} />
             )}
             <Text className="flex-1 font-body text-body-sm text-on-surface" numberOfLines={1}>
-              {document.kind === 'pdf' ? document.name : 'Photo attached (compressed before upload)'}
+              {document.kind === 'pdf' ? document.name : 'Photo attached'}
             </Text>
             <Pressable accessibilityRole="button" accessibilityLabel="Remove document" hitSlop={12} onPress={() => setDocument(null)}>
-              <MaterialIcons name="close" size={20} color={colors['on-surface-variant']} />
+              <X size={20} color={colors['on-surface-variant']} />
             </Pressable>
           </View>
         ) : (

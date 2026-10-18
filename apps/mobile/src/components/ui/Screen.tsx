@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { cn } from '@/lib/cn';
@@ -15,19 +15,31 @@ export function Screen({
   className?: string;
 }) {
   const insets = useSafeAreaInsets();
-  const padding = { paddingTop: insets.top, paddingBottom: insets.bottom };
   const body = cn('gap-space-md px-margin', className);
 
   if (!scroll) {
     return (
-      <View className={cn('flex-1 bg-background', body)} style={padding}>
+      <View
+        className={cn('flex-1 bg-background', body)}
+        style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
         {children}
       </View>
     );
   }
+  // The top inset pads the outer view, not the scroll content, so content scrolls under a solid
+  // strip instead of behind the status bar. KeyboardAvoidingView per Expo's keyboard guide:
+  // 'padding' on iOS, no behavior on Android.
   return (
-    <ScrollView className="flex-1 bg-background" contentContainerStyle={padding}>
-      <View className={cn('py-space-md', body)}>{children}</View>
-    </ScrollView>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      className="flex-1 bg-background"
+      style={{ paddingTop: insets.top }}>
+      <ScrollView
+        className="flex-1"
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingBottom: insets.bottom }}>
+        <View className={cn('py-space-md', body)}>{children}</View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

@@ -56,6 +56,23 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "1fe6d3d3-4e83-489c-a17d-f7bad955d56b"
+      }
+    },
+    "owner": "meetpshah",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/1fe6d3d3-4e83-489c-a17d-f7bad955d56b"
     }
   }
 }

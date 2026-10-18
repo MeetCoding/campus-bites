@@ -1,34 +1,33 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Link, type Href } from 'expo-router';
-import type { ComponentProps } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import {
+  ArrowUpRight,
+  CalendarX2,
+  ChevronRight,
+  Coffee,
+  MessageSquareWarning,
+  Moon,
+  Store,
+  Sun,
+  type LucideIcon,
+} from 'lucide-react-native';
+import { Text, View } from 'react-native';
 
-import { Badge, Card, Screen, SectionHeader } from '@/components/ui';
+import { Card, IconBadge, PressableScale, Screen, SectionHeader, type IconTone } from '@/components/ui';
 import { AccountPanel } from '@/features/auth/AccountPanel';
 import { useSession } from '@/features/auth/session';
 import { useBhawans } from '@/features/campus/queries';
 import { OpenStatusPill } from '@/features/canteens/components';
 import { useLiveStatus } from '@/features/canteens/queries';
-import { MealStatusCard, OverrideBanner } from '@/features/mess/components';
-import {
-  MEAL_LABEL,
-  MEAL_SLOTS,
-  useActiveOverrides,
-  useMessOutlet,
-  useMessSchedule,
-  useWeeklyMenu,
-} from '@/features/mess/queries';
+import { MealHero, OverrideBanner } from '@/features/mess/components';
+import { useActiveOverrides, useMessOutlet, useMessSchedule, useWeeklyMenu } from '@/features/mess/queries';
 import { DAY_LABEL, istNow, weekStart } from '@/lib/time';
 import { colors } from '@/theme/tokens';
 
-type IconName = ComponentProps<typeof MaterialIcons>['name'];
-
-const QUICK_LINKS: { title: string; icon: IconName; href?: Href }[] = [
-  { title: 'Mess Hub', icon: 'restaurant', href: '/mess' },
-  { title: 'Hostel canteens', icon: 'storefront', href: '/canteens' },
-  { title: 'Campus eateries', icon: 'local-cafe', href: '/eateries' },
-  { title: 'Mess rebates', icon: 'event-busy', href: '/rebates' },
-  { title: 'Complaints', icon: 'report', href: '/complaints' },
+const TILES: { title: string; icon: LucideIcon; tone: IconTone; href: Href }[] = [
+  { title: 'Canteens', icon: Store, tone: 'primary', href: '/canteens' },
+  { title: 'Eateries', icon: Coffee, tone: 'tertiary', href: '/eateries' },
+  { title: 'Rebates', icon: CalendarX2, tone: 'open', href: '/rebates' },
+  { title: 'Complaints', icon: MessageSquareWarning, tone: 'error', href: '/complaints' },
 ];
 
 /** Student dashboard per stitch-reference/campus_bites_home_dashboard (TASKS M3.15). */
@@ -42,97 +41,71 @@ export default function StudentHome() {
   const schedule = useMessSchedule(claims?.bhawan_id);
   const overrides = useActiveOverrides(messOutlet?.id);
   const menu = useWeeklyMenu(claims?.bhawan_id, weekStart(today.date));
-  const todaysMenu = menu.data?.items[today.dayKey];
   const status = useLiveStatus();
   const myCanteens = status.data?.filter((s) => s.bhawan_id === claims?.bhawan_id) ?? [];
+  const eateriesOpen = status.data?.filter((s) => s.type === 'eatery' && s.is_open).length;
 
   return (
     <Screen>
-      <View className="gap-space-xs pt-space-md">
-        <Text className="font-label text-label-sm uppercase text-on-surface-variant">
-          Today is {DAY_LABEL[today.dayKey]} · IIT Roorkee
+      <View className="gap-space-xs pt-space-sm">
+        <Text className="font-label-bold text-label-sm uppercase text-on-surface-variant">
+          {DAY_LABEL[today.dayKey]}
+          {bhawan ? ` · ${bhawan.name}` : ''}
         </Text>
-        <Text className="font-headline text-headline-lg-mobile text-on-surface">
-          {bhawan?.name ?? 'Campus Bites'}
-        </Text>
+        <Text className="font-headline text-headline-lg-mobile text-on-surface">What&apos;s cooking</Text>
       </View>
 
       <OverrideBanner overrides={overrides.data} />
 
       <Link href="/mess" asChild>
-        <Pressable accessibilityRole="link" accessibilityLabel="Open Mess Hub" className="active:opacity-90">
-          <MealStatusCard
-            title={bhawan ? `${bhawan.name} Mess` : 'Your mess'}
-            schedule={schedule.data}
-            loading={schedule.isPending}
-          />
-        </Pressable>
+        <PressableScale accessibilityRole="link" accessibilityLabel="Open Mess Hub">
+          <MealHero schedule={schedule.data} loading={schedule.isPending} menu={menu.data?.items[today.dayKey]} />
+        </PressableScale>
       </Link>
 
       {myCanteens.length > 0 ? (
-        <Card className="gap-space-sm">
+        <View className="gap-space-sm">
+          <SectionHeader title="Your canteens" />
           {myCanteens.map((c) => (
             <Link key={c.outlet_id} href={{ pathname: '/canteens', params: { outlet: c.outlet_id } }} asChild>
-              <Pressable accessibilityRole="link" className="gap-space-xs active:opacity-80">
-                <Text className="font-label-bold text-label-md text-primary">
-                  {c.type === 'day_canteen' ? 'Day canteen' : 'Night canteen'}
-                </Text>
-                <OpenStatusPill status={c} />
-              </Pressable>
+              <PressableScale accessibilityRole="link">
+                <Card className="flex-row items-center gap-space-md">
+                  <IconBadge icon={c.type === 'day_canteen' ? Sun : Moon} tone={c.type === 'day_canteen' ? 'tertiary' : 'primary'} />
+                  <View className="flex-1 gap-space-xs">
+                    <Text className="font-body-semibold text-body-lg text-on-surface">
+                      {c.type === 'day_canteen' ? 'Day canteen' : 'Night canteen'}
+                    </Text>
+                    <OpenStatusPill status={c} />
+                  </View>
+                  <ChevronRight size={20} color={colors.outline} />
+                </Card>
+              </PressableScale>
             </Link>
           ))}
-        </Card>
+        </View>
       ) : null}
 
-      <SectionHeader title="Campus food directory" />
-      <View className="flex-row flex-wrap gap-space-sm">
-        {QUICK_LINKS.map((link) => {
-          const tile = (
-            <Card className="min-h-24 justify-between gap-space-sm">
-              <MaterialIcons name={link.icon} size={24} color={link.href ? colors.primary : colors.outline} />
-              <View className="gap-space-xs">
-                <Text className="font-body-semibold text-body-md text-on-surface">{link.title}</Text>
-                {link.href ? null : <Badge label="Soon" />}
-              </View>
-            </Card>
-          );
-          return (
-            <View key={link.title} className="w-[48%]">
-              {link.href ? (
-                <Link href={link.href} asChild>
-                  <Pressable accessibilityRole="link" className="active:opacity-80">
-                    {tile}
-                  </Pressable>
-                </Link>
-              ) : (
-                tile
-              )}
-            </View>
-          );
-        })}
-      </View>
-
-      <SectionHeader title="Today's mess menu" />
-      <Link href="/mess" asChild>
-        <Pressable accessibilityRole="link" className="active:opacity-90">
-          <Card className="gap-space-sm">
-            {todaysMenu ? (
-              MEAL_SLOTS.map((slot) => (
-                <View key={slot} className="gap-space-xs">
-                  <Text className="font-label-bold text-label-sm uppercase text-primary">{MEAL_LABEL[slot]}</Text>
-                  <Text className="font-body text-body-md text-on-surface">
-                    {todaysMenu[slot]?.length ? todaysMenu[slot]!.join(' · ') : '—'}
-                  </Text>
+      <SectionHeader title="Explore" />
+      <View className="flex-row flex-wrap justify-between gap-y-space-sm">
+        {TILES.map((tile) => (
+          <Link key={tile.title} href={tile.href} asChild>
+            <PressableScale accessibilityRole="link" className="w-[48.5%]">
+              <Card className="min-h-28 justify-between gap-space-md">
+                <View className="flex-row items-start justify-between">
+                  <IconBadge icon={tile.icon} tone={tile.tone} />
+                  <ArrowUpRight size={18} color={colors.outline} />
                 </View>
-              ))
-            ) : (
-              <Text className="font-body text-body-md text-on-surface-variant">
-                {menu.isPending ? 'Loading menu…' : 'Menu not published yet — tap to see the noticeboard photo.'}
-              </Text>
-            )}
-          </Card>
-        </Pressable>
-      </Link>
+                <View>
+                  <Text className="font-body-semibold text-body-lg text-on-surface">{tile.title}</Text>
+                  {tile.href === '/eateries' && eateriesOpen !== undefined ? (
+                    <Text className="font-label text-label-md text-on-surface-variant">{eateriesOpen} open now</Text>
+                  ) : null}
+                </View>
+              </Card>
+            </PressableScale>
+          </Link>
+        ))}
+      </View>
 
       <AccountPanel />
     </Screen>

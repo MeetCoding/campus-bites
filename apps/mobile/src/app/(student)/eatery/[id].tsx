@@ -18,11 +18,11 @@ export default function EateryDetail() {
     <Screen>
       <OutletHeader outletId={id} />
       <OverrideBanner overrides={overrides.data} />
-      <NoticeboardCard outletId={id} title="Menu photo" canReport={claims?.roles.includes('student') ?? false} />
       <SectionHeader title="Menu" />
       <MenuItemsList outletId={id} />
+      <NoticeboardCard outletId={id} title="Menu photo" canReport={claims?.roles.includes('student') ?? false} />
       <Link href={{ pathname: '/raise-complaint', params: { outlet: id } }} asChild>
-        <Button label="Raise a complaint (goes to ADoSW)" variant="secondary" />
+        <Button label="Report an issue" variant="secondary" />
       </Link>
     </Screen>
   );

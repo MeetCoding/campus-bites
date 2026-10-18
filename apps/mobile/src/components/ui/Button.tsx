@@ -1,6 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 
+import { PressableScale } from '@/components/ui/PressableScale';
 import { cn } from '@/lib/cn';
 import { colors } from '@/theme/tokens';
 
@@ -21,7 +22,7 @@ const labelClass: Record<ButtonVariant, string> = {
   tertiary: 'text-primary underline',
 };
 
-const contentClass = 'flex-1 items-center justify-center px-5 py-3';
+const contentClass = 'min-h-12 items-center justify-center px-5 py-3';
 
 /** Alexandria buttons: primary = gradient fill, secondary = surface-high, tertiary = text. */
 export function Button({
@@ -40,29 +41,31 @@ export function Button({
   );
 
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityState={{ disabled: inactive, busy: loading }}
       onPress={onPress}
       disabled={inactive}
-      className={cn(
-        'min-h-12 overflow-hidden rounded-xl active:opacity-80',
-        variant === 'secondary' && 'bg-surface-container-high',
-        inactive && 'opacity-50',
-        className,
-      )}>
-      {variant === 'primary' ? (
-        // LinearGradient is not a NativeWind-aware component, so it takes a style.
-        <LinearGradient
-          colors={[colors.primary, colors['primary-container']]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{ flex: 1 }}>
+      haptic={variant === 'tertiary' ? 'selection' : 'impact'}
+      className={className}>
+      <View
+        className={cn(
+          'overflow-hidden rounded-full',
+          variant === 'secondary' && 'bg-surface-container-high',
+          inactive && 'opacity-50',
+        )}>
+        {variant === 'primary' ? (
+          // LinearGradient is not a NativeWind-aware component, so it takes a style.
+          <LinearGradient
+            colors={[colors.primary, colors['primary-container']]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}>
+            <View className={contentClass}>{content}</View>
+          </LinearGradient>
+        ) : (
           <View className={contentClass}>{content}</View>
-        </LinearGradient>
-      ) : (
-        <View className={contentClass}>{content}</View>
-      )}
-    </Pressable>
+        )}
+      </View>
+    </PressableScale>
   );
 }

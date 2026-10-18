@@ -29,11 +29,11 @@ export function TextField({
       <Text className="font-label text-label-md text-on-surface-variant">{label}</Text>
       <View
         className={cn(
-          'min-h-12 flex-row items-center overflow-hidden rounded-xl border bg-surface-container-lowest',
+          'min-h-12 flex-row items-center overflow-hidden rounded-2xl border bg-surface-container-lowest',
           error ? 'border-error' : focused ? 'border-primary' : 'border-outline-variant/15',
         )}>
         {prefix ? (
-          <View className="h-full justify-center bg-surface-container-low px-space-md">
+          <View className="self-stretch justify-center bg-surface-container-low px-space-md">
             <Text className="font-body-semibold text-body-lg text-on-surface">{prefix}</Text>
           </View>
         ) : null}

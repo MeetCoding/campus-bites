@@ -25,7 +25,7 @@ export function Card({
   className?: string;
 }) {
   return (
-    <View className={cn('rounded-xl', padded && 'p-space-md', toneClass[tone], className)}>
+    <View className={cn('rounded-3xl', padded && 'p-space-md', toneClass[tone], className)}>
       {children}
     </View>
   );

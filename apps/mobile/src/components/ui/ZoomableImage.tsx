@@ -1,5 +1,5 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Image } from 'expo-image';
+import { X } from 'lucide-react-native';
 import { Modal, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import {
   GestureDetector,
@@ -137,7 +137,7 @@ export function ZoomableImage({ uri, visible, onClose, caption, accessibilityLab
             onPress={close}
             hitSlop={12}
             className="h-11 w-11 items-center justify-center rounded-full bg-inverse-surface/80">
-            <MaterialIcons name="close" size={24} color={colors['inverse-on-surface']} />
+            <X size={24} color={colors['inverse-on-surface']} />
           </Pressable>
         </View>
 

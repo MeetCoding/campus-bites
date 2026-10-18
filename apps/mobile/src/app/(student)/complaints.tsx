@@ -2,10 +2,9 @@ import { Link } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 
-import { Button, Card, Pill, Screen, SectionHeader } from '@/components/ui';
+import { Button, Card, HeroCard, Pill, Screen, Segmented } from '@/components/ui';
 import { useSession } from '@/features/auth/session';
 import { useBhawans } from '@/features/campus/queries';
-import { Segmented } from '@/features/canteens/components';
 import { BoardCard, ComplaintCard } from '@/features/complaints/components';
 import { type ComplaintDomain } from '@/features/complaints/logic';
 import {
@@ -17,9 +16,9 @@ import {
 
 type Tab = 'mine' | 'board';
 const DOMAINS: { value: ComplaintDomain; label: string }[] = [
-  { value: 'mess', label: 'My Bhawan mess' },
-  { value: 'hostel_canteen', label: 'Hostel canteens' },
-  { value: 'campus_eatery', label: 'Campus eateries (ADoSW)' },
+  { value: 'mess', label: 'Mess' },
+  { value: 'hostel_canteen', label: 'Canteens' },
+  { value: 'campus_eatery', label: 'Eateries' },
 ];
 
 /** Accountability & complaint hub per stitch-reference/accountability_complaint_hub (TASKS M6.10). */
@@ -30,12 +29,12 @@ export default function ComplaintsHub() {
   return (
     <Screen>
       <Link href="/raise-complaint" asChild>
-        <Button label="Raise a dining complaint" />
+        <Button label="Raise a complaint" />
       </Link>
       <Segmented
         options={[
-          { value: 'mine', label: 'My complaints' },
-          { value: 'board', label: 'Public issue board' },
+          { value: 'mine', label: 'Mine' },
+          { value: 'board', label: 'Issue board' },
         ]}
         value={tab}
         onChange={setTab}
@@ -54,10 +53,8 @@ function MyComplaints() {
   if (mine.isError) return <Text className="font-body text-body-md text-error">{mine.error.message}</Text>;
   if (mine.data.length === 0) {
     return (
-      <Card tone="low">
-        <Text className="font-body text-body-md text-on-surface-variant">
-          You haven&apos;t raised any complaints. Issues stay on the public board until you confirm they&apos;re fixed.
-        </Text>
+      <Card>
+        <Text className="font-body text-body-md text-on-surface-variant">Nothing raised yet.</Text>
       </Card>
     );
   }
@@ -96,7 +93,7 @@ function IssueBoard() {
           {bhawans.data?.map((b) => (
             <Pill
               key={b.id}
-              label={b.name.replace(' Bhawan', '')}
+              label={b.id === claims?.bhawan_id ? `${b.name.replace(' Bhawan', '')} · Mine` : b.name.replace(' Bhawan', '')}
               selected={b.id === activeBhawan}
               onPress={() => setBhawanId(b.id)}
             />
@@ -104,37 +101,33 @@ function IssueBoard() {
         </ScrollView>
       ) : null}
 
-      <Card className="flex-row">
-        <Stat value={String(active.length)} label="Active" tone="text-primary" />
-        <Stat value={String(critical)} label="Critical > 48 h" tone="text-error" />
-        <Stat value={`${onTime}%`} label="Within 48 h" tone="text-tertiary" />
-      </Card>
+      <HeroCard className="flex-row">
+        <Stat value={String(active.length)} label="Active" />
+        <Stat value={String(critical)} label="Long-standing" />
+        <Stat value={`${onTime}%`} label="On time" />
+      </HeroCard>
 
-      <SectionHeader title="Issues (long-standing pinned first)" />
       {board.isPending ? (
         <ActivityIndicator />
       ) : board.isError ? (
         <Text className="font-body text-body-md text-error">{board.error.message}</Text>
       ) : rows.length === 0 ? (
-        <Card tone="low">
+        <Card>
           <Text className="font-body text-body-md text-on-surface-variant">No open issues here.</Text>
         </Card>
       ) : (
         rows.map((r) => <BoardCard key={r.id} row={r} />)
       )}
-      <Text className="font-body text-body-sm text-on-surface-variant">
-        The board is anonymous — nobody sees who raised an issue. Issues unresolved for 48 h are flagged and escalated
-        automatically.
-      </Text>
+      <Text className="text-center font-label text-label-md text-on-surface-variant">Anonymous · auto-escalates after 48 h</Text>
     </View>
   );
 }
 
-function Stat({ value, label, tone }: { value: string; label: string; tone: string }) {
+function Stat({ value, label }: { value: string; label: string }) {
   return (
     <View className="flex-1 items-center gap-space-xs">
-      <Text className={`font-headline text-headline-md ${tone}`}>{value}</Text>
-      <Text className="text-center font-label text-label-sm text-on-surface-variant">{label}</Text>
+      <Text className="font-headline text-headline-md text-on-primary">{value}</Text>
+      <Text className="text-center font-label text-label-sm uppercase text-on-primary-container">{label}</Text>
     </View>
   );
 }

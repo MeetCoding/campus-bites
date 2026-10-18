@@ -1,5 +1,5 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams } from 'expo-router';
+import { X } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
@@ -209,7 +209,7 @@ function ActionPanel({
           <View className="flex-row items-center justify-between rounded-lg bg-surface-container-low p-space-sm">
             <Text className="font-body text-body-sm text-on-surface">Proof photo attached</Text>
             <Pressable accessibilityRole="button" accessibilityLabel="Remove proof photo" onPress={() => setProof(null)}>
-              <MaterialIcons name="close" size={20} color={colors['on-surface-variant']} />
+              <X size={20} color={colors['on-surface-variant']} />
             </Pressable>
           </View>
         ) : (

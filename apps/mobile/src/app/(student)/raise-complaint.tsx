@@ -1,13 +1,12 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
+import { X } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
-import { Button, Card, Pill, Screen, TextField } from '@/components/ui';
+import { Button, Card, Pill, Screen, Segmented, TextField } from '@/components/ui';
 import { useSession } from '@/features/auth/session';
 import { useBhawans, useOutlets } from '@/features/campus/queries';
-import { Segmented } from '@/features/canteens/components';
 import { complaintErrorMessage } from '@/features/complaints/errors';
 import { CATEGORY_LABEL, HANDLER_LABEL, type ComplaintCategory, type ComplaintDomain } from '@/features/complaints/logic';
 import { MAX_PHOTOS, useRaiseComplaint } from '@/features/complaints/queries';
@@ -141,7 +140,7 @@ export default function RaiseComplaint() {
                 accessibilityLabel="Remove photo"
                 onPress={() => setPhotos((prev) => prev.filter((_, i) => i !== index))}
                 className="absolute right-1 top-1 rounded-full bg-inverse-surface/80 p-0.5">
-                <MaterialIcons name="close" size={14} color={colors['inverse-on-surface']} />
+                <X size={14} color={colors['inverse-on-surface']} />
               </Pressable>
             </View>
           ))}

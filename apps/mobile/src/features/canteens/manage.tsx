@@ -18,6 +18,7 @@ import { describeLiveStatus } from '@/features/canteens/status';
 import { describeOverride, NoticeboardCard } from '@/features/mess/components';
 import { useActiveOverrides, useCreateOverride, useRevokeOverride, useUploadMenuPhoto } from '@/features/mess/queries';
 import type { Outlet } from '@/features/campus/queries';
+import { ImpactFeedbackStyle, impactTap } from '@/lib/haptics';
 import { pickImage } from '@/lib/images';
 import { formatPaise, parseRupeesToPaise } from '@/lib/money';
 import {
@@ -56,7 +57,10 @@ export function OpenToggleCard({ outletId }: { outletId: string }) {
           value={live}
           disabled={setOpen.isPending}
           trackColor={switchColors}
-          onValueChange={(isOpen) => setOpen.mutate({ outletId, isOpen })}
+          onValueChange={(isOpen) => {
+            impactTap(ImpactFeedbackStyle.Medium);
+            setOpen.mutate({ outletId, isOpen });
+          }}
         />
       </View>
       <Text className="font-body text-body-sm text-on-surface-variant">
@@ -372,7 +376,10 @@ export function MenuItemsEditor({ outletId }: { outletId: string }) {
                   accessibilityLabel={`${item.name} in stock`}
                   value={item.in_stock}
                   trackColor={switchColors}
-                  onValueChange={(inStock) => saveItem.mutate({ ...item, in_stock: inStock })}
+                  onValueChange={(inStock) => {
+                    impactTap();
+                    saveItem.mutate({ ...item, in_stock: inStock });
+                  }}
                 />
                 <Text className="font-label text-label-sm text-on-surface-variant">
                   {item.in_stock ? 'In stock' : 'Sold out'}

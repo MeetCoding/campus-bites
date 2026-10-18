@@ -26,12 +26,13 @@ campus-bites/
 │   │   │   │   ├── (staff)/        # vendor + mess/bhawan secretary consoles
 │   │   │   │   ├── (authority)/    # mess authority (rebates), ADoSW (eatery complaints)
 │   │   │   │   └── (admin)/        # whitelist + role assignment
-│   │   │   ├── components/ui/      # primitives: Button, Card, Pill, Badge, Screen, SectionHeader, TextField (+ ZoomableImage in M3)
+│   │   │   ├── components/ui/      # primitives: Button, Card, Pill, Badge, Screen, SectionHeader, TextField, ZoomableImage, HeroCard, IconBadge, LiveDot, PressableScale, Segmented
 │   │   │   ├── features/<module>/  # mess, canteens, eateries, rebates, complaints, auth: hooks, components, queries
 │   │   │   ├── lib/
 │   │   │   │   ├── supabase.ts     # single supabase-js client (chunked SecureStore session, PKCE)
 │   │   │   │   ├── api.ts          # single FastAPI client; attaches session JWT
 │   │   │   │   ├── images.ts       # compressForUpload() — expo-image-manipulator
+│   │   │   │   ├── haptics.ts      # selectionTap / impactTap / successTap (expo-haptics, never throws)
 │   │   │   │   ├── time.ts         # IST helpers, open-now / overnight shift logic
 │   │   │   │   ├── cn.ts           # className join helper
 │   │   │   │   └── database.types.ts # GENERATED — do not edit
