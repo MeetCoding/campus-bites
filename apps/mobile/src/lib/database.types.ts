@@ -14,6 +14,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.18"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       app_settings: {
@@ -72,816 +97,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      outlets: {
-        Row: {
-          bhawan_id: string | null
-          created_at: string
-          id: string
-          is_open: boolean
-          location_tag: string | null
-          name: string
-          slug: string
-          status_updated_at: string | null
-          type: Database["public"]["Enums"]["outlet_type"]
-          updated_at: string
-        }
-        Insert: {
-          bhawan_id?: string | null
-          created_at?: string
-          id?: string
-          is_open?: boolean
-          location_tag?: string | null
-          name: string
-          slug: string
-          status_updated_at?: string | null
-          type: Database["public"]["Enums"]["outlet_type"]
-          updated_at?: string
-        }
-        Update: {
-          bhawan_id?: string | null
-          created_at?: string
-          id?: string
-          is_open?: boolean
-          location_tag?: string | null
-          name?: string
-          slug?: string
-          status_updated_at?: string | null
-          type?: Database["public"]["Enums"]["outlet_type"]
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "outlets_bhawan_id_fkey"
-            columns: ["bhawan_id"]
-            isOneToOne: false
-            referencedRelation: "bhawans"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      profiles: {
-        Row: {
-          avatar_url: string | null
-          bhawan_id: string | null
-          created_at: string
-          email: string | null
-          full_name: string | null
-          id: string
-          onboarded_at: string | null
-          phone: string | null
-          updated_at: string
-        }
-        Insert: {
-          avatar_url?: string | null
-          bhawan_id?: string | null
-          created_at?: string
-          email?: string | null
-          full_name?: string | null
-          id: string
-          onboarded_at?: string | null
-          phone?: string | null
-          updated_at?: string
-        }
-        Update: {
-          avatar_url?: string | null
-          bhawan_id?: string | null
-          created_at?: string
-          email?: string | null
-          full_name?: string | null
-          id?: string
-          onboarded_at?: string | null
-          phone?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_bhawan_id_fkey"
-            columns: ["bhawan_id"]
-            isOneToOne: false
-            referencedRelation: "bhawans"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      role_assignments: {
-        Row: {
-          assigned_by: string | null
-          bhawan_id: string | null
-          created_at: string
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Insert: {
-          assigned_by?: string | null
-          bhawan_id?: string | null
-          created_at?: string
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
-          assigned_by?: string | null
-          bhawan_id?: string | null
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "role_assignments_assigned_by_fkey"
-            columns: ["assigned_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "role_assignments_bhawan_id_fkey"
-            columns: ["bhawan_id"]
-            isOneToOne: false
-            referencedRelation: "bhawans"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "role_assignments_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      extra_items: {
-        Row: {
-          available: boolean
-          bhawan_id: string
-          created_at: string
-          id: string
-          name: string
-          price_paise: number
-          sort_order: number
-          unit: string | null
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          available?: boolean
-          bhawan_id: string
-          created_at?: string
-          id?: string
-          name: string
-          price_paise: number
-          sort_order?: number
-          unit?: string | null
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          available?: boolean
-          bhawan_id?: string
-          created_at?: string
-          id?: string
-          name?: string
-          price_paise?: number
-          sort_order?: number
-          unit?: string | null
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "extra_items_bhawan_id_fkey"
-            columns: ["bhawan_id"]
-            isOneToOne: false
-            referencedRelation: "bhawans"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "extra_items_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      meal_timings: {
-        Row: {
-          bhawan_id: string | null
-          closes_at: string
-          created_at: string
-          day_type: Database["public"]["Enums"]["day_type"]
-          id: string
-          opens_at: string
-          slot: Database["public"]["Enums"]["meal_slot"]
-          updated_at: string
-        }
-        Insert: {
-          bhawan_id?: string | null
-          closes_at: string
-          created_at?: string
-          day_type: Database["public"]["Enums"]["day_type"]
-          id?: string
-          opens_at: string
-          slot: Database["public"]["Enums"]["meal_slot"]
-          updated_at?: string
-        }
-        Update: {
-          bhawan_id?: string | null
-          closes_at?: string
-          created_at?: string
-          day_type?: Database["public"]["Enums"]["day_type"]
-          id?: string
-          opens_at?: string
-          slot?: Database["public"]["Enums"]["meal_slot"]
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "meal_timings_bhawan_id_fkey"
-            columns: ["bhawan_id"]
-            isOneToOne: false
-            referencedRelation: "bhawans"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      menu_photos: {
-        Row: {
-          created_at: string
-          height: number | null
-          id: string
-          is_current: boolean
-          outlet_id: string
-          storage_path: string
-          uploaded_by: string | null
-          week_start: string | null
-          width: number | null
-        }
-        Insert: {
-          created_at?: string
-          height?: number | null
-          id?: string
-          is_current?: boolean
-          outlet_id: string
-          storage_path: string
-          uploaded_by?: string | null
-          week_start?: string | null
-          width?: number | null
-        }
-        Update: {
-          created_at?: string
-          height?: number | null
-          id?: string
-          is_current?: boolean
-          outlet_id?: string
-          storage_path?: string
-          uploaded_by?: string | null
-          week_start?: string | null
-          width?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "menu_photos_outlet_id_fkey"
-            columns: ["outlet_id"]
-            isOneToOne: false
-            referencedRelation: "outlets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "menu_photos_uploaded_by_fkey"
-            columns: ["uploaded_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      photo_reports: {
-        Row: {
-          created_at: string
-          id: string
-          photo_id: string
-          reason: string
-          reported_by: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          photo_id: string
-          reason: string
-          reported_by?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          photo_id?: string
-          reason?: string
-          reported_by?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "photo_reports_photo_id_fkey"
-            columns: ["photo_id"]
-            isOneToOne: false
-            referencedRelation: "menu_photos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "photo_reports_reported_by_fkey"
-            columns: ["reported_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      push_tokens: {
-        Row: {
-          created_at: string
-          expo_token: string
-          id: string
-          last_seen_at: string
-          platform: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          expo_token: string
-          id?: string
-          last_seen_at?: string
-          platform: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          expo_token?: string
-          id?: string
-          last_seen_at?: string
-          platform?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "push_tokens_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      timing_overrides: {
-        Row: {
-          closes_at: string | null
-          created_at: string
-          created_by: string | null
-          ends_on: string
-          id: string
-          is_closed: boolean
-          opens_at: string | null
-          outlet_id: string
-          reason: string
-          revoked_at: string | null
-          slot: Database["public"]["Enums"]["meal_slot"] | null
-          starts_on: string
-        }
-        Insert: {
-          closes_at?: string | null
-          created_at?: string
-          created_by?: string | null
-          ends_on: string
-          id?: string
-          is_closed?: boolean
-          opens_at?: string | null
-          outlet_id: string
-          reason: string
-          revoked_at?: string | null
-          slot?: Database["public"]["Enums"]["meal_slot"] | null
-          starts_on: string
-        }
-        Update: {
-          closes_at?: string | null
-          created_at?: string
-          created_by?: string | null
-          ends_on?: string
-          id?: string
-          is_closed?: boolean
-          opens_at?: string | null
-          outlet_id?: string
-          reason?: string
-          revoked_at?: string | null
-          slot?: Database["public"]["Enums"]["meal_slot"] | null
-          starts_on?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "timing_overrides_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "timing_overrides_outlet_id_fkey"
-            columns: ["outlet_id"]
-            isOneToOne: false
-            referencedRelation: "outlets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      weekly_menus: {
-        Row: {
-          bhawan_id: string
-          created_at: string
-          id: string
-          items: Json
-          updated_at: string
-          updated_by: string | null
-          week_start: string
-        }
-        Insert: {
-          bhawan_id: string
-          created_at?: string
-          id?: string
-          items?: Json
-          updated_at?: string
-          updated_by?: string | null
-          week_start: string
-        }
-        Update: {
-          bhawan_id?: string
-          created_at?: string
-          id?: string
-          items?: Json
-          updated_at?: string
-          updated_by?: string | null
-          week_start?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "weekly_menus_bhawan_id_fkey"
-            columns: ["bhawan_id"]
-            isOneToOne: false
-            referencedRelation: "bhawans"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "weekly_menus_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      whitelisted_vendors: {
-        Row: {
-          active: boolean
-          added_by: string | null
-          created_at: string
-          id: string
-          label: string | null
-          outlet_id: string
-          phone_e164: string
-          updated_at: string
-        }
-        Insert: {
-          active?: boolean
-          added_by?: string | null
-          created_at?: string
-          id?: string
-          label?: string | null
-          outlet_id: string
-          phone_e164: string
-          updated_at?: string
-        }
-        Update: {
-          active?: boolean
-          added_by?: string | null
-          created_at?: string
-          id?: string
-          label?: string | null
-          outlet_id?: string
-          phone_e164?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "whitelisted_vendors_added_by_fkey"
-            columns: ["added_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "whitelisted_vendors_outlet_id_fkey"
-            columns: ["outlet_id"]
-            isOneToOne: false
-            referencedRelation: "outlets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      fixed_rate_items: {
-        Row: {
-          bhawan_id: string
-          ceiling_price_paise: number
-          circular_ref: string | null
-          created_at: string
-          description: string | null
-          effective_from: string
-          id: string
-          name: string
-          sort_order: number
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          bhawan_id: string
-          ceiling_price_paise: number
-          circular_ref?: string | null
-          created_at?: string
-          description?: string | null
-          effective_from?: string
-          id?: string
-          name: string
-          sort_order?: number
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          bhawan_id?: string
-          ceiling_price_paise?: number
-          circular_ref?: string | null
-          created_at?: string
-          description?: string | null
-          effective_from?: string
-          id?: string
-          name?: string
-          sort_order?: number
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fixed_rate_items_bhawan_id_fkey"
-            columns: ["bhawan_id"]
-            isOneToOne: false
-            referencedRelation: "bhawans"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fixed_rate_items_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      menu_items: {
-        Row: {
-          category: string | null
-          created_at: string
-          description: string | null
-          id: string
-          in_stock: boolean
-          name: string
-          outlet_id: string
-          price_paise: number
-          sort_order: number
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          in_stock?: boolean
-          name: string
-          outlet_id: string
-          price_paise: number
-          sort_order?: number
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          in_stock?: boolean
-          name?: string
-          outlet_id?: string
-          price_paise?: number
-          sort_order?: number
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "menu_items_outlet_id_fkey"
-            columns: ["outlet_id"]
-            isOneToOne: false
-            referencedRelation: "outlet_live_status"
-            referencedColumns: ["outlet_id"]
-          },
-          {
-            foreignKeyName: "menu_items_outlet_id_fkey"
-            columns: ["outlet_id"]
-            isOneToOne: false
-            referencedRelation: "outlets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "menu_items_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      outlet_shifts: {
-        Row: {
-          closes_at: string
-          created_at: string
-          id: string
-          opens_at: string
-          outlet_id: string
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          closes_at: string
-          created_at?: string
-          id?: string
-          opens_at: string
-          outlet_id: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          closes_at?: string
-          created_at?: string
-          id?: string
-          opens_at?: string
-          outlet_id?: string
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "outlet_shifts_outlet_id_fkey"
-            columns: ["outlet_id"]
-            isOneToOne: true
-            referencedRelation: "outlet_live_status"
-            referencedColumns: ["outlet_id"]
-          },
-          {
-            foreignKeyName: "outlet_shifts_outlet_id_fkey"
-            columns: ["outlet_id"]
-            isOneToOne: true
-            referencedRelation: "outlets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "outlet_shifts_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      rebate_applications: {
-        Row: {
-          authority_remarks: string | null
-          bhawan_id: string
-          created_at: string
-          days: number | null
-          document_path: string | null
-          end_date: string
-          id: string
-          reason: string
-          reviewed_at: string | null
-          reviewed_by: string | null
-          start_date: string
-          status: Database["public"]["Enums"]["rebate_status"]
-          student_email: string | null
-          student_id: string
-          student_name: string | null
-          updated_at: string
-        }
-        Insert: {
-          authority_remarks?: string | null
-          bhawan_id: string
-          created_at?: string
-          days?: number | null
-          document_path?: string | null
-          end_date: string
-          id?: string
-          reason: string
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          start_date: string
-          status?: Database["public"]["Enums"]["rebate_status"]
-          student_email?: string | null
-          student_id: string
-          student_name?: string | null
-          updated_at?: string
-        }
-        Update: {
-          authority_remarks?: string | null
-          bhawan_id?: string
-          created_at?: string
-          days?: number | null
-          document_path?: string | null
-          end_date?: string
-          id?: string
-          reason?: string
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          start_date?: string
-          status?: Database["public"]["Enums"]["rebate_status"]
-          student_email?: string | null
-          student_id?: string
-          student_name?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "rebate_applications_bhawan_id_fkey"
-            columns: ["bhawan_id"]
-            isOneToOne: false
-            referencedRelation: "bhawans"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "rebate_applications_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "rebate_applications_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      rebate_events: {
-        Row: {
-          actor_id: string | null
-          created_at: string
-          from_status: Database["public"]["Enums"]["rebate_status"] | null
-          id: string
-          rebate_id: string
-          remarks: string | null
-          to_status: Database["public"]["Enums"]["rebate_status"]
-        }
-        Insert: {
-          actor_id?: string | null
-          created_at?: string
-          from_status?: Database["public"]["Enums"]["rebate_status"] | null
-          id?: string
-          rebate_id: string
-          remarks?: string | null
-          to_status: Database["public"]["Enums"]["rebate_status"]
-        }
-        Update: {
-          actor_id?: string | null
-          created_at?: string
-          from_status?: Database["public"]["Enums"]["rebate_status"] | null
-          id?: string
-          rebate_id?: string
-          remarks?: string | null
-          to_status?: Database["public"]["Enums"]["rebate_status"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "rebate_events_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "rebate_events_rebate_id_fkey"
-            columns: ["rebate_id"]
-            isOneToOne: false
-            referencedRelation: "rebate_applications"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       complaint_events: {
         Row: {
@@ -1068,6 +283,837 @@ export type Database = {
           },
         ]
       }
+      extra_items: {
+        Row: {
+          available: boolean
+          bhawan_id: string
+          created_at: string
+          id: string
+          name: string
+          price_paise: number
+          sort_order: number
+          unit: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          available?: boolean
+          bhawan_id: string
+          created_at?: string
+          id?: string
+          name: string
+          price_paise: number
+          sort_order?: number
+          unit?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          available?: boolean
+          bhawan_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          price_paise?: number
+          sort_order?: number
+          unit?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "extra_items_bhawan_id_fkey"
+            columns: ["bhawan_id"]
+            isOneToOne: false
+            referencedRelation: "bhawans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "extra_items_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fixed_rate_items: {
+        Row: {
+          bhawan_id: string
+          ceiling_price_paise: number
+          circular_ref: string | null
+          created_at: string
+          description: string | null
+          effective_from: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          bhawan_id: string
+          ceiling_price_paise: number
+          circular_ref?: string | null
+          created_at?: string
+          description?: string | null
+          effective_from?: string
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          bhawan_id?: string
+          ceiling_price_paise?: number
+          circular_ref?: string | null
+          created_at?: string
+          description?: string | null
+          effective_from?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_rate_items_bhawan_id_fkey"
+            columns: ["bhawan_id"]
+            isOneToOne: false
+            referencedRelation: "bhawans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_rate_items_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meal_timings: {
+        Row: {
+          bhawan_id: string | null
+          closes_at: string
+          created_at: string
+          day_type: Database["public"]["Enums"]["day_type"]
+          id: string
+          opens_at: string
+          slot: Database["public"]["Enums"]["meal_slot"]
+          updated_at: string
+        }
+        Insert: {
+          bhawan_id?: string | null
+          closes_at: string
+          created_at?: string
+          day_type: Database["public"]["Enums"]["day_type"]
+          id?: string
+          opens_at: string
+          slot: Database["public"]["Enums"]["meal_slot"]
+          updated_at?: string
+        }
+        Update: {
+          bhawan_id?: string | null
+          closes_at?: string
+          created_at?: string
+          day_type?: Database["public"]["Enums"]["day_type"]
+          id?: string
+          opens_at?: string
+          slot?: Database["public"]["Enums"]["meal_slot"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_timings_bhawan_id_fkey"
+            columns: ["bhawan_id"]
+            isOneToOne: false
+            referencedRelation: "bhawans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_items: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          in_stock: boolean
+          name: string
+          outlet_id: string
+          price_paise: number
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          in_stock?: boolean
+          name: string
+          outlet_id: string
+          price_paise: number
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          in_stock?: boolean
+          name?: string
+          outlet_id?: string
+          price_paise?: number
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "outlet_live_status"
+            referencedColumns: ["outlet_id"]
+          },
+          {
+            foreignKeyName: "menu_items_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_items_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_photos: {
+        Row: {
+          created_at: string
+          height: number | null
+          id: string
+          is_current: boolean
+          outlet_id: string
+          storage_path: string
+          uploaded_by: string | null
+          week_start: string | null
+          width: number | null
+        }
+        Insert: {
+          created_at?: string
+          height?: number | null
+          id?: string
+          is_current?: boolean
+          outlet_id: string
+          storage_path: string
+          uploaded_by?: string | null
+          week_start?: string | null
+          width?: number | null
+        }
+        Update: {
+          created_at?: string
+          height?: number | null
+          id?: string
+          is_current?: boolean
+          outlet_id?: string
+          storage_path?: string
+          uploaded_by?: string | null
+          week_start?: string | null
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_photos_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "outlet_live_status"
+            referencedColumns: ["outlet_id"]
+          },
+          {
+            foreignKeyName: "menu_photos_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_photos_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outlet_shifts: {
+        Row: {
+          closes_at: string
+          created_at: string
+          id: string
+          opens_at: string
+          outlet_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          closes_at: string
+          created_at?: string
+          id?: string
+          opens_at: string
+          outlet_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          closes_at?: string
+          created_at?: string
+          id?: string
+          opens_at?: string
+          outlet_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outlet_shifts_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: true
+            referencedRelation: "outlet_live_status"
+            referencedColumns: ["outlet_id"]
+          },
+          {
+            foreignKeyName: "outlet_shifts_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: true
+            referencedRelation: "outlets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outlet_shifts_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outlets: {
+        Row: {
+          bhawan_id: string | null
+          created_at: string
+          id: string
+          is_open: boolean
+          location_tag: string | null
+          name: string
+          slug: string
+          status_updated_at: string | null
+          type: Database["public"]["Enums"]["outlet_type"]
+          updated_at: string
+        }
+        Insert: {
+          bhawan_id?: string | null
+          created_at?: string
+          id?: string
+          is_open?: boolean
+          location_tag?: string | null
+          name: string
+          slug: string
+          status_updated_at?: string | null
+          type: Database["public"]["Enums"]["outlet_type"]
+          updated_at?: string
+        }
+        Update: {
+          bhawan_id?: string | null
+          created_at?: string
+          id?: string
+          is_open?: boolean
+          location_tag?: string | null
+          name?: string
+          slug?: string
+          status_updated_at?: string | null
+          type?: Database["public"]["Enums"]["outlet_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outlets_bhawan_id_fkey"
+            columns: ["bhawan_id"]
+            isOneToOne: false
+            referencedRelation: "bhawans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      photo_reports: {
+        Row: {
+          created_at: string
+          id: string
+          photo_id: string
+          reason: string
+          reported_by: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          photo_id: string
+          reason: string
+          reported_by?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          photo_id?: string
+          reason?: string
+          reported_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photo_reports_photo_id_fkey"
+            columns: ["photo_id"]
+            isOneToOne: false
+            referencedRelation: "menu_photos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_reports_reported_by_fkey"
+            columns: ["reported_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bhawan_id: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          onboarded_at: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bhawan_id?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          onboarded_at?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bhawan_id?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          onboarded_at?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_bhawan_id_fkey"
+            columns: ["bhawan_id"]
+            isOneToOne: false
+            referencedRelation: "bhawans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_tokens: {
+        Row: {
+          created_at: string
+          expo_token: string
+          id: string
+          last_seen_at: string
+          platform: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expo_token: string
+          id?: string
+          last_seen_at?: string
+          platform: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expo_token?: string
+          id?: string
+          last_seen_at?: string
+          platform?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rebate_applications: {
+        Row: {
+          authority_remarks: string | null
+          bhawan_id: string
+          created_at: string
+          days: number | null
+          document_path: string | null
+          end_date: string
+          id: string
+          reason: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["rebate_status"]
+          student_email: string | null
+          student_id: string
+          student_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          authority_remarks?: string | null
+          bhawan_id: string
+          created_at?: string
+          days?: number | null
+          document_path?: string | null
+          end_date: string
+          id?: string
+          reason: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["rebate_status"]
+          student_email?: string | null
+          student_id: string
+          student_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          authority_remarks?: string | null
+          bhawan_id?: string
+          created_at?: string
+          days?: number | null
+          document_path?: string | null
+          end_date?: string
+          id?: string
+          reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["rebate_status"]
+          student_email?: string | null
+          student_id?: string
+          student_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rebate_applications_bhawan_id_fkey"
+            columns: ["bhawan_id"]
+            isOneToOne: false
+            referencedRelation: "bhawans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rebate_applications_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rebate_applications_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rebate_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          from_status: Database["public"]["Enums"]["rebate_status"] | null
+          id: string
+          rebate_id: string
+          remarks: string | null
+          to_status: Database["public"]["Enums"]["rebate_status"]
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["rebate_status"] | null
+          id?: string
+          rebate_id: string
+          remarks?: string | null
+          to_status: Database["public"]["Enums"]["rebate_status"]
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["rebate_status"] | null
+          id?: string
+          rebate_id?: string
+          remarks?: string | null
+          to_status?: Database["public"]["Enums"]["rebate_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rebate_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rebate_events_rebate_id_fkey"
+            columns: ["rebate_id"]
+            isOneToOne: false
+            referencedRelation: "rebate_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      role_assignments: {
+        Row: {
+          assigned_by: string | null
+          bhawan_id: string | null
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          bhawan_id?: string | null
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          bhawan_id?: string | null
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_assignments_bhawan_id_fkey"
+            columns: ["bhawan_id"]
+            isOneToOne: false
+            referencedRelation: "bhawans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timing_overrides: {
+        Row: {
+          closes_at: string | null
+          created_at: string
+          created_by: string | null
+          ends_on: string
+          id: string
+          is_closed: boolean
+          opens_at: string | null
+          outlet_id: string
+          reason: string
+          revoked_at: string | null
+          slot: Database["public"]["Enums"]["meal_slot"] | null
+          starts_on: string
+        }
+        Insert: {
+          closes_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          ends_on: string
+          id?: string
+          is_closed?: boolean
+          opens_at?: string | null
+          outlet_id: string
+          reason: string
+          revoked_at?: string | null
+          slot?: Database["public"]["Enums"]["meal_slot"] | null
+          starts_on: string
+        }
+        Update: {
+          closes_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          ends_on?: string
+          id?: string
+          is_closed?: boolean
+          opens_at?: string | null
+          outlet_id?: string
+          reason?: string
+          revoked_at?: string | null
+          slot?: Database["public"]["Enums"]["meal_slot"] | null
+          starts_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timing_overrides_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timing_overrides_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "outlet_live_status"
+            referencedColumns: ["outlet_id"]
+          },
+          {
+            foreignKeyName: "timing_overrides_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      weekly_menus: {
+        Row: {
+          bhawan_id: string
+          created_at: string
+          id: string
+          items: Json
+          updated_at: string
+          updated_by: string | null
+          week_start: string
+        }
+        Insert: {
+          bhawan_id: string
+          created_at?: string
+          id?: string
+          items?: Json
+          updated_at?: string
+          updated_by?: string | null
+          week_start: string
+        }
+        Update: {
+          bhawan_id?: string
+          created_at?: string
+          id?: string
+          items?: Json
+          updated_at?: string
+          updated_by?: string | null
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_menus_bhawan_id_fkey"
+            columns: ["bhawan_id"]
+            isOneToOne: false
+            referencedRelation: "bhawans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weekly_menus_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whitelisted_vendors: {
+        Row: {
+          active: boolean
+          added_by: string | null
+          created_at: string
+          id: string
+          label: string | null
+          outlet_id: string
+          phone_e164: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          label?: string | null
+          outlet_id: string
+          phone_e164: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          label?: string | null
+          outlet_id?: string
+          phone_e164?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whitelisted_vendors_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whitelisted_vendors_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "outlet_live_status"
+            referencedColumns: ["outlet_id"]
+          },
+          {
+            foreignKeyName: "whitelisted_vendors_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       mess_schedule_today: {
@@ -1110,6 +1156,41 @@ export type Database = {
       }
     }
     Functions: {
+      admin_create_bhawan: {
+        Args: { p_name: string; p_slug: string; p_sort_order?: number }
+        Returns: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "bhawans"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_delete_bhawan: { Args: { p_id: string }; Returns: boolean }
+      admin_update_bhawan: {
+        Args: { p_id: string; p_name?: string; p_sort_order?: number }
+        Returns: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "bhawans"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       complaint_board: {
         Args: {
           p_bhawan?: string
@@ -1455,6 +1536,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: [

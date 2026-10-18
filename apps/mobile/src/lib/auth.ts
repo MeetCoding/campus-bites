@@ -1,5 +1,6 @@
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
+import { Platform } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
 
@@ -17,14 +18,19 @@ function readParam(url: URL, name: string): string | null {
   return url.searchParams.get(name) ?? fromFragment;
 }
 
-/** Google sign-in via Supabase PKCE in an in-app browser (ARCHITECTURE.md §3.1). */
+/**
+ * Google sign-in via Supabase PKCE in an in-app browser (ARCHITECTURE.md §3.1). On web the whole
+ * page goes to Google and comes back to /auth-callback, which calls completeWebGoogleSignIn():
+ * a popup can't hand the code back because Google's Cross-Origin-Opener-Policy cuts it off.
+ */
 export async function signInWithGoogle(): Promise<AuthResult> {
   const redirectTo = Linking.createURL(OAUTH_REDIRECT_PATH);
+  const web = Platform.OS === 'web';
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo,
-      skipBrowserRedirect: true,
+      skipBrowserRedirect: !web,
       // `hd` only narrows Google's account picker; the before_user_created hook enforces the domain.
       queryParams: { hd: 'iitr.ac.in', prompt: 'select_account' },
     },
@@ -32,13 +38,22 @@ export async function signInWithGoogle(): Promise<AuthResult> {
   if (error || !data.url) {
     return { ok: false, message: error?.message ?? 'Could not start Google sign-in.' };
   }
+  if (web) return { ok: true }; // the browser is already navigating to Google
 
   const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
   if (result.type !== 'success') {
     return { ok: false, cancelled: true, message: 'Sign-in cancelled.' };
   }
+  return exchangeRedirect(result.url);
+}
 
-  const url = new URL(result.url);
+/** Web only: finishes the redirect flow on /auth-callback. */
+export function completeWebGoogleSignIn(): Promise<AuthResult> {
+  return exchangeRedirect(window.location.href);
+}
+
+async function exchangeRedirect(redirectUrl: string): Promise<AuthResult> {
+  const url = new URL(redirectUrl);
   const failure = readParam(url, 'error_description') ?? readParam(url, 'error');
   if (failure) {
     return { ok: false, message: failure.replace(/\+/g, ' ') };

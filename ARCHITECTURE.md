@@ -79,6 +79,7 @@ A user can hold several roles (e.g. a student who is also Mess Secretary). Offic
 1. App: `signInWithOAuth({ provider: 'google' })` with PKCE and `skipBrowserRedirect`, opened in an in-app browser (`WebBrowser.openAuthSessionAsync`). `hd=iitr.ac.in` is passed as a UX hint only.
 2. Google → Supabase → redirect back to `campusbites://…` (dev/production build) or `exp://…` (Expo Go); both are on the Supabase redirect allow-list.
 3. App: `exchangeCodeForSession(code)` (`src/app/auth-callback.tsx`).
+   - **Web build** (`expo start --web`, single-page output): no popup — Google's Cross-Origin-Opener-Policy stops a popup handing the code back. The whole page redirects to Google and returns to `<origin>/auth-callback?code=…`, where the screen calls `completeWebGoogleSignIn()`. The origin (e.g. `http://localhost:8081/**`) must be on the redirect allow-list and in the API's `CORS_ORIGINS`.
 4. **First sign-in only:** before the user row is created, `public.hook_before_user_created` runs: the identity must be the **google** provider and the email must match `^[^@\s]+@([a-z0-9-]+\.)?iitr\.ac\.in$` (covers `@iitr.ac.in` and every `@<dept>.iitr.ac.in`). Anything else is rejected with a readable error and no account is created. Email/password sign-ups are rejected by the same hook.
 5. Trigger `handle_new_user` creates the `profiles` row (email, name, avatar from Google).
 

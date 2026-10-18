@@ -23,7 +23,7 @@
       "package": "in.ac.iitr.campusbites"
     },
     "web": {
-      "output": "server",
+      "output": "single",
       "favicon": "./assets/images/favicon.png",
       "bundler": "metro"
     },
