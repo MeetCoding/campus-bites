@@ -59,7 +59,7 @@ Timezone for every business rule: **`Asia/Kolkata`** (IST, no DST). Times of day
 | `bhawan_secretary` | Assigned by admin (per Bhawan) | `(staff)` + student | Same outlet tools as a vendor for both canteens of their Bhawan; Institute fixed-rate card; handles hostel-canteen complaints |
 | `mess_authority` (Warden office) | Assigned by admin (per Bhawan) | `(authority)` | Rebate queue for their Bhawan(s): biometric cross-check → approve / reject with remarks; sees (read-only) and is alerted about escalated complaints of their Bhawan |
 | `adosw` | Assigned by admin (campus-wide) | `(authority)` | Handles campus-eatery complaints; oversees every complaint, incl. a cross-Bhawan long-standing queue |
-| `admin` | Assigned by another admin (first one bootstrapped by SQL, §4.4) | `(admin)` | Vendor whitelist, role assignments |
+| `admin` | Assigned by another admin (first one bootstrapped by SQL, §4.4) | `(admin)` | Vendor whitelist, role assignments, master list of Bhawans and eateries |
 
 A user can hold several roles (e.g. a student who is also Mess Secretary). Officials (`mess_authority`, `adosw`) do **not** also get `student`.
 
@@ -134,7 +134,7 @@ Templates: `apps/mobile/.env.example`, `apps/api/env.example` (committed). Real 
 
 ## 4. Admin operations (runbook)
 
-All admin actions go through FastAPI (`/v1/admin/*`), which re-checks `admin` in the database on **every** call. The app's `(admin)` area has a Whitelist screen and a Roles screen.
+All admin actions go through FastAPI (`/v1/admin/*`), which re-checks `admin` in the database on **every** call. The app's `(admin)` area has Whitelist, Roles, Bhawans and Campus eateries screens.
 
 ### 4.1 Onboard a vendor (canteen owner / eatery staff)
 1. **App → Admin → Whitelist:** enter the phone (`+91…`, normalised to E.164), pick the outlet, optional label → `POST /v1/admin/vendor-whitelist`. One phone may own many outlets (one row per outlet); duplicates → `WHITELIST_DUPLICATE`.
@@ -159,8 +159,12 @@ select id, 'admin' from public.profiles where email = '<you>@<dept>.iitr.ac.in';
 ```
 Sign out and back in. Every later admin is added from the app.
 
-### 4.5 Add a Bhawan or outlet
-No admin UI yet: insert via a migration/seed (`bhawans`, then `outlets`). New canteens/eateries get default hours automatically (trigger, §6.4) and must be whitelisted for a vendor.
+### 4.5 Manage the Bhawans and eateries (master list)
+- **App → Admin → Bhawans:** add by name → `POST /v1/admin/bhawans` (slug derived from the name minus "Bhawan", e.g. `kasturba`; appended to the end of lists). The service-role RPC `admin_create_bhawan` creates the Bhawan **and** its Mess, Day Canteen and Night Canteen in one transaction; canteens get default shifts (trigger, §6.4) and the mess uses the institute meal timings. Then assign its secretaries (§4.2) and whitelist the canteen owners (§4.1).
+- **Rename / reorder:** `PATCH /v1/admin/bhawans/{id}` (`name`, `sort_order`) → `admin_update_bhawan` renames its three outlets to match; slugs never change.
+- **Remove:** `DELETE /v1/admin/bhawans/{id}` → `admin_delete_bhawan`, only for a Bhawan added by mistake: refused with `BHAWAN_IN_USE` once a student has picked it or it has rebate/complaint history. Menus, rate cards, shifts, overrides, whitelist rows and role assignments cascade.
+- **App → Admin → Campus eateries:** `POST /v1/admin/eateries` (`name`, optional `location_tag`; default 10:00–22:00 hours), `PATCH /v1/admin/eateries/{id}` (only the fields sent; `location_tag: null` clears it), `DELETE /v1/admin/eateries/{id}` (`EATERY_IN_USE` if it has complaints; its menu, hours and whitelist rows cascade). Whitelist the owner afterwards (§4.1).
+- Errors: `BHAWAN_DUPLICATE` / `EATERY_DUPLICATE` (name or slug taken), `NOTHING_TO_UPDATE`, `INVALID_NAME`, `BHAWAN_NOT_FOUND` / `EATERY_NOT_FOUND`. Mutations refetch every query in the app, since Bhawans and outlets feed most screens.
 
 ## 5. Code layout & conventions
 
@@ -250,8 +254,8 @@ Enums: `app_role` · `outlet_type` (`mess`, `day_canteen`, `night_canteen`, `eat
 | Table | Key columns | Writes |
 | --- | --- | --- |
 | `app_settings` | single row of business constants (§4.3) | migration only |
-| `bhawans` | `name`, `slug`, `sort_order` | seed |
-| `outlets` | `type`, `bhawan_id?` (null = eatery), `name`, `slug`, `location_tag`, `is_open`, `status_updated_at` | seed; outlet managers: `is_open`, `location_tag` (column grants) |
+| `bhawans` | `name`, `slug`, `sort_order` | seed; API (admin, via `admin_*_bhawan` RPCs) |
+| `outlets` | `type`, `bhawan_id?` (null = eatery), `name`, `slug`, `location_tag`, `is_open`, `status_updated_at` | seed; API (admin: Bhawan outlets via the RPCs, eateries directly); outlet managers: `is_open`, `location_tag` (column grants) |
 | `profiles` | `id → auth.users`, `email`, `phone`, `full_name`, `bhawan_id` (set once), `onboarded_at` | trigger; owner sets Bhawan once |
 | `role_assignments` | `user_id`, `role`, `bhawan_id?`, `assigned_by` — one Mess Secretary per Bhawan | API (admin) |
 | `whitelisted_vendors` | `phone_e164`, `outlet_id`, `label`, `active` | API (admin) |
@@ -269,7 +273,7 @@ Enums: `app_role` · `outlet_type` (`mess`, `day_canteen`, `night_canteen`, `eat
 Views/RPCs: `mess_schedule_today`, `outlet_live_status`, `search_food()`, `register_push_token()`, `complaint_board()`; service-role only: `complaint_transition()`, `complaint_nudge()`, `complaint_escalate_due()`. Storage buckets: `noticeboard-photos` (public, 5 MB, images), `rebate-documents` (private, 5 MB, images + PDF), `complaint-attachments` (private, 5 MB, images).
 
 ### 7.1 Seed roster (`supabase/seed.sql`)
-11 Bhawans — Rajendra, Radhakrishna, Ganga, Cautley, Rajiv, Himalaya, Vivekananda, Govind, Vigyan, Sarojini, Jawahar — each with a Mess, Day Canteen and Night Canteen, plus 4 eateries (CBRI Canteen, Cafe Coffee Day, Amul, Yippe Kiosk) = 37 outlets. V1 vendor whitelist: one shared owner phone `+919510709195` for all 22 canteens + 4 eateries (replace per outlet via the admin console as owners onboard).
+Seeded with 11 Bhawans (admins add more in the app, §4.5) — Rajendra, Radhakrishna, Ganga, Cautley, Rajiv, Himalaya, Vivekananda, Govind, Vigyan, Sarojini, Jawahar — each with a Mess, Day Canteen and Night Canteen, plus 4 eateries (CBRI Canteen, Cafe Coffee Day, Amul, Yippe Kiosk) = 37 outlets. V1 vendor whitelist: one shared owner phone `+919510709195` for all 22 canteens + 4 eateries (replace per outlet via the admin console as owners onboard).
 
 ## 8. Environments & deployment
 

@@ -15,6 +15,16 @@ const SECTIONS = [
     title: 'Roles',
     detail: 'Assign Mess / Bhawan Secretaries, Mess Authority, ADoSW and admins.',
   },
+  {
+    href: '/manage-bhawans',
+    title: 'Bhawans',
+    detail: 'Add, rename, reorder or remove hostels (each with its Mess and canteens).',
+  },
+  {
+    href: '/manage-eateries',
+    title: 'Campus eateries',
+    detail: 'Add, rename, relocate or remove campus eateries.',
+  },
 ] as const;
 
 export default function AdminHome() {

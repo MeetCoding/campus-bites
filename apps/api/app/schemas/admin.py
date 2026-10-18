@@ -73,3 +73,57 @@ class ProfileSummary(BaseModel):
     id: UUID
     email: str | None = None
     full_name: str | None = None
+
+
+class BhawanCreate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    name: str = Field(min_length=3, max_length=60, description="e.g. Kasturba Bhawan")
+    sort_order: int | None = Field(default=None, ge=0, description="Defaults to the end.")
+
+
+class BhawanUpdate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    name: str | None = Field(default=None, min_length=3, max_length=60)
+    sort_order: int | None = Field(default=None, ge=0)
+
+
+class BhawanOut(BaseModel):
+    id: UUID
+    name: str
+    slug: str
+    sort_order: int
+
+
+class EateryCreate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    name: str = Field(min_length=2, max_length=60)
+    location_tag: str | None = Field(default=None, max_length=60)
+
+    @field_validator("location_tag")
+    @classmethod
+    def _blank_is_none(cls, value: str | None) -> str | None:
+        return value or None
+
+
+class EateryUpdate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    name: str | None = Field(default=None, min_length=2, max_length=60)
+    location_tag: str | None = Field(
+        default=None, max_length=60, description='Send null or "" to clear it.'
+    )
+
+    @field_validator("location_tag")
+    @classmethod
+    def _blank_is_none(cls, value: str | None) -> str | None:
+        return value or None
+
+
+class EateryOut(BaseModel):
+    id: UUID
+    name: str
+    slug: str
+    location_tag: str | None = None

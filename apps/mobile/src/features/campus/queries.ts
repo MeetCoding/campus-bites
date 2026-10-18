@@ -11,7 +11,7 @@ export const campusKeys = {
   outlets: ['outlets'] as const,
 };
 
-/** All 11 Bhawans in official order (readable by any signed-in user). */
+/** All Bhawans in official order (readable by any signed-in user). */
 export function useBhawans() {
   return useQuery({
     queryKey: campusKeys.bhawans,

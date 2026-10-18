@@ -6,6 +6,12 @@ from fastapi import APIRouter, Depends, status
 from app.core.auth import CurrentUser, require_role
 from app.repositories.admin import AdminRepository, get_admin_repository
 from app.schemas.admin import (
+    BhawanCreate,
+    BhawanOut,
+    BhawanUpdate,
+    EateryCreate,
+    EateryOut,
+    EateryUpdate,
     RoleAssignmentCreate,
     RoleAssignmentOut,
     WhitelistCreate,
@@ -62,3 +68,37 @@ async def assign_role(
 @router.delete("/role-assignments/{assignment_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def revoke_role(actor: Admin, service: Service, assignment_id: UUID) -> None:
     await service.revoke_role(actor, assignment_id)
+
+
+@router.post("/bhawans", response_model=BhawanOut, status_code=status.HTTP_201_CREATED)
+async def create_bhawan(actor: Admin, service: Service, body: BhawanCreate) -> BhawanOut:
+    return await service.create_bhawan(actor, body)
+
+
+@router.patch("/bhawans/{bhawan_id}", response_model=BhawanOut)
+async def update_bhawan(
+    actor: Admin, service: Service, bhawan_id: UUID, body: BhawanUpdate
+) -> BhawanOut:
+    return await service.update_bhawan(actor, bhawan_id, body)
+
+
+@router.delete("/bhawans/{bhawan_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_bhawan(actor: Admin, service: Service, bhawan_id: UUID) -> None:
+    await service.delete_bhawan(actor, bhawan_id)
+
+
+@router.post("/eateries", response_model=EateryOut, status_code=status.HTTP_201_CREATED)
+async def create_eatery(actor: Admin, service: Service, body: EateryCreate) -> EateryOut:
+    return await service.create_eatery(actor, body)
+
+
+@router.patch("/eateries/{eatery_id}", response_model=EateryOut)
+async def update_eatery(
+    actor: Admin, service: Service, eatery_id: UUID, body: EateryUpdate
+) -> EateryOut:
+    return await service.update_eatery(actor, eatery_id, body)
+
+
+@router.delete("/eateries/{eatery_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_eatery(actor: Admin, service: Service, eatery_id: UUID) -> None:
+    await service.delete_eatery(actor, eatery_id)

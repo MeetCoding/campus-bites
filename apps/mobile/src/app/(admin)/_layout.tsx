@@ -14,6 +14,8 @@ export default function AdminLayout() {
       <Stack.Screen name="admin" options={{ headerShown: false }} />
       <Stack.Screen name="whitelist" options={{ title: 'Vendor whitelist' }} />
       <Stack.Screen name="roles" options={{ title: 'Roles' }} />
+      <Stack.Screen name="manage-bhawans" options={{ title: 'Bhawans' }} />
+      <Stack.Screen name="manage-eateries" options={{ title: 'Eateries' }} />
     </Stack>
   );
 }

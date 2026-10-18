@@ -67,6 +67,9 @@ begin
     'execute'), 'transition RPC exposed';
   assert not has_function_privilege('anon', 'public.complaint_board(uuid, public.complaint_domain)', 'execute'), 'board exposed to anon';
   assert not has_function_privilege('authenticated', 'app.run_escalation_sweep()', 'execute'), 'cron caller exposed';
+  assert not has_function_privilege('authenticated', 'public.admin_create_bhawan(text, text, integer)', 'execute'), 'create-bhawan RPC exposed';
+  assert not has_function_privilege('authenticated', 'public.admin_update_bhawan(uuid, text, integer)', 'execute'), 'update-bhawan RPC exposed';
+  assert not has_function_privilege('authenticated', 'public.admin_delete_bhawan(uuid)', 'execute'), 'delete-bhawan RPC exposed';
 
   -- 8. Private buckets stay private.
   assert (select count(*) from storage.buckets

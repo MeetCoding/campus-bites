@@ -6,10 +6,17 @@ from postgrest.exceptions import APIError
 from supabase import AsyncClient
 
 from app.core.supabase import get_supabase
-from app.schemas.admin import ProfileSummary, RoleAssignmentOut, WhitelistEntry
+from app.schemas.admin import (
+    BhawanOut,
+    EateryOut,
+    ProfileSummary,
+    RoleAssignmentOut,
+    WhitelistEntry,
+)
 from app.schemas.common import AppRole
 
 UNIQUE_VIOLATION = "23505"
+FOREIGN_KEY_VIOLATION = "23503"
 
 
 class DuplicateError(Exception):
@@ -18,6 +25,10 @@ class DuplicateError(Exception):
     def __init__(self, constraint: str) -> None:
         super().__init__(constraint)
         self.constraint = constraint
+
+
+class InUseError(Exception):
+    """A foreign key (or the Bhawan residents check) refused a delete: the row has history."""
 
 
 class AdminRepository(Protocol):
@@ -36,6 +47,14 @@ class AdminRepository(Protocol):
         self, user_id: UUID, role: AppRole, bhawan_id: UUID | None, assigned_by: UUID
     ) -> RoleAssignmentOut: ...
     async def delete_role_assignment(self, assignment_id: UUID) -> bool: ...
+    async def create_bhawan(self, name: str, slug: str, sort_order: int | None) -> BhawanOut: ...
+    async def update_bhawan(
+        self, bhawan_id: UUID, name: str | None, sort_order: int | None
+    ) -> BhawanOut | None: ...
+    async def delete_bhawan(self, bhawan_id: UUID) -> bool: ...
+    async def create_eatery(self, name: str, slug: str, location_tag: str | None) -> EateryOut: ...
+    async def update_eatery(self, eatery_id: UUID, changes: dict[str, Any]) -> EateryOut | None: ...
+    async def delete_eatery(self, eatery_id: UUID) -> bool: ...
 
 
 _WHITELIST_COLUMNS = "id, phone_e164, outlet_id, label, active, created_at, outlets(name)"
@@ -62,6 +81,11 @@ def _role_assignment(row: dict[str, Any]) -> RoleAssignmentOut:
 def _raise_duplicate(exc: APIError) -> None:
     if exc.code == UNIQUE_VIOLATION:
         raise DuplicateError(exc.message or "") from exc
+
+
+def _raise_in_use(exc: APIError) -> None:
+    if exc.code == FOREIGN_KEY_VIOLATION:
+        raise InUseError(exc.message or "") from exc
 
 
 class SupabaseAdminRepository:
@@ -187,6 +211,77 @@ class SupabaseAdminRepository:
         res = await (
             self._db.table("role_assignments").delete().eq("id", str(assignment_id)).execute()
         )
+        return bool(res.data)
+
+    # ─── Campus master list ──────────────────────────────────────────────────
+    async def create_bhawan(self, name: str, slug: str, sort_order: int | None) -> BhawanOut:
+        try:
+            res = await self._db.rpc(
+                "admin_create_bhawan",
+                {"p_name": name, "p_slug": slug, "p_sort_order": sort_order},
+            ).execute()
+        except APIError as exc:
+            _raise_duplicate(exc)
+            raise
+        return BhawanOut(**res.data[0])
+
+    async def update_bhawan(
+        self, bhawan_id: UUID, name: str | None, sort_order: int | None
+    ) -> BhawanOut | None:
+        try:
+            res = await self._db.rpc(
+                "admin_update_bhawan",
+                {"p_id": str(bhawan_id), "p_name": name, "p_sort_order": sort_order},
+            ).execute()
+        except APIError as exc:
+            _raise_duplicate(exc)
+            raise
+        return BhawanOut(**res.data[0]) if res.data else None
+
+    async def delete_bhawan(self, bhawan_id: UUID) -> bool:
+        try:
+            res = await self._db.rpc("admin_delete_bhawan", {"p_id": str(bhawan_id)}).execute()
+        except APIError as exc:
+            _raise_in_use(exc)
+            raise
+        return bool(res.data)
+
+    async def create_eatery(self, name: str, slug: str, location_tag: str | None) -> EateryOut:
+        try:
+            res = await (
+                self._db.table("outlets")
+                .insert(
+                    {"type": "eatery", "name": name, "slug": slug, "location_tag": location_tag}
+                )
+                .execute()
+            )
+        except APIError as exc:
+            _raise_duplicate(exc)
+            raise
+        return EateryOut(**res.data[0])
+
+    async def update_eatery(self, eatery_id: UUID, changes: dict[str, Any]) -> EateryOut | None:
+        res = await (
+            self._db.table("outlets")
+            .update(changes)
+            .eq("id", str(eatery_id))
+            .eq("type", "eatery")
+            .execute()
+        )
+        return EateryOut(**res.data[0]) if res.data else None
+
+    async def delete_eatery(self, eatery_id: UUID) -> bool:
+        try:
+            res = await (
+                self._db.table("outlets")
+                .delete()
+                .eq("id", str(eatery_id))
+                .eq("type", "eatery")
+                .execute()
+            )
+        except APIError as exc:
+            _raise_in_use(exc)
+            raise
         return bool(res.data)
 
 

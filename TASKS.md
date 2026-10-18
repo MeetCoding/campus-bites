@@ -109,6 +109,8 @@ Legend: `[ ]` todo · `[~]` built, awaiting live verification · `[x]` done · *
 - [ ] **M6.14** Create prod Supabase project, `db push` migrations, seed, configure auth hooks/providers/SMS. ✅ smoke test login on prod.
 - [~] **M6.15** EAS: `eas.json` profiles (development / preview / production), app icons with IITR crest, production build + internal test track. ✅ installable build passes the end-to-end checklist below. (`eas.json` development/preview/production, app id `in.ac.iitr.campusbites`, icons from the IITR crest. Pending: `eas init`, then a build.)
 
+- [~] **M6.16** Admin master list (PRD §2 System Admin): migration `014_admin_campus` (service-role RPCs `admin_create_bhawan` / `admin_update_bhawan` / `admin_delete_bhawan`), `POST|PATCH|DELETE /v1/admin/bhawans` + `/v1/admin/eateries`, `(admin)/manage-bhawans` + `manage-eateries` screens. ✅ API tests (18 new), `admin_campus_test.sql`, hardening checks. Pending: apply `014` to the dev project (the Supabase connector refuses migrations containing `delete`), run `admin_campus_test.sql`, regenerate types, device check.
+
 ### Release end-to-end checklist
 Verified 18 Oct 2026 against the dev project + the M6 API (51/51): ✅ = verified through the real database/API with real role tokens; 📱 = still to see on a device (UI, push delivery, Google sign-in, camera).
 - [~] Student: ✅ login → Bhawan onboarding (set-once) → noticeboard photo loads → canteen fixed-rate tab → rebate submit (+ overlap rejected) → complaint raise (routed) → LONG-STANDING after 48 h (sweep, board pinning, idempotent) → nudge after 7 days (+ cooldown) → confirm resolved. 📱 Google sign-in on device, photo zoom, push receipt.

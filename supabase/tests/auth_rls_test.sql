@@ -10,8 +10,12 @@ insert into auth.users (id, instance_id, aud, role, email, phone, raw_user_meta_
 values
   ('00000000-0000-0000-0000-00000000a001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'student@ece.iitr.ac.in', null, '{}', now(), now()),
   ('00000000-0000-0000-0000-00000000a002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'secy@cse.iitr.ac.in', null, '{}', now(), now()),
-  ('00000000-0000-0000-0000-00000000a003', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'warden@iitr.ac.in', null, '{}', now(), now()),
-  ('00000000-0000-0000-0000-00000000a004', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', null, '919510709195', '{}', now(), now());
+  ('00000000-0000-0000-0000-00000000a003', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'warden@iitr.ac.in', null, '{}', now(), now());
+
+-- The vendor test number is unique in auth.users: reuse the real account once it has signed in.
+insert into auth.users (id, instance_id, aud, role, email, phone, raw_user_meta_data, created_at, updated_at)
+select '00000000-0000-0000-0000-00000000a004', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', null, '919510709195', '{}', now(), now()
+where not exists (select 1 from auth.users where phone = '919510709195');
 
 insert into public.role_assignments (user_id, role, bhawan_id)
 select '00000000-0000-0000-0000-00000000a002'::uuid, 'mess_secretary'::public.app_role, id from public.bhawans where slug = 'rajendra'
@@ -59,7 +63,7 @@ begin
   assert c ->> 'app_role' = 'mess_authority', 'authority app_role';
   assert not (c -> 'roles' ? 'student'), 'officials are not students';
 
-  c := public.custom_access_token_hook(jsonb_build_object('user_id', '00000000-0000-0000-0000-00000000a004',
+  c := public.custom_access_token_hook(jsonb_build_object('user_id', (select id from auth.users where phone = '919510709195'),
          'claims', '{"email": "", "phone": "919510709195"}'::jsonb)) -> 'claims';
   assert c ->> 'app_role' = 'vendor', 'vendor app_role';
   assert c -> 'roles' = '["vendor"]', 'vendor roles';
@@ -141,7 +145,7 @@ end $$;
 reset role;
 -- claims are built as postgres (the whitelist itself is not readable by `authenticated`)
 select set_config('request.jwt.claims', json_build_object(
-  'sub', '00000000-0000-0000-0000-00000000a004', 'role', 'authenticated',
+  'sub', (select id from auth.users where phone = '919510709195'), 'role', 'authenticated',
   'roles', json_build_array('vendor'),
   'outlet_ids', (select json_agg(outlet_id) from public.whitelisted_vendors))::text, true);
 set local role authenticated;

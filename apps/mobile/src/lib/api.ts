@@ -31,7 +31,7 @@ function toApiError(status: number, body: ErrorBody | null): ApiError {
   return new ApiError(status, 'ERROR', typeof detail === 'string' ? detail : 'Something went wrong.');
 }
 
-type RequestOptions = { method?: 'GET' | 'POST' | 'DELETE'; body?: unknown };
+type RequestOptions = { method?: 'GET' | 'POST' | 'PATCH' | 'DELETE'; body?: unknown };
 
 /** The only way the app talks to FastAPI: attaches the Supabase session JWT. */
 export async function api<T>(path: string, { method = 'GET', body }: RequestOptions = {}): Promise<T> {

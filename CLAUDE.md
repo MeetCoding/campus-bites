@@ -54,7 +54,7 @@ campus-bites/
 ├── supabase/
 │   ├── config.toml
 │   ├── migrations/                 # 001_init, 002_grants, 003_auth, then <timestamp>_<name>.sql — the only way schema changes
-│   ├── tests/                      # SQL regression tests, each in a rolled-back transaction (auth_rls_test.sql, mess_test.sql, canteens_test.sql, rebates_test.sql, complaints_test.sql; plus read-only hardening_test.sql)
+│   ├── tests/                      # SQL regression tests, each in a rolled-back transaction (auth_rls_test.sql, mess_test.sql, canteens_test.sql, rebates_test.sql, complaints_test.sql, admin_campus_test.sql; plus read-only hardening_test.sql)
 │   └── seed.sql                    # 11 Bhawans × 3 outlets, 4 eateries, V1 vendor whitelist
 ├── stitch-reference/               # design reference — read-only
 ├── PRD.md  ARCHITECTURE.md  CLAUDE.md  TASKS.md
