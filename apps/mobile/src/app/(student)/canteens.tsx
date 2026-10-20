@@ -5,7 +5,7 @@ import { ScrollView, Text, View } from 'react-native';
 import { Button, Pill, Screen, Segmented } from '@/components/ui';
 import { useSession } from '@/features/auth/session';
 import { useBhawans, useOutlets } from '@/features/campus/queries';
-import { FixedRateCard, MenuItemsList, OutletHeader } from '@/features/canteens/components';
+import { FixedRateCard, OutletHeader } from '@/features/canteens/components';
 import { useLiveStatus, useLiveUpdates } from '@/features/canteens/queries';
 import { NoticeboardCard, OverrideBanner } from '@/features/mess/components';
 import { useActiveOverrides } from '@/features/mess/queries';
@@ -78,14 +78,11 @@ export default function CanteenHub() {
           />
 
           {tab === 'menu' ? (
-            <View className="gap-space-md">
-              <NoticeboardCard
-                outletId={canteen.id}
-                title="Menu photo"
-                canReport={claims?.roles.includes('student') ?? false}
-              />
-              <MenuItemsList outletId={canteen.id} />
-            </View>
+            <NoticeboardCard
+              outletId={canteen.id}
+              title="Menu"
+              canReport={claims?.roles.includes('student') ?? false}
+            />
           ) : activeBhawanId ? (
             <View className="gap-space-md">
               <FixedRateCard bhawanId={activeBhawanId} />

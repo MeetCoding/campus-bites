@@ -315,60 +315,6 @@ export type Database = {
           },
         ]
       }
-      extra_items: {
-        Row: {
-          available: boolean
-          bhawan_id: string
-          created_at: string
-          id: string
-          name: string
-          price_paise: number
-          sort_order: number
-          unit: string | null
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          available?: boolean
-          bhawan_id: string
-          created_at?: string
-          id?: string
-          name: string
-          price_paise: number
-          sort_order?: number
-          unit?: string | null
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          available?: boolean
-          bhawan_id?: string
-          created_at?: string
-          id?: string
-          name?: string
-          price_paise?: number
-          sort_order?: number
-          unit?: string | null
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "extra_items_bhawan_id_fkey"
-            columns: ["bhawan_id"]
-            isOneToOne: false
-            referencedRelation: "bhawans"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "extra_items_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       fixed_rate_items: {
         Row: {
           bhawan_id: string
@@ -496,76 +442,13 @@ export type Database = {
           },
         ]
       }
-      menu_items: {
-        Row: {
-          category: string | null
-          created_at: string
-          description: string | null
-          id: string
-          in_stock: boolean
-          name: string
-          outlet_id: string
-          price_paise: number
-          sort_order: number
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          in_stock?: boolean
-          name: string
-          outlet_id: string
-          price_paise: number
-          sort_order?: number
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          in_stock?: boolean
-          name?: string
-          outlet_id?: string
-          price_paise?: number
-          sort_order?: number
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "menu_items_outlet_id_fkey"
-            columns: ["outlet_id"]
-            isOneToOne: false
-            referencedRelation: "outlet_live_status"
-            referencedColumns: ["outlet_id"]
-          },
-          {
-            foreignKeyName: "menu_items_outlet_id_fkey"
-            columns: ["outlet_id"]
-            isOneToOne: false
-            referencedRelation: "outlets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "menu_items_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       menu_photos: {
         Row: {
           created_at: string
           height: number | null
           id: string
           is_current: boolean
+          kind: string
           outlet_id: string
           storage_path: string
           uploaded_by: string | null
@@ -577,6 +460,7 @@ export type Database = {
           height?: number | null
           id?: string
           is_current?: boolean
+          kind?: string
           outlet_id: string
           storage_path: string
           uploaded_by?: string | null
@@ -588,6 +472,7 @@ export type Database = {
           height?: number | null
           id?: string
           is_current?: boolean
+          kind?: string
           outlet_id?: string
           storage_path?: string
           uploaded_by?: string | null
@@ -627,6 +512,8 @@ export type Database = {
           outlet_id: string
           updated_at: string
           updated_by: string | null
+          weekend_closes_at: string | null
+          weekend_opens_at: string | null
         }
         Insert: {
           closes_at: string
@@ -636,6 +523,8 @@ export type Database = {
           outlet_id: string
           updated_at?: string
           updated_by?: string | null
+          weekend_closes_at?: string | null
+          weekend_opens_at?: string | null
         }
         Update: {
           closes_at?: string
@@ -645,6 +534,8 @@ export type Database = {
           outlet_id?: string
           updated_at?: string
           updated_by?: string | null
+          weekend_closes_at?: string | null
+          weekend_opens_at?: string | null
         }
         Relationships: [
           {
@@ -1081,51 +972,6 @@ export type Database = {
           },
         ]
       }
-      weekly_menus: {
-        Row: {
-          bhawan_id: string
-          created_at: string
-          id: string
-          items: Json
-          updated_at: string
-          updated_by: string | null
-          week_start: string
-        }
-        Insert: {
-          bhawan_id: string
-          created_at?: string
-          id?: string
-          items?: Json
-          updated_at?: string
-          updated_by?: string | null
-          week_start: string
-        }
-        Update: {
-          bhawan_id?: string
-          created_at?: string
-          id?: string
-          items?: Json
-          updated_at?: string
-          updated_by?: string | null
-          week_start?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "weekly_menus_bhawan_id_fkey"
-            columns: ["bhawan_id"]
-            isOneToOne: false
-            referencedRelation: "bhawans"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "weekly_menus_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       whitelisted_vendors: {
         Row: {
           active: boolean
@@ -1459,13 +1305,10 @@ export type Database = {
         Args: { p_query: string }
         Returns: {
           bhawan_id: string
-          in_stock: boolean
-          item_id: string
-          item_name: string
+          location_tag: string
           outlet_id: string
           outlet_name: string
           outlet_type: Database["public"]["Enums"]["outlet_type"]
-          price_paise: number
           score: number
         }[]
       }

@@ -129,8 +129,10 @@ end $$;
 reset role; set local role authenticated;
 select set_config('request.jwt.claims', json_build_object('sub', '00000000-0000-0000-0000-00000000e005', 'role', 'authenticated', 'roles', json_build_array('adosw'))::text, true);
 do $$ begin
-  assert (select count(*) from public.complaints) = 3, 'ADoSW sees everything (eateries + cross-Bhawan oversight)';
-  assert (select count(*) from public.complaint_events) = 3, 'and the events';
+  assert (select count(*) from public.complaints where created_by::text like '00000000-0000-0000-0000-00000000e%') = 3,
+    'ADoSW sees everything (eateries + cross-Bhawan oversight)';
+  assert (select count(*) from public.complaint_events e join public.complaints c on c.id = e.complaint_id
+           where c.created_by::text like '00000000-0000-0000-0000-00000000e%') = 3, 'and the events';
 end $$;
 
 -- ─── Workflow RPCs (as the service role would call them) ─────────────────────
@@ -139,9 +141,9 @@ do $$
 declare
   s1 uuid := '00000000-0000-0000-0000-00000000e001';
   ms uuid := '00000000-0000-0000-0000-00000000e003';
-  mess_c uuid := (select id from public.complaints where domain = 'mess');
-  canteen_c uuid := (select id from public.complaints where domain = 'hostel_canteen');
-  eatery_c uuid := (select id from public.complaints where domain = 'campus_eatery');
+  mess_c uuid := (select id from public.complaints where domain = 'mess' and created_by::text like '00000000-0000-0000-0000-00000000e%');
+  canteen_c uuid := (select id from public.complaints where domain = 'hostel_canteen' and created_by::text like '00000000-0000-0000-0000-00000000e%');
+  eatery_c uuid := (select id from public.complaints where domain = 'campus_eatery' and created_by::text like '00000000-0000-0000-0000-00000000e%');
   r record;
   n integer;
 begin

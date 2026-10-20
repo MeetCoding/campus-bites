@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { Link } from 'expo-router';
 import { CalendarX2, FileText, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
@@ -46,7 +47,11 @@ export default function RebatesScreen() {
         ) : null}
       </HeroCard>
 
-      {studentId ? <RebateForm studentId={studentId} /> : null}
+      {studentId && claims?.bhawan_id ? (
+        <RebateForm studentId={studentId} />
+      ) : studentId ? (
+        <NoHostelCard />
+      ) : null}
 
       <SectionHeader title="Your passes" />
       {rebates.isPending ? (
@@ -59,6 +64,21 @@ export default function RebatesScreen() {
         rebates.data.map((r) => <RebatePass key={r.id} rebate={r} />)
       )}
     </Screen>
+  );
+}
+
+/** "No hostel" accounts have no mess to rebate from (the API answers REBATE_NO_BHAWAN). */
+function NoHostelCard() {
+  return (
+    <Card className="gap-space-sm">
+      <Text className="font-body-semibold text-body-lg text-on-surface">Rebates are for hostel residents</Text>
+      <Text className="font-body text-body-md text-on-surface-variant">
+        You said you don&apos;t live in a hostel. If you&apos;ve moved into one, choose your Bhawan first.
+      </Text>
+      <Link href="/choose-bhawan" asChild>
+        <Button label="Choose your Bhawan" variant="secondary" />
+      </Link>
+    </Card>
   );
 }
 

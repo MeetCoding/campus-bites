@@ -2,7 +2,6 @@ import { Link, type Href } from 'expo-router';
 import {
   AlarmClock,
   BadgeCheck,
-  BookOpen,
   Camera,
   ChevronRight,
   MessageSquareWarning,
@@ -30,9 +29,8 @@ type Tool = { href: Href; title: string; icon: LucideIcon; tone: IconTone };
 // Mess Secretaries and vendors running a mess publish these; timing overrides push every resident,
 // so they stay with the Mess Secretary.
 const MESS_TOOLS: (Tool & { secretaryOnly?: boolean })[] = [
-  { href: '/mess-photo', title: 'Noticeboard photo', icon: Camera, tone: 'primary' },
-  { href: '/mess-menu', title: 'Weekly menu', icon: BookOpen, tone: 'primary' },
-  { href: '/extra-items', title: 'Extra items', icon: ReceiptText, tone: 'tertiary' },
+  { href: '/mess-photo', title: 'Menu photos', icon: Camera, tone: 'primary' },
+  { href: '/extra-items', title: 'Extra items photos', icon: ReceiptText, tone: 'tertiary' },
   { href: '/mess-timings', title: 'Timing override', icon: AlarmClock, tone: 'warning', secretaryOnly: true },
 ];
 

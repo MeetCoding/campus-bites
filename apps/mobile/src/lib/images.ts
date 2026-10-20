@@ -78,6 +78,8 @@ export async function uploadMenuPhoto(params: {
   source: { uri: string; width: number; height: number };
   weekStart?: string;
   today: string;
+  /** 'extras' = a mess's pay-to-get price list (020); default the menu / noticeboard stack. */
+  kind?: 'menu' | 'extras';
 }) {
   const image = await compressForUpload(params.source);
   const { bytes } = image;
@@ -96,6 +98,7 @@ export async function uploadMenuPhoto(params: {
       width: image.width,
       height: image.height,
       week_start: params.weekStart ?? null,
+      kind: params.kind ?? 'menu',
     })
     .select()
     .single();
@@ -103,6 +106,7 @@ export async function uploadMenuPhoto(params: {
     // Don't leave an unlisted file behind in the public bucket.
     await supabase.storage.from(NOTICEBOARD_BUCKET).remove([path]);
     if (error.message === 'MENU_PHOTO_LIMIT') throw new Error(error.details || 'Photo limit reached. Delete an old one first.');
+    if (error.message === 'EXTRAS_PHOTO_MESS_ONLY') throw new Error('Extra-items photos are for messes only.');
     throw error;
   }
   return { photo: data, sizeBytes: bytes.byteLength };

@@ -1,13 +1,11 @@
 import { BadgeCheck, Clock, Info, MapPin, type LucideIcon } from 'lucide-react-native';
 import { ActivityIndicator, Text, View } from 'react-native';
 
-import { Badge, Card, HeroCard, LiveDot } from '@/components/ui';
+import { Card, HeroCard, LiveDot } from '@/components/ui';
 import {
   OUTLET_TYPE_LABEL,
   useFixedRates,
-  useMenuItems,
   useOutletStatus,
-  type MenuItem,
   type OutletStatus,
 } from '@/features/canteens/queries';
 import { describeLiveStatus, formatShift, type StatusTone } from '@/features/canteens/status';
@@ -81,61 +79,6 @@ function HeroTag({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
     <View className="flex-row items-center gap-1.5 rounded-full bg-on-primary/10 px-3 py-1.5">
       <Icon size={14} color={colors['on-primary-container']} />
       <Text className="font-label text-label-md text-on-primary">{label}</Text>
-    </View>
-  );
-}
-
-// ─── Tab 1: custom menu ──────────────────────────────────────────────────────
-function groupByCategory(items: MenuItem[]): { category: string; items: MenuItem[] }[] {
-  const groups = new Map<string, MenuItem[]>();
-  for (const item of items) {
-    const key = item.category?.trim() || 'Menu';
-    groups.set(key, [...(groups.get(key) ?? []), item]);
-  }
-  return [...groups].map(([category, grouped]) => ({ category, items: grouped }));
-}
-
-export function MenuItemsList({ outletId }: { outletId: string }) {
-  const items = useMenuItems(outletId);
-
-  if (items.isPending) return <ActivityIndicator />;
-  if (items.isError) return <Text className="font-body text-body-md text-error">{items.error.message}</Text>;
-  if (items.data.length === 0) {
-    return (
-      <Card>
-        <Text className="font-body text-body-md text-on-surface-variant">No items listed yet.</Text>
-      </Card>
-    );
-  }
-
-  return (
-    <View className="gap-space-sm">
-      {groupByCategory(items.data).map((group) => (
-        <Card key={group.category} className="gap-space-xs">
-          <Text className="font-label-bold text-label-sm uppercase text-on-surface-variant">{group.category}</Text>
-          {group.items.map((item) => (
-            <View key={item.id} className="flex-row items-center justify-between gap-space-sm py-1.5">
-              <View className="flex-1">
-                <Text
-                  className={cn(
-                    'font-body-semibold text-body-md',
-                    item.in_stock ? 'text-on-surface' : 'text-on-surface-variant line-through',
-                  )}>
-                  {item.name}
-                </Text>
-                {item.description ? (
-                  <Text className="font-body text-body-sm text-on-surface-variant">{item.description}</Text>
-                ) : null}
-              </View>
-              {item.in_stock ? (
-                <PriceChip paise={item.price_paise} />
-              ) : (
-                <Badge label="Sold out" tone="longStanding" />
-              )}
-            </View>
-          ))}
-        </Card>
-      ))}
     </View>
   );
 }

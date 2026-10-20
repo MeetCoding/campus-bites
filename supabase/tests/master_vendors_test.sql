@@ -63,16 +63,18 @@ begin
     'mess vendor manages its mess (photos)';
   assert not app.can_run_outlet((select id from public.outlets where slug = 'rajendra-mess')),
     'but cannot toggle the mess open/closed';
-  assert app.can_manage_mess(v_rajendra), 'menu rights for its Bhawan';
-  assert not app.can_manage_mess(v_ganga), 'no menu rights elsewhere';
+  assert not app.can_manage_outlet((select id from public.outlets where slug = 'ganga-mess')),
+    'no rights in another mess';
 
-  insert into public.extra_items (bhawan_id, name, price_paise)
-  values (v_rajendra, 'Master test lassi', 2500);
-  assert exists (select 1 from public.extra_items where name = 'Master test lassi'), 'adds extra item';
+  insert into public.menu_photos (outlet_id, kind, storage_path)
+  select id, 'extras', id || '/master-test-extras.jpg' from public.outlets where slug = 'rajendra-mess';
+  assert exists (select 1 from public.menu_photos where storage_path like '%/master-test-extras.jpg'),
+    'mess vendor publishes an extras photo';
 
   begin
-    insert into public.extra_items (bhawan_id, name, price_paise) values (v_ganga, 'Nope', 100);
-    assert false, 'extra item in another Bhawan';
+    insert into public.menu_photos (outlet_id, kind, storage_path)
+    select id, 'extras', id || '/nope.jpg' from public.outlets where slug = 'ganga-mess';
+    assert false, 'extras photo in another mess';
   exception when insufficient_privilege then null;
   end;
 end $$;
@@ -83,7 +85,7 @@ select set_config('request.jwt.claims', json_build_object(
   'roles', json_build_array('vendor'))::text, true);
 do $$
 begin
-  assert (select bool_and(app.can_manage_mess(id)) from public.bhawans), 'master manages every mess';
+  assert (select bool_and(app.can_manage_outlet(id)) from public.outlets where type = 'mess'), 'master manages every mess';
 end $$;
 
 -- ─── Clients can't see or call any of it ─────────────────────────────────────

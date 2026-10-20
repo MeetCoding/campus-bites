@@ -5,7 +5,6 @@ import { Card, Screen, SectionHeader } from '@/components/ui';
 import { useLiveUpdates } from '@/features/canteens/queries';
 import {
   LocationEditor,
-  MenuItemsEditor,
   MenuPhotoUploader,
   OpenToggleCard,
   PinEditor,
@@ -55,13 +54,8 @@ export default function OutletConsole() {
       </View>
 
       <View className="gap-space-sm">
-        <SectionHeader title="Menu photo" />
+        <SectionHeader title="Menu photos" />
         <MenuPhotoUploader outletId={outlet.id} />
-      </View>
-
-      <View className="gap-space-sm">
-        <SectionHeader title="Menu & stock" />
-        <MenuItemsEditor outletId={outlet.id} />
       </View>
 
       {outlet.type === 'eatery' ? (

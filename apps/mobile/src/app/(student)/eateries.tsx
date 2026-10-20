@@ -4,9 +4,9 @@ import { ChevronRight, Coffee, Map as MapIcon, MapPin, Moon, Search, Sun, X } fr
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 
-import { Badge, Card, IconBadge, PressableScale, Screen, Segmented } from '@/components/ui';
+import { Card, IconBadge, PressableScale, Screen, Segmented } from '@/components/ui';
 import { useSession } from '@/features/auth/session';
-import { OpenStatusPill, PriceChip } from '@/features/canteens/components';
+import { OpenStatusPill } from '@/features/canteens/components';
 import {
   OUTLET_TYPE_LABEL,
   useFoodSearch,
@@ -46,8 +46,8 @@ export default function EateriesDirectory() {
       <View className="min-h-12 flex-row items-center gap-space-sm rounded-full bg-surface-container-lowest px-space-md">
         <Search size={18} color={colors.outline} />
         <TextInput
-          accessibilityLabel="Search food or outlets"
-          placeholder="Search maggi, cold coffee, Amul…"
+          accessibilityLabel="Search canteens and eateries"
+          placeholder="Search Amul, CCD, night canteen…"
           placeholderTextColor={colors.outline}
           value={query}
           onChangeText={setQuery}
@@ -72,24 +72,16 @@ export default function EateriesDirectory() {
             <Text className="font-body text-body-md text-on-surface-variant">Nothing matches “{query.trim()}”.</Text>
           ) : (
             search.data.map((hit) => (
-              <Link key={`${hit.outlet_id}-${hit.item_id ?? 'outlet'}`} href={outletHref(hit)} asChild>
+              <Link key={hit.outlet_id} href={outletHref(hit)} asChild>
                 <PressableScale accessibilityRole="link">
                   <Card className="flex-row items-center gap-space-md">
                     <View className="flex-1 gap-space-xs">
-                      <Text className="font-body-semibold text-body-md text-on-surface">
-                        {hit.item_name ?? hit.outlet_name}
-                      </Text>
+                      <Text className="font-body-semibold text-body-md text-on-surface">{hit.outlet_name}</Text>
                       <Text className="font-label text-label-md text-on-surface-variant">
-                        {hit.item_id ? hit.outlet_name : OUTLET_TYPE_LABEL[hit.outlet_type]}
+                        {[OUTLET_TYPE_LABEL[hit.outlet_type], hit.location_tag].filter(Boolean).join(' · ')}
                       </Text>
                     </View>
-                    {hit.item_id === null ? (
-                      <ChevronRight size={20} color={colors.outline} />
-                    ) : hit.in_stock ? (
-                      <PriceChip paise={hit.price_paise ?? 0} />
-                    ) : (
-                      <Badge label="Sold out" tone="longStanding" />
-                    )}
+                    <ChevronRight size={20} color={colors.outline} />
                   </Card>
                 </PressableScale>
               </Link>

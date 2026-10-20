@@ -22,7 +22,7 @@ campus-bites/
 │   │   ├── src/                    # `@/` alias → src/
 │   │   │   ├── app/                # Expo Router routes only (thin screens)
 │   │   │   │   ├── _layout.tsx     # imports global.css; fonts, splash, QueryClient (+ Session in M2)
-│   │   │   │   ├── (auth)/         # sign-in (Google / vendor phone + passcode), bhawan onboarding
+│   │   │   │   ├── (auth)/         # sign-in (Google / vendor phone + passcode); onboarding.tsx = Bhawan or "no hostel"
 │   │   │   │   ├── (student)/      # stack: home, mess, canteens, eateries, eatery/[id], rebates (+ complaints in M6)
 │   │   │   │   ├── (staff)/        # vendor + mess/bhawan secretary consoles
 │   │   │   │   ├── (authority)/    # mess authority (rebates), ADoSW (eatery complaints)

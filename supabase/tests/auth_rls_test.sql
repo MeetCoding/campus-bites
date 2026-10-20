@@ -17,7 +17,8 @@ insert into auth.users (id, instance_id, aud, role, email, phone, raw_user_meta_
 values
   ('00000000-0000-0000-0000-00000000a001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'student@ece.iitr.ac.in', null, '{}', now(), now()),
   ('00000000-0000-0000-0000-00000000a002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'secy@cse.iitr.ac.in', null, '{}', now(), now()),
-  ('00000000-0000-0000-0000-00000000a003', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'warden@iitr.ac.in', null, '{}', now(), now());
+  ('00000000-0000-0000-0000-00000000a003', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'warden@iitr.ac.in', null, '{}', now(), now()),
+  ('00000000-0000-0000-0000-00000000a005', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'staff.member@iitr.ac.in', null, '{}', now(), now());
 
 -- The vendor test number is unique in auth.users: reuse the real account once it has signed in.
 insert into auth.users (id, instance_id, aud, role, email, phone, raw_user_meta_data, created_at, updated_at)
@@ -166,6 +167,46 @@ begin
   update public.profiles set bhawan_id = (select id from public.bhawans where slug = 'ganga') where id = auth.uid();
   get diagnostics n = row_count;
   assert n = 0, 'vendors cannot set a bhawan';
+end $$;
+
+-- ─── "No hostel" onboarding (020) ────────────────────────────────────────────
+-- a005 (a new user without a Bhawan) says they don't live in a hostel, then picks one later.
+reset role;
+do $$
+begin
+  assert not (public.custom_access_token_hook(jsonb_build_object('user_id', '00000000-0000-0000-0000-00000000a005',
+    'claims', '{"email": "staff.member@iitr.ac.in", "phone": ""}'::jsonb)) -> 'claims' ->> 'onboarded')::boolean,
+    'new student is not onboarded';
+end $$;
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object(
+  'sub', '00000000-0000-0000-0000-00000000a005', 'role', 'authenticated',
+  'roles', json_build_array('student'))::text, true);
+do $$
+declare n int;
+begin
+  update public.profiles set onboarded_at = now() where id = auth.uid() and bhawan_id is null;
+  get diagnostics n = row_count;
+  assert n = 1, 'student can finish onboarding without a Bhawan';
+  begin
+    update public.profiles set full_name = 'Renamed' where id = auth.uid();
+    assert false, 'only onboarded_at / bhawan_id are writable';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+reset role;
+do $$
+begin
+  assert (public.custom_access_token_hook(jsonb_build_object('user_id', '00000000-0000-0000-0000-00000000a005',
+    'claims', '{"email": "staff.member@iitr.ac.in", "phone": ""}'::jsonb)) -> 'claims' ->> 'onboarded')::boolean,
+    'token says onboarded';
+end $$;
+set local role authenticated;
+do $$
+begin
+  update public.profiles set bhawan_id = (select id from public.bhawans where slug = 'ganga') where id = auth.uid();
+  assert (select bhawan_id from public.profiles where id = auth.uid()) = (select id from public.bhawans where slug = 'ganga'),
+    'a no-hostel user can still pick a Bhawan once';
 end $$;
 
 -- ─── Signed-out ──────────────────────────────────────────────────────────────

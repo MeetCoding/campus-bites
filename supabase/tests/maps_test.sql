@@ -10,7 +10,8 @@ values
   ('00000000-0000-0000-0000-00000000f003', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', null, '{}', now(), now());
 -- f003 is the V1 vendor (whitelisted for every canteen and eatery)
 update public.profiles set phone = '+919510709195' where id = '00000000-0000-0000-0000-00000000f003';
--- An eatery nobody is whitelisted for
+-- An eatery nobody is whitelisted for (master vendors would be auto-assigned it, 019)
+delete from public.master_vendors;
 insert into public.outlets (type, name, slug) values ('eatery', 'Map Test Kiosk', 'map-test-kiosk');
 
 do $$

@@ -64,18 +64,6 @@ begin
   assert (select opens_at from public.mess_day_schedule(ganga, '2026-10-20') where slot = 'dinner') = '19:30', 'overrides are per Bhawan';
 end $$;
 
--- ─── Weekly menu JSON validation (M3.8) ──────────────────────────────────────
-do $$
-begin
-  assert app.is_valid_weekly_menu('{"mon": {"breakfast": ["Poha", "Tea"], "dinner": []}}'), 'valid menu';
-  assert app.is_valid_weekly_menu('{}'), 'empty menu is valid';
-  assert not app.is_valid_weekly_menu('{"monday": {}}'), 'unknown day key';
-  assert not app.is_valid_weekly_menu('{"mon": {"brunch": []}}'), 'unknown meal key';
-  assert not app.is_valid_weekly_menu('{"mon": {"lunch": [1, 2]}}'), 'dishes must be strings';
-  assert not app.is_valid_weekly_menu('{"mon": {"lunch": [""]}}'), 'empty dish';
-  assert not app.is_valid_weekly_menu('[]'), 'must be an object';
-end $$;
-
 -- ─── RLS as the Rajendra Mess Secretary ──────────────────────────────────────
 set local role authenticated;
 select set_config('request.jwt.claims', json_build_object(
@@ -91,30 +79,18 @@ declare
   rajendra_canteen uuid := (select id from public.outlets where slug = 'rajendra-day-canteen');
   first_photo uuid;
 begin
-  assert (select count(*) from public.mess_schedule_today) = 33, 'view: 11 bhawans × 3 meals';
+  assert (select count(*) from public.mess_schedule_today) = 3 * (select count(*) from public.bhawans), 'view: every Bhawan × 3 meals';
 
-  insert into public.weekly_menus (bhawan_id, week_start, items)
-  values (rajendra, '2026-10-19', '{"mon": {"breakfast": ["Aloo paratha", "Curd"]}}')
-  on conflict (bhawan_id, week_start) do update set items = excluded.items;
-  assert (select updated_by from public.weekly_menus where bhawan_id = rajendra) = auth.uid(), 'updated_by stamped';
+  -- Typed menus are gone (020): menus and pay-to-get items are photos.
+  assert to_regclass('public.weekly_menus') is null and to_regclass('public.extra_items') is null,
+    'typed mess menus removed';
 
+  -- Pay-to-get (extras) photos are a separate stack on the mess outlet.
+  insert into public.menu_photos (outlet_id, kind, storage_path, width, height)
+  values (rajendra_mess, 'extras', rajendra_mess || '/extras-a.jpg', 1600, 1200);
   begin
-    insert into public.weekly_menus (bhawan_id, week_start, items) values (ganga, '2026-10-19', '{}');
-    assert false, 'secretary must not edit another Bhawan menu';
-  exception when insufficient_privilege then null;
-  end;
-
-  begin
-    insert into public.weekly_menus (bhawan_id, week_start, items) values (rajendra, '2026-10-20', '{}');
-    assert false, 'week_start must be a Monday';
-  exception when check_violation then null;
-  end;
-
-  insert into public.extra_items (bhawan_id, name, unit, price_paise) values (rajendra, 'Paneer', 'per plate', 4000);
-  update public.extra_items set available = false where bhawan_id = rajendra and name = 'Paneer';
-  begin
-    insert into public.extra_items (bhawan_id, name, price_paise) values (ganga, 'Egg', 1200);
-    assert false, 'secretary must not edit another Bhawan rate card';
+    insert into public.menu_photos (outlet_id, kind, storage_path) values (ganga_mess, 'extras', ganga_mess || '/x.jpg');
+    assert false, 'cannot upload extras for another mess';
   exception when insufficient_privilege then null;
   end;
 
@@ -129,12 +105,13 @@ begin
   values (rajendra_mess, rajendra_mess || '/2026-10-19-b.jpg', 2560, 1920);
   insert into public.menu_photos (outlet_id, storage_path, width, height)
   values (rajendra_mess, rajendra_mess || '/2026-10-19-c.jpg', 2560, 1920);
-  assert (select count(*) from public.menu_photos where outlet_id = rajendra_mess and is_current) = 3, 'photos stack up';
+  assert (select count(*) from public.menu_photos where outlet_id = rajendra_mess and kind = 'menu' and is_current) = 3, 'photos stack up';
   assert (select is_current from public.menu_photos where id = first_photo), 'older photo stays published';
 
   delete from public.menu_photos where id = first_photo;
   assert not exists (select 1 from public.menu_photos where id = first_photo), 'manager deletes a photo';
-  assert (select count(*) from public.menu_photos where outlet_id = rajendra_mess) = 2, 'only that photo removed';
+  assert (select count(*) from public.menu_photos where outlet_id = rajendra_mess and kind = 'menu') = 2, 'only that photo removed';
+  assert (select count(*) from public.menu_photos where outlet_id = rajendra_mess and kind = 'extras') = 1, 'extras stack kept apart';
 
   -- Another outlet's photo: RLS hides it from DELETE.
   delete from public.menu_photos where outlet_id = ganga_mess;
@@ -173,21 +150,16 @@ declare
   current_photo uuid := (select id from public.menu_photos where is_current limit 1);
   visible_photos bigint;
 begin
-  assert (select count(*) from public.weekly_menus) = 1, 'students read menus';
-  assert (select count(*) from public.extra_items) = 1, 'students read rate card';
-  assert (select count(*) from public.menu_photos where outlet_id = (select id from public.outlets where slug = 'rajendra-mess')) = 2,
+  assert (select count(*) from public.menu_photos
+           where outlet_id = (select id from public.outlets where slug = 'rajendra-mess') and kind = 'menu') = 2,
     'students see the whole photo stack';
+  assert (select count(*) from public.menu_photos
+           where outlet_id = (select id from public.outlets where slug = 'rajendra-mess') and kind = 'extras') = 1,
+    'students see the extras photos';
 
   visible_photos := (select count(*) from public.menu_photos);
   delete from public.menu_photos;
   assert (select count(*) from public.menu_photos) = visible_photos, 'students cannot delete photos';
-
-  begin
-    update public.extra_items set price_paise = 1 where bhawan_id = rajendra;
-    -- RLS hides the row from UPDATE; prove nothing changed
-    assert (select price_paise from public.extra_items where bhawan_id = rajendra) = 4000, 'student cannot change prices';
-  exception when insufficient_privilege then null;
-  end;
 
   insert into public.photo_reports (photo_id, reason) values (current_photo, 'outdated');
   begin

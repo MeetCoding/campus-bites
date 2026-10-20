@@ -4,16 +4,12 @@ import { ActivityIndicator, Switch, Text, View } from 'react-native';
 import { Button, Card, Pill, TextField } from '@/components/ui';
 import { OpenStatusPill } from '@/features/canteens/components';
 import {
-  useDeleteMenuItem,
-  useMenuItems,
   useOutletShift,
   useOutletStatus,
-  useSaveMenuItem,
   useSaveShift,
   useSetLocation,
   useSetOpen,
   useSetPin,
-  type MenuItem,
 } from '@/features/canteens/queries';
 import { describeLiveStatus } from '@/features/canteens/status';
 import type { LatLng } from '@/features/map/campus';
@@ -23,7 +19,6 @@ import { useActiveOverrides, useCreateOverride, useRevokeOverride, useUploadMenu
 import type { Outlet } from '@/features/campus/queries';
 import { ImpactFeedbackStyle, impactTap } from '@/lib/haptics';
 import { pickImage } from '@/lib/images';
-import { formatPaise, parseRupeesToPaise } from '@/lib/money';
 import {
   DATE_PRESET_LABEL,
   formatWindow,
@@ -79,27 +74,61 @@ export function ShiftEditor({ outletId }: { outletId: string }) {
   const shift = useOutletShift(outletId);
   if (shift.isPending) return <ActivityIndicator />;
   // Re-keyed so the form starts from the stored hours after every save.
-  return <ShiftForm key={shift.data?.updated_at ?? 'none'} outletId={outletId} opens={shift.data?.opens_at} closes={shift.data?.closes_at} />;
+  return <ShiftForm key={shift.data?.updated_at ?? 'none'} outletId={outletId} shift={shift.data ?? null} />;
 }
 
-function ShiftForm({ outletId, opens, closes }: { outletId: string; opens?: string; closes?: string }) {
+type StoredShift = {
+  opens_at: string;
+  closes_at: string;
+  weekend_opens_at: string | null;
+  weekend_closes_at: string | null;
+};
+
+const hhmm = (time: string | null | undefined) => time?.slice(0, 5) ?? '';
+
+/** Why a weekday or weekend window is invalid, or null. */
+function windowProblem(opens: string, closes: string): string | null {
+  if (!isValidTimeInput(opens) || !isValidTimeInput(closes)) return 'Use 24-hour times like 22:30.';
+  if (opens.trim() === closes.trim()) return 'Opening and closing times must differ.';
+  return null;
+}
+
+function ShiftForm({ outletId, shift }: { outletId: string; shift: StoredShift | null }) {
   const save = useSaveShift();
-  const [opensAt, setOpensAt] = useState(opens?.slice(0, 5) ?? '');
-  const [closesAt, setClosesAt] = useState(closes?.slice(0, 5) ?? '');
+  const [opensAt, setOpensAt] = useState(hhmm(shift?.opens_at));
+  const [closesAt, setClosesAt] = useState(hhmm(shift?.closes_at));
+  const [weekend, setWeekend] = useState(Boolean(shift?.weekend_opens_at));
+  const [weekendOpens, setWeekendOpens] = useState(hhmm(shift?.weekend_opens_at));
+  const [weekendCloses, setWeekendCloses] = useState(hhmm(shift?.weekend_closes_at));
   const [error, setError] = useState<string | null>(null);
 
   function submit() {
-    if (!isValidTimeInput(opensAt) || !isValidTimeInput(closesAt)) return setError('Use 24-hour times like 22:30.');
-    if (opensAt.trim() === closesAt.trim()) return setError('Opening and closing times must differ.');
+    const problem =
+      windowProblem(opensAt, closesAt) ?? (weekend ? windowProblem(weekendOpens, weekendCloses) : null);
+    if (problem) return setError(problem);
     setError(null);
-    save.mutate({ outlet_id: outletId, opens_at: opensAt.trim(), closes_at: closesAt.trim() });
+    save.mutate({
+      outlet_id: outletId,
+      opens_at: opensAt.trim(),
+      closes_at: closesAt.trim(),
+      weekend_opens_at: weekend ? weekendOpens.trim() : null,
+      weekend_closes_at: weekend ? weekendCloses.trim() : null,
+    });
   }
+
+  const current = !shift
+    ? 'No hours published yet.'
+    : shift.weekend_opens_at && shift.weekend_closes_at
+      ? `Currently ${formatWindow(shift.opens_at, shift.closes_at)} Mon–Fri, ${formatWindow(shift.weekend_opens_at, shift.weekend_closes_at)} Sat–Sun.`
+      : `Currently ${formatWindow(shift.opens_at, shift.closes_at)} every day.`;
 
   return (
     <Card className="gap-space-md">
       <Text className="font-body text-body-sm text-on-surface-variant">
-        {opens && closes ? `Currently ${formatWindow(opens, closes)} every day.` : 'No hours published yet.'} A
-        closing time earlier than the opening time runs past midnight (e.g. 22:30 → 10:30).
+        {current} A closing time earlier than the opening time runs past midnight (e.g. 22:30 → 10:30).
+      </Text>
+      <Text className="font-label-bold text-label-sm uppercase text-on-surface-variant">
+        {weekend ? 'Weekdays (Mon–Fri)' : 'Every day'}
       </Text>
       <View className="flex-row gap-space-sm">
         <View className="flex-1">
@@ -109,6 +138,38 @@ function ShiftForm({ outletId, opens, closes }: { outletId: string; opens?: stri
           <TextField label="Closes (24 h)" placeholder="22:30" value={closesAt} onChangeText={setClosesAt} keyboardType="numbers-and-punctuation" />
         </View>
       </View>
+
+      <View className="flex-row items-center justify-between gap-space-md">
+        <View className="flex-1">
+          <Text className="font-body-semibold text-body-md text-on-surface">Different weekend hours</Text>
+          <Text className="font-body text-body-sm text-on-surface-variant">
+            Saturday and Sunday. A shift belongs to the day it starts on.
+          </Text>
+        </View>
+        <Switch
+          accessibilityLabel="Different weekend hours"
+          value={weekend}
+          trackColor={switchColors}
+          onValueChange={(next) => {
+            setWeekend(next);
+            if (next && !weekendOpens && !weekendCloses) {
+              setWeekendOpens(opensAt);
+              setWeekendCloses(closesAt);
+            }
+          }}
+        />
+      </View>
+      {weekend ? (
+        <View className="flex-row gap-space-sm">
+          <View className="flex-1">
+            <TextField label="Weekend opens" placeholder="12:00" value={weekendOpens} onChangeText={setWeekendOpens} keyboardType="numbers-and-punctuation" />
+          </View>
+          <View className="flex-1">
+            <TextField label="Weekend closes" placeholder="20:00" value={weekendCloses} onChangeText={setWeekendCloses} keyboardType="numbers-and-punctuation" />
+          </View>
+        </View>
+      ) : null}
+
       {error || save.error ? (
         <Text accessibilityRole="alert" className="font-body text-body-sm text-error">
           {error ?? save.error?.message}
@@ -313,116 +374,6 @@ export function MenuPhotoUploader({ outletId }: { outletId: string }) {
   );
 }
 
-// ─── Menu items: add/edit, price, In Stock / Sold Out ────────────────────────
-export function MenuItemsEditor({ outletId }: { outletId: string }) {
-  const items = useMenuItems(outletId);
-  const saveItem = useSaveMenuItem();
-  const deleteItem = useDeleteMenuItem();
-
-  const [editing, setEditing] = useState<MenuItem | null>(null);
-  const [name, setName] = useState('');
-  const [category, setCategory] = useState('');
-  const [description, setDescription] = useState('');
-  const [price, setPrice] = useState('');
-  const [formError, setFormError] = useState<string | null>(null);
-
-  function startEdit(item: MenuItem | null) {
-    setEditing(item);
-    setName(item?.name ?? '');
-    setCategory(item?.category ?? '');
-    setDescription(item?.description ?? '');
-    setPrice(item ? String(item.price_paise / 100) : '');
-    setFormError(null);
-  }
-
-  function submit() {
-    const pricePaise = parseRupeesToPaise(price);
-    if (!name.trim()) return setFormError('Enter an item name.');
-    if (pricePaise === null || pricePaise > 500000) return setFormError('Enter a price between ₹0 and ₹5,000.');
-    setFormError(null);
-    saveItem.mutate(
-      {
-        id: editing?.id,
-        outlet_id: outletId,
-        name: name.trim(),
-        category: category.trim() || null,
-        description: description.trim() || null,
-        price_paise: pricePaise,
-      },
-      { onSuccess: () => startEdit(null) },
-    );
-  }
-
-  return (
-    <View className="gap-space-sm">
-      <Card className="gap-space-md">
-        <Text className="font-body-semibold text-body-md text-on-surface">{editing ? `Edit ${editing.name}` : 'Add an item'}</Text>
-        <TextField label="Item" placeholder="e.g. Cheese Maggi" value={name} onChangeText={setName} maxLength={80} />
-        <View className="flex-row gap-space-sm">
-          <View className="flex-1">
-            <TextField label="Section (optional)" placeholder="e.g. Maggi, Drinks" value={category} onChangeText={setCategory} maxLength={40} />
-          </View>
-          <View className="flex-1">
-            <TextField label="Price" prefix="₹" placeholder="50" keyboardType="decimal-pad" value={price} onChangeText={setPrice} />
-          </View>
-        </View>
-        <TextField label="Description (optional)" placeholder="e.g. Double egg, served with chutney" value={description} onChangeText={setDescription} maxLength={200} />
-        {formError || saveItem.error ? (
-          <Text accessibilityRole="alert" className="font-body text-body-sm text-error">
-            {formError ?? saveItem.error?.message}
-          </Text>
-        ) : null}
-        <Button label={editing ? 'Save changes' : 'Add to menu'} onPress={submit} loading={saveItem.isPending} />
-        {editing ? <Button label="Cancel" variant="tertiary" onPress={() => startEdit(null)} /> : null}
-      </Card>
-
-      {items.isPending ? (
-        <ActivityIndicator />
-      ) : !items.data?.length ? (
-        <Text className="font-body text-body-md text-on-surface-variant">No items yet.</Text>
-      ) : (
-        items.data.map((item) => (
-          <Card key={item.id} className="gap-space-sm">
-            <View className="flex-row items-center justify-between gap-space-sm">
-              <View className="flex-1">
-                <Text className="font-body-semibold text-body-lg text-on-surface">{item.name}</Text>
-                <Text className="font-body text-body-sm text-on-surface-variant">
-                  {formatPaise(item.price_paise)}
-                  {item.category ? ` · ${item.category}` : ''}
-                </Text>
-              </View>
-              <View className="items-center">
-                <Switch
-                  accessibilityLabel={`${item.name} in stock`}
-                  value={item.in_stock}
-                  trackColor={switchColors}
-                  onValueChange={(inStock) => {
-                    impactTap();
-                    saveItem.mutate({ ...item, in_stock: inStock });
-                  }}
-                />
-                <Text className="font-label text-label-sm text-on-surface-variant">
-                  {item.in_stock ? 'In stock' : 'Sold out'}
-                </Text>
-              </View>
-            </View>
-            <View className="flex-row gap-space-sm">
-              <Button label="Edit" variant="tertiary" onPress={() => startEdit(item)} />
-              <Button
-                label="Remove"
-                variant="tertiary"
-                loading={deleteItem.isPending && deleteItem.variables?.id === item.id}
-                onPress={() => deleteItem.mutate({ id: item.id, outlet_id: outletId })}
-              />
-            </View>
-          </Card>
-        ))
-      )}
-    </View>
-  );
-}
-
-// ─── Location tag (eateries) ─────────────────────────────────────────────────
 export function LocationEditor({ outletId }: { outletId: string }) {
   const status = useOutletStatus(outletId);
   const setLocation = useSetLocation();

@@ -24,7 +24,8 @@ declare
   amul uuid := (select id from public.outlets where slug = 'amul');
   r record;
 begin
-  assert (select count(*) from public.outlet_shifts) = 26, 'every canteen and eatery has a default shift';
+  assert (select count(*) from public.outlet_shifts) = (select count(*) from public.outlets where type <> 'mess'),
+    'every canteen and eatery has a default shift';
   assert (select opens_at from public.outlet_shifts where outlet_id = amul) = '10:00', 'eateries default to 10:00–22:00 (008)';
 
   -- 2026-10-19 (Mon) 02:00 IST = 2026-10-18 20:30 UTC: night shift that began Sunday 22:30 is running
@@ -71,7 +72,9 @@ begin
   assert r.is_open and r.source = 'manual' and r.closes_at is null, 'opened early, outside the shift';
   assert (select source from public.outlet_status_at(night_c, '2026-10-19 23:00:00+05:30')) = 'schedule', 'shift start takes over';
 
-  -- Outlet without published hours: the toggle alone decides
+  -- Outlet without published hours: the toggle alone decides (clear any real toggle on dev first)
+  update public.outlets set is_open = false where id = amul;
+  update public.outlets set status_updated_at = null where id = amul;
   delete from public.outlet_shifts where outlet_id = amul;
   assert (select source from public.outlet_status_at(amul, now())) = 'none', 'no hours, no toggle';
   update public.outlets set is_open = true where id = amul;
@@ -101,16 +104,9 @@ declare
   night_c uuid := (select id from public.outlets where slug = 'rajendra-night-canteen');
   rajendra_mess uuid := (select id from public.outlets where slug = 'rajendra-mess');
   amul uuid := (select id from public.outlets where slug = 'amul');
+  ccd uuid := (select id from public.outlets where slug = 'cafe-coffee-day');
 begin
-  insert into public.menu_items (outlet_id, name, category, price_paise) values
-    (night_c, 'Plain Maggi', 'Maggi', 3000),
-    (night_c, 'Cheese Maggi', 'Maggi', 5000),
-    (amul, 'Masala Maggi', null, 4000),
-    (amul, 'Kool Cafe', 'Drinks', 2500);
-  assert (select updated_by from public.menu_items where name = 'Plain Maggi') = auth.uid(), 'updated_by stamped';
-
-  update public.menu_items set in_stock = false where name = 'Cheese Maggi';
-  assert not (select in_stock from public.menu_items where name = 'Cheese Maggi'), 'vendor marks sold out';
+  assert to_regclass('public.menu_items') is null, 'typed menus removed (020): menus are photos';
 
   update public.outlets set is_open = false where id = night_c;
   assert (select status_updated_at from public.outlets where id = night_c) = now(), 'toggle stamps status_updated_at';
@@ -121,11 +117,31 @@ begin
   update public.outlet_shifts set opens_at = '02:00', closes_at = '14:00' where outlet_id = night_c;
   assert (select opens_at from public.outlet_shifts where outlet_id = night_c) = '02:00', 'vendor changes shift';
 
+  -- Weekend hours (020): both or neither, and Saturday/Sunday occurrences use them.
+  update public.outlet_shifts
+     set opens_at = '10:00', closes_at = '22:00', weekend_opens_at = '12:00', weekend_closes_at = '20:00'
+   where outlet_id = ccd;
+  assert (select starts_at from public.outlet_shift_occurrences(ccd, '2026-10-24', '2026-10-24'))
+         = '2026-10-24 12:00+05:30', 'Saturday uses weekend hours';
+  assert (select ends_at from public.outlet_shift_occurrences(ccd, '2026-10-25', '2026-10-25'))
+         = '2026-10-25 20:00+05:30', 'Sunday uses weekend hours';
+  assert (select starts_at from public.outlet_shift_occurrences(ccd, '2026-10-23', '2026-10-23'))
+         = '2026-10-23 10:00+05:30', 'Friday keeps weekday hours';
   begin
-    insert into public.menu_items (outlet_id, name, price_paise) values (rajendra_mess, 'Thali', 6000);
-    assert false, 'vendors never run a mess';
-  exception when insufficient_privilege then null;
+    update public.outlet_shifts set weekend_opens_at = '09:00', weekend_closes_at = null where outlet_id = ccd;
+    assert false, 'weekend hours need both times';
+  exception when check_violation then null;
   end;
+  update public.outlet_shifts set weekend_opens_at = null, weekend_closes_at = null where outlet_id = ccd;
+  assert (select starts_at from public.outlet_shift_occurrences(ccd, '2026-10-24', '2026-10-24'))
+         = '2026-10-24 10:00+05:30', 'cleared weekend hours fall back to weekdays';
+
+  begin
+    insert into public.menu_photos (outlet_id, kind, storage_path) values (night_c, 'extras', night_c || '/x.jpg');
+    assert false, 'extras photos are for messes only';
+  exception when raise_exception then null;
+  end;
+
 
   begin
     insert into public.fixed_rate_items (bhawan_id, name, ceiling_price_paise) values (rajendra, 'Plain Maggi', 2500);
@@ -166,17 +182,16 @@ begin
   exception when insufficient_privilege then null;
   end;
 
-  insert into public.menu_items (outlet_id, name, price_paise) values (day_c, 'Samosa', 1500);
   update public.outlet_shifts set closes_at = '23:00' where outlet_id = day_c;
   assert (select closes_at from public.outlet_shifts where outlet_id = day_c) = '23:00', 'secretary changes own canteen shift';
 
   begin
-    insert into public.menu_items (outlet_id, name, price_paise) values (ganga_day, 'Samosa', 1500);
-    assert false, 'cross-outlet menu write rejected';
+    insert into public.menu_photos (outlet_id, storage_path) values (ganga_day, ganga_day || '/x.jpg');
+    assert false, 'cross-outlet menu photo rejected';
   exception when insufficient_privilege then null;
   end;
   begin
-    insert into public.menu_items (outlet_id, name, price_paise) values (amul, 'Lassi', 3000);
+    insert into public.menu_photos (outlet_id, storage_path) values (amul, amul || '/x.jpg');
     assert false, 'Bhawan secretaries do not run eateries';
   exception when insufficient_privilege then null;
   end;
@@ -196,18 +211,14 @@ do $$
 declare
   night_c uuid := (select id from public.outlets where slug = 'rajendra-night-canteen');
 begin
-  assert (select count(*) from public.outlet_live_status) = 28, 'view: 22 canteens + 4 eateries + test canteen + test eatery';
+  assert (select count(*) from public.outlet_live_status) = (select count(*) from public.outlets where type <> 'mess'),
+    'view: every canteen and eatery (live roster)';
   assert (select count(*) from public.fixed_rate_items) = 1, 'students read the rate card';
 
   update public.outlets set is_open = true where id = night_c;
   assert not (select is_open from public.outlets where id = night_c), 'student cannot toggle';
-  update public.menu_items set price_paise = 1 where name = 'Plain Maggi';
-  assert (select price_paise from public.menu_items where name = 'Plain Maggi') = 3000, 'student cannot change prices';
-
-  assert (select count(*) from public.search_food('maggi') where item_id is not null) = 3, 'maggi: three items';
-  assert (select count(distinct outlet_id) from public.search_food('maggi')) = 2, 'across two outlets';
-  assert (select count(*) from public.search_food('magi') where item_id is not null) >= 3, 'typo still matches';
   assert (select outlet_name from public.search_food('coffee') limit 1) = 'Cafe Coffee Day', 'outlet names are searchable';
+  assert (select outlet_name from public.search_food('cofee day') limit 1) = 'Cafe Coffee Day', 'typo still matches';
   assert (select count(*) from public.search_food('%')) = 0, 'wildcards are escaped / too short';
   assert (select count(*) from public.search_food('mess')) = 0, 'messes excluded';
 end $$;

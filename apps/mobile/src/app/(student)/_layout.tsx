@@ -20,6 +20,7 @@ export default function StudentLayout() {
       <Stack.Screen name="rebates" options={{ title: 'Rebates' }} />
       <Stack.Screen name="complaints" options={{ title: 'Complaints' }} />
       <Stack.Screen name="raise-complaint" options={{ title: 'Raise a complaint' }} />
+      <Stack.Screen name="choose-bhawan" options={{ title: 'Your Bhawan' }} />
     </Stack>
   );
 }

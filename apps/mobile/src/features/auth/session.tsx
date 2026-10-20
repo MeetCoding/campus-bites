@@ -24,7 +24,7 @@ type SessionState = {
   modes: Mode[];
   mode: Mode | null;
   setMode: (mode: Mode) => void;
-  /** Students must pick their Bhawan before anything else. */
+  /** Students must pick their Bhawan (or "no hostel") before anything else. */
   needsOnboarding: boolean;
   /** Last Google sign-in failure; lives here so it survives the OAuth redirect remount. */
   authError: string | null;
@@ -69,7 +69,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const modes = useMemo(() => modesFor(claims?.roles ?? []), [claims]);
   const mode =
     chosenMode && modes.includes(chosenMode) ? chosenMode : defaultMode(claims?.app_role ?? null, modes);
-  const needsOnboarding = !!claims && claims.roles.includes('student') && !claims.bhawan_id;
+  const needsOnboarding =
+    !!claims && claims.roles.includes('student') && !claims.bhawan_id && !claims.onboarded;
 
   // Register this device for push once per signed-in user with a Campus Bites role.
   const pushUserId = claims && modes.length > 0 ? claims.sub : null;

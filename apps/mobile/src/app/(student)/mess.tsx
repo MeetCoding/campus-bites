@@ -6,28 +6,21 @@ import { ScrollView, Text, View } from 'react-native';
 import { Card, IconBadge, Pill, PressableScale, Screen } from '@/components/ui';
 import { useSession } from '@/features/auth/session';
 import { useBhawans } from '@/features/campus/queries';
-import {
-  ExtraItemsCard,
-  MealHero,
-  NoticeboardCard,
-  OverrideBanner,
-  WeeklyMenuCard,
-} from '@/features/mess/components';
-import { useActiveOverrides, useMessOutlet, useMessSchedule, useWeeklyMenu } from '@/features/mess/queries';
-import { istNow, weekStart } from '@/lib/time';
+import { MealHero, NoticeboardCard, OverrideBanner } from '@/features/mess/components';
+import { useActiveOverrides, useMessOutlet, useMessSchedule } from '@/features/mess/queries';
 
 /** Mess Hub per stitch-reference/dedicated_hostel_mess_noticeboard. Students may browse any Bhawan. */
 export default function MessHub() {
   const { claims } = useSession();
   const params = useLocalSearchParams<{ bhawan?: string }>();
   const bhawans = useBhawans();
-  const [bhawanId, setBhawanId] = useState<string | null>(params.bhawan ?? claims?.bhawan_id ?? null);
-  const today = istNow();
+  const [chosenId, setBhawanId] = useState<string | null>(params.bhawan ?? claims?.bhawan_id ?? null);
+  // No home Bhawan ("no hostel" accounts): start on the first one; any Bhawan can be browsed.
+  const bhawanId = chosenId ?? bhawans.data?.[0]?.id ?? null;
 
   const messOutlet = useMessOutlet(bhawanId);
   const schedule = useMessSchedule(bhawanId);
   const overrides = useActiveOverrides(messOutlet?.id);
-  const menu = useWeeklyMenu(bhawanId, weekStart(today.date));
 
   return (
     <Screen>
@@ -44,20 +37,25 @@ export default function MessHub() {
 
       <OverrideBanner overrides={overrides.data} />
 
-      <MealHero schedule={schedule.data} loading={schedule.isPending} menu={menu.data?.items[today.dayKey]} />
+      <MealHero schedule={schedule.data} loading={schedule.isPending} />
       {schedule.isError ? (
         <Text className="font-body text-body-sm text-error">{schedule.error.message}</Text>
       ) : null}
 
-      <WeeklyMenuCard bhawanId={bhawanId} />
-
       <NoticeboardCard
         outletId={messOutlet?.id}
-        title="Noticeboard photo"
+        title="This week's menu"
+        emptyText="The menu hasn't been photographed yet."
         canReport={claims?.roles.includes('student') ?? false}
       />
 
-      <ExtraItemsCard bhawanId={bhawanId} />
+      <NoticeboardCard
+        outletId={messOutlet?.id}
+        kind="extras"
+        title="Extras · pay at counter"
+        emptyText="No extra-items price list photographed yet."
+        canReport={claims?.roles.includes('student') ?? false}
+      />
 
       {messOutlet ? (
         <Link href={{ pathname: '/raise-complaint', params: { outlet: messOutlet.id } }} asChild>

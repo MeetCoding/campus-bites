@@ -3,39 +3,25 @@ import { Camera, Flag, Megaphone, Moon, Pin, Sun, Sunrise, Trash2, ZoomIn, type 
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View, type ScrollViewInstance } from 'react-native';
 
-import { Badge, Card, HeroCard, IconBadge, LiveDot, Pill, PressableScale, SectionHeader } from '@/components/ui';
+import { Badge, Card, HeroCard, IconBadge, LiveDot, PressableScale, SectionHeader } from '@/components/ui';
 import { ZoomableImage } from '@/components/ui/ZoomableImage';
-import { PriceChip } from '@/features/canteens/components';
 import {
   MEAL_LABEL,
   MEAL_SLOTS,
   useDeleteMenuPhoto,
-  useExtraItems,
   useMenuPhotoLimit,
   useMenuPhotos,
   usePhotoReports,
   useReportPhoto,
-  useWeeklyMenu,
   type MealSlot,
   type MenuPhoto,
+  type PhotoKind,
   type ScheduleRow,
   type TimingOverride,
 } from '@/features/mess/queries';
 import { cn } from '@/lib/cn';
 import { noticeboardUrl } from '@/lib/images';
-import {
-  currentMeal,
-  DAY_KEYS,
-  DAY_LABEL,
-  formatDateRange,
-  formatDuration,
-  formatTime,
-  formatWindow,
-  istNow,
-  timeAgo,
-  weekStart,
-  type DayKey,
-} from '@/lib/time';
+import { currentMeal, formatDateRange, formatDuration, formatTime, formatWindow, istNow, timeAgo } from '@/lib/time';
 import { useNow } from '@/lib/useNow';
 import { colors } from '@/theme/tokens';
 
@@ -45,23 +31,18 @@ export const MEAL_ICON: Record<MealSlot, LucideIcon> = {
   dinner: Moon,
 };
 
-type DayMenu = Partial<Record<MealSlot, string[]>>;
-
 // ─── Live meal hero ──────────────────────────────────────────────────────────
 /**
- * "What's cooking right now": the serving (or next) meal in IST, a countdown, today's dishes
- * for that meal as chips, and a strip of today's three windows.
+ * "What's cooking right now": the serving (or next) meal in IST, a countdown and a strip of
+ * today's three windows. The menu itself is the noticeboard photo stack.
  */
 export function MealHero({
   schedule,
   loading,
-  menu,
   eyebrow,
 }: {
   schedule: ScheduleRow[] | undefined;
   loading?: boolean;
-  /** Today's dishes per meal, when the weekly menu is published. */
-  menu?: DayMenu;
   eyebrow?: string;
 }) {
   const now = istNow(useNow());
@@ -74,7 +55,6 @@ export function MealHero({
   }
   const { serving, next, minutesLeft } = currentMeal(schedule, now.minutes);
   const focus = serving ?? next;
-  const dishes = focus ? (menu?.[focus.slot] ?? []) : [];
 
   return (
     <HeroCard>
@@ -119,16 +99,6 @@ export function MealHero({
           <Text className="font-body text-body-md text-on-primary-container">See you at breakfast.</Text>
         </View>
       )}
-
-      {dishes.length > 0 ? (
-        <View className="flex-row flex-wrap gap-space-xs">
-          {dishes.map((dish) => (
-            <View key={dish} className="rounded-full bg-on-primary/15 px-3 py-1.5">
-              <Text className="font-body-medium text-body-sm text-on-primary">{dish}</Text>
-            </View>
-          ))}
-        </View>
-      ) : null}
 
       <View className="flex-row gap-space-xs rounded-2xl bg-hero/40 p-1">
         {MEAL_SLOTS.map((slot) => {
@@ -195,12 +165,16 @@ export function NoticeboardCard({
   outletId,
   title,
   canReport,
+  kind = 'menu',
+  emptyText,
 }: {
   outletId: string | null | undefined;
   title: string;
   canReport: boolean;
+  kind?: PhotoKind;
+  emptyText?: string;
 }) {
-  const photos = useMenuPhotos(outletId);
+  const photos = useMenuPhotos(outletId, kind);
   const report = useReportPhoto();
   const pager = useRef<ScrollViewInstance>(null);
   const [frameWidth, setFrameWidth] = useState(0);
@@ -222,7 +196,9 @@ export function NoticeboardCard({
     return (
       <Card className="flex-row items-center gap-space-md">
         <IconBadge icon={Camera} tone="neutral" />
-        <Text className="flex-1 font-body text-body-md text-on-surface-variant">No {title.toLowerCase()} yet.</Text>
+        <Text className="flex-1 font-body text-body-md text-on-surface-variant">
+          {emptyText ?? `No ${title.toLowerCase()} photo yet.`}
+        </Text>
       </Card>
     );
   }
@@ -327,16 +303,16 @@ export function NoticeboardCard({
 }
 
 /** Room left in an outlet's photo stack (app_settings.max_menu_photos). */
-export function useMenuPhotoStack(outletId: string | null | undefined) {
-  const photos = useMenuPhotos(outletId);
+export function useMenuPhotoStack(outletId: string | null | undefined, kind: PhotoKind = 'menu') {
+  const photos = useMenuPhotos(outletId, kind);
   const limit = useMenuPhotoLimit();
   const count = photos.data?.length ?? 0;
   return { photos, limit: limit.data, count, full: limit.data !== undefined && count >= limit.data };
 }
 
 /** Manager view of the stack: every published photo with its reports, zoom and delete. */
-export function MenuPhotoStackEditor({ outletId }: { outletId: string }) {
-  const { photos, limit, count } = useMenuPhotoStack(outletId);
+export function MenuPhotoStackEditor({ outletId, kind = 'menu' }: { outletId: string; kind?: PhotoKind }) {
+  const { photos, limit, count } = useMenuPhotoStack(outletId, kind);
   const remove = useDeleteMenuPhoto();
   const [confirming, setConfirming] = useState<string | null>(null);
   const [zoomed, setZoomed] = useState<MenuPhoto | null>(null);
@@ -436,95 +412,3 @@ function PhotoReportCount({ photoId }: { photoId: string }) {
   return n > 0 ? <Badge label={`${n} report${n === 1 ? '' : 's'}`} tone="longStanding" /> : null;
 }
 
-// ─── Weekly menu ─────────────────────────────────────────────────────────────
-export function WeeklyMenuCard({ bhawanId }: { bhawanId: string | null | undefined }) {
-  const today = istNow();
-  const [day, setDay] = useState<DayKey>(today.dayKey);
-  const menu = useWeeklyMenu(bhawanId, weekStart(today.date));
-  const meals = menu.data?.items[day];
-
-  return (
-    <View className="gap-space-sm">
-      <SectionHeader title="This week" />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-space-xs">
-        {DAY_KEYS.map((key) => (
-          <Pill
-            key={key}
-            label={key === today.dayKey ? 'Today' : DAY_LABEL[key]}
-            selected={key === day}
-            onPress={() => setDay(key)}
-          />
-        ))}
-      </ScrollView>
-      {menu.isPending ? (
-        <ActivityIndicator />
-      ) : !menu.data ? (
-        <Card>
-          <Text className="font-body text-body-md text-on-surface-variant">Not published yet — see the noticeboard.</Text>
-        </Card>
-      ) : (
-        MEAL_SLOTS.map((slot) => (
-          <Card key={slot} className="flex-row gap-space-md">
-            <IconBadge icon={MEAL_ICON[slot]} tone={slot === 'dinner' ? 'primary' : 'tertiary'} />
-            <View className="flex-1 gap-space-sm">
-              <Text className="font-body-semibold text-body-lg text-on-surface">{MEAL_LABEL[slot]}</Text>
-              {meals?.[slot]?.length ? (
-                <DishChips dishes={meals[slot]!} />
-              ) : (
-                <Text className="font-body text-body-sm text-on-surface-variant">—</Text>
-              )}
-            </View>
-          </Card>
-        ))
-      )}
-    </View>
-  );
-}
-
-export function DishChips({ dishes }: { dishes: string[] }) {
-  return (
-    <View className="flex-row flex-wrap gap-space-xs">
-      {dishes.map((dish) => (
-        <View key={dish} className="rounded-full bg-surface-container-low px-3 py-1">
-          <Text className="font-body text-body-sm text-on-surface">{dish}</Text>
-        </View>
-      ))}
-    </View>
-  );
-}
-
-// ─── Extra items rate card ───────────────────────────────────────────────────
-export function ExtraItemsCard({ bhawanId }: { bhawanId: string | null | undefined }) {
-  const items = useExtraItems(bhawanId);
-
-  return (
-    <View className="gap-space-sm">
-      <SectionHeader title="Extras · pay at counter" />
-      <Card className="gap-space-xs">
-        {items.isPending ? (
-          <ActivityIndicator />
-        ) : !items.data?.length ? (
-          <Text className="font-body text-body-md text-on-surface-variant">No extra items listed.</Text>
-        ) : (
-          items.data.map((item) => (
-            <View key={item.id} className="flex-row items-center justify-between gap-space-sm py-1.5">
-              <View className="flex-1">
-                <Text
-                  className={cn(
-                    'font-body-semibold text-body-md',
-                    item.available ? 'text-on-surface' : 'text-on-surface-variant line-through',
-                  )}>
-                  {item.name}
-                </Text>
-                {item.unit ? (
-                  <Text className="font-body text-body-sm text-on-surface-variant">{item.unit}</Text>
-                ) : null}
-              </View>
-              {item.available ? <PriceChip paise={item.price_paise} /> : <Badge label="Unavailable" />}
-            </View>
-          ))
-        )}
-      </Card>
-    </View>
-  );
-}

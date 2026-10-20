@@ -6,7 +6,6 @@ import type { Enums, Tables, TablesInsert } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
 
 export type OutletType = Enums<'outlet_type'>;
-export type MenuItem = Tables<'menu_items'>;
 export type FixedRateItem = Tables<'fixed_rate_items'>;
 export type OutletShift = Tables<'outlet_shifts'>;
 
@@ -34,10 +33,8 @@ export type SearchHit = {
   outlet_name: string;
   outlet_type: OutletType;
   bhawan_id: string | null;
-  item_id: string | null;
-  item_name: string | null;
-  price_paise: number | null;
-  in_stock: boolean | null;
+  location_tag: string | null;
+  score: number;
 };
 
 export const OUTLET_TYPE_LABEL: Record<OutletType, string> = {
@@ -51,7 +48,6 @@ export const canteenKeys = {
   all: ['canteens'] as const,
   status: ['canteens', 'status'] as const,
   shift: (outletId: string) => ['canteens', 'shift', outletId] as const,
-  menu: (outletId: string) => ['canteens', 'menu', outletId] as const,
   rates: (bhawanId: string) => ['canteens', 'rates', bhawanId] as const,
   search: (query: string) => ['canteens', 'search', query] as const,
 };
@@ -92,24 +88,6 @@ export function useOutletShift(outletId: string | null | undefined) {
   });
 }
 
-export function useMenuItems(outletId: string | null | undefined) {
-  return useQuery({
-    queryKey: canteenKeys.menu(outletId ?? ''),
-    enabled: !!outletId,
-    queryFn: async (): Promise<MenuItem[]> => {
-      const { data, error } = await supabase
-        .from('menu_items')
-        .select('*')
-        .eq('outlet_id', outletId!)
-        .order('category', { nullsFirst: false })
-        .order('sort_order')
-        .order('name');
-      if (error) throw error;
-      return data;
-    },
-  });
-}
-
 export function useFixedRates(bhawanId: string | null | undefined) {
   return useQuery({
     queryKey: canteenKeys.rates(bhawanId ?? ''),
@@ -127,7 +105,7 @@ export function useFixedRates(bhawanId: string | null | undefined) {
   });
 }
 
-/** pg_trgm search across canteen/eatery names and menu items (public.search_food). */
+/** pg_trgm search across canteen and eatery names (public.search_food); menus are photos. */
 export function useFoodSearch(query: string) {
   const term = query.trim();
   return useQuery({
@@ -143,7 +121,7 @@ export function useFoodSearch(query: string) {
 }
 
 /**
- * Realtime (M4.6): a vendor's toggle, shift or menu edit invalidates the cached queries on every
+ * Realtime (M4.6): a vendor's toggle or shift edit invalidates the cached queries on every
  * other device. Subscriptions only invalidate; TanStack Query holds the state.
  */
 export function useLiveUpdates() {
@@ -155,7 +133,6 @@ export function useLiveUpdates() {
       .channel(`outlets-live-${id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'outlets' }, invalidate)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'outlet_shifts' }, invalidate)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_items' }, invalidate)
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);
@@ -222,38 +199,18 @@ export function useSetPin() {
 export function useSaveShift() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (shift: { outlet_id: string; opens_at: string; closes_at: string }) => {
+    mutationFn: async (shift: {
+      outlet_id: string;
+      opens_at: string;
+      closes_at: string;
+      /** Saturday/Sunday hours (020); both null = same as weekdays. */
+      weekend_opens_at: string | null;
+      weekend_closes_at: string | null;
+    }) => {
       const { error } = await supabase.from('outlet_shifts').upsert(shift, { onConflict: 'outlet_id' });
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: canteenKeys.all }),
-  });
-}
-
-export function useSaveMenuItem() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (item: TablesInsert<'menu_items'> & { id?: string }) => {
-      const { error } = item.id
-        ? await supabase.from('menu_items').update(item).eq('id', item.id)
-        : await supabase.from('menu_items').insert(item);
-      if (error) {
-        if (error.code === '23505') throw new Error('An item with this name is already on the menu.');
-        throw error;
-      }
-    },
-    onSuccess: (_data, item) => queryClient.invalidateQueries({ queryKey: canteenKeys.menu(item.outlet_id) }),
-  });
-}
-
-export function useDeleteMenuItem() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (item: { id: string; outlet_id: string }) => {
-      const { error } = await supabase.from('menu_items').delete().eq('id', item.id);
-      if (error) throw error;
-    },
-    onSuccess: (_data, item) => queryClient.invalidateQueries({ queryKey: canteenKeys.menu(item.outlet_id) }),
   });
 }
 

@@ -4,10 +4,10 @@ import { useSession } from '@/features/auth/session';
 import { useBhawans, useOutlets } from '@/features/campus/queries';
 import { canteenKeys } from '@/features/canteens/queries';
 import { api } from '@/lib/api';
-import type { Enums, Json, Tables, TablesInsert } from '@/lib/database.types';
+import type { Enums, Tables } from '@/lib/database.types';
 import { deleteMenuPhoto, uploadMenuPhoto } from '@/lib/images';
 import { supabase } from '@/lib/supabase';
-import { istNow, type DayKey } from '@/lib/time';
+import { istNow } from '@/lib/time';
 
 export type MealSlot = Enums<'meal_slot'>;
 export const MEAL_SLOTS: MealSlot[] = ['breakfast', 'lunch', 'dinner'];
@@ -27,19 +27,17 @@ export type ScheduleRow = {
 };
 export type TimingOverride = Tables<'timing_overrides'>;
 export type MenuPhoto = Tables<'menu_photos'>;
-export type ExtraItem = Tables<'extra_items'>;
-/** weekly_menus.items: { mon: { breakfast: ['Poha', 'Tea'], … }, … } (validated in SQL) */
-export type WeeklyMenuItems = Partial<Record<DayKey, Partial<Record<MealSlot, string[]>>>>;
+/** menu = menu / noticeboard photos (every outlet); extras = a mess's pay-to-get price list (020). */
+export type PhotoKind = 'menu' | 'extras';
 
 export const messKeys = {
   all: ['mess'] as const,
   schedule: (bhawanId: string) => ['mess', 'schedule', bhawanId] as const,
   overrides: (outletId: string) => ['mess', 'overrides', outletId] as const,
-  photos: (outletId: string) => ['mess', 'photos', outletId] as const,
+  photos: (outletId: string, kind?: PhotoKind) =>
+    kind ? (['mess', 'photos', outletId, kind] as const) : (['mess', 'photos', outletId] as const),
   photoLimit: ['mess', 'photo-limit'] as const,
   photoReports: (photoId: string) => ['mess', 'photo-reports', photoId] as const,
-  menu: (bhawanId: string, weekStart: string) => ['mess', 'menu', bhawanId, weekStart] as const,
-  extras: (bhawanId: string) => ['mess', 'extras', bhawanId] as const,
   secretaryBhawans: (role: SecretaryRole) => ['mess', 'secretary-bhawans', role] as const,
 };
 
@@ -88,15 +86,16 @@ export function useActiveOverrides(outletId: string | null | undefined) {
 }
 
 /** The outlet's published photo stack, newest first. */
-export function useMenuPhotos(outletId: string | null | undefined) {
+export function useMenuPhotos(outletId: string | null | undefined, kind: PhotoKind = 'menu') {
   return useQuery({
-    queryKey: messKeys.photos(outletId ?? ''),
+    queryKey: messKeys.photos(outletId ?? '', kind),
     enabled: !!outletId,
     queryFn: async (): Promise<MenuPhoto[]> => {
       const { data, error } = await supabase
         .from('menu_photos')
         .select('*')
         .eq('outlet_id', outletId!)
+        .eq('kind', kind)
         .eq('is_current', true)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -152,40 +151,6 @@ export function useReportPhoto() {
   });
 }
 
-export function useWeeklyMenu(bhawanId: string | null | undefined, weekStart: string) {
-  return useQuery({
-    queryKey: messKeys.menu(bhawanId ?? '', weekStart),
-    enabled: !!bhawanId,
-    queryFn: async (): Promise<{ items: WeeklyMenuItems; updated_at: string } | null> => {
-      const { data, error } = await supabase
-        .from('weekly_menus')
-        .select('items, updated_at')
-        .eq('bhawan_id', bhawanId!)
-        .eq('week_start', weekStart)
-        .maybeSingle();
-      if (error) throw error;
-      return data ? { items: data.items as WeeklyMenuItems, updated_at: data.updated_at } : null;
-    },
-  });
-}
-
-export function useExtraItems(bhawanId: string | null | undefined) {
-  return useQuery({
-    queryKey: messKeys.extras(bhawanId ?? ''),
-    enabled: !!bhawanId,
-    queryFn: async (): Promise<ExtraItem[]> => {
-      const { data, error } = await supabase
-        .from('extra_items')
-        .select('*')
-        .eq('bhawan_id', bhawanId!)
-        .order('sort_order')
-        .order('name');
-      if (error) throw error;
-      return data;
-    },
-  });
-}
-
 // ─── Mess Secretary ──────────────────────────────────────────────────────────
 
 export type SecretaryRole = 'mess_secretary' | 'bhawan_secretary';
@@ -237,52 +202,6 @@ export function useMessManagerBhawans() {
     isPending: secretary.isPending || outlets.isPending || bhawans.isPending,
     error: secretary.error ?? outlets.error ?? bhawans.error,
   };
-}
-
-export function useSaveWeeklyMenu() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (params: { bhawanId: string; weekStart: string; items: WeeklyMenuItems }) => {
-      const { error } = await supabase
-        .from('weekly_menus')
-        .upsert(
-          { bhawan_id: params.bhawanId, week_start: params.weekStart, items: params.items as Json },
-          { onConflict: 'bhawan_id,week_start' },
-        );
-      if (error) throw error;
-    },
-    onSuccess: (_data, { bhawanId, weekStart }) =>
-      queryClient.invalidateQueries({ queryKey: messKeys.menu(bhawanId, weekStart) }),
-  });
-}
-
-export function useSaveExtraItem() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (item: TablesInsert<'extra_items'> & { id?: string }) => {
-      const { error } = item.id
-        ? await supabase.from('extra_items').update(item).eq('id', item.id)
-        : await supabase.from('extra_items').insert(item);
-      if (error) {
-        if (error.code === '23505') throw new Error('An item with this name already exists.');
-        throw error;
-      }
-    },
-    onSuccess: (_data, item) =>
-      queryClient.invalidateQueries({ queryKey: messKeys.extras(item.bhawan_id) }),
-  });
-}
-
-export function useDeleteExtraItem() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (item: { id: string; bhawan_id: string }) => {
-      const { error } = await supabase.from('extra_items').delete().eq('id', item.id);
-      if (error) throw error;
-    },
-    onSuccess: (_data, item) =>
-      queryClient.invalidateQueries({ queryKey: messKeys.extras(item.bhawan_id) }),
-  });
 }
 
 export function useUploadMenuPhoto() {

@@ -8,11 +8,12 @@ import {
   Moon,
   Store,
   Sun,
+  UtensilsCrossed,
   type LucideIcon,
 } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 
-import { Card, IconBadge, PressableScale, Screen, SectionHeader, type IconTone } from '@/components/ui';
+import { Button, Card, IconBadge, PressableScale, Screen, SectionHeader, type IconTone } from '@/components/ui';
 import { AccountPanel } from '@/features/auth/AccountPanel';
 import { useSession } from '@/features/auth/session';
 import { useBhawans } from '@/features/campus/queries';
@@ -20,8 +21,8 @@ import { OpenStatusPill } from '@/features/canteens/components';
 import { useLiveStatus } from '@/features/canteens/queries';
 import { MealHero, OverrideBanner } from '@/features/mess/components';
 import { EateriesMapCard } from '@/features/map/components';
-import { useActiveOverrides, useMessOutlet, useMessSchedule, useWeeklyMenu } from '@/features/mess/queries';
-import { DAY_LABEL, istNow, weekStart } from '@/lib/time';
+import { useActiveOverrides, useMessOutlet, useMessSchedule } from '@/features/mess/queries';
+import { DAY_LABEL, istNow } from '@/lib/time';
 import { colors } from '@/theme/tokens';
 
 const TILES: { title: string; icon: LucideIcon; tone: IconTone; href: Href }[] = [
@@ -30,6 +31,31 @@ const TILES: { title: string; icon: LucideIcon; tone: IconTone; href: Href }[] =
   { title: 'Rebates', icon: CalendarX2, tone: 'open', href: '/rebates' },
   { title: 'Complaints', icon: MessageSquareWarning, tone: 'error', href: '/complaints' },
 ];
+
+/** "No hostel" accounts (staff, faculty, day scholars): browse any mess, or pick a Bhawan later. */
+function NoHostelCard() {
+  return (
+    <Card className="gap-space-md">
+      <View className="flex-row items-center gap-space-md">
+        <IconBadge icon={UtensilsCrossed} tone="primary" />
+        <View className="flex-1">
+          <Text className="font-body-semibold text-body-lg text-on-surface">No hostel selected</Text>
+          <Text className="font-body text-body-sm text-on-surface-variant">
+            Browse any Bhawan&apos;s mess menu and timings, or choose your Bhawan if you live in one.
+          </Text>
+        </View>
+      </View>
+      <View className="flex-row gap-space-sm">
+        <Link href="/mess" asChild>
+          <Button label="Browse messes" variant="secondary" className="flex-1" />
+        </Link>
+        <Link href="/choose-bhawan" asChild>
+          <Button label="Choose Bhawan" variant="tertiary" className="flex-1" />
+        </Link>
+      </View>
+    </Card>
+  );
+}
 
 /** Student dashboard per stitch-reference/campus_bites_home_dashboard (TASKS M3.15). */
 export default function StudentHome() {
@@ -41,7 +67,6 @@ export default function StudentHome() {
   const messOutlet = useMessOutlet(claims?.bhawan_id);
   const schedule = useMessSchedule(claims?.bhawan_id);
   const overrides = useActiveOverrides(messOutlet?.id);
-  const menu = useWeeklyMenu(claims?.bhawan_id, weekStart(today.date));
   const status = useLiveStatus();
   const myCanteens = status.data?.filter((s) => s.bhawan_id === claims?.bhawan_id) ?? [];
   const eateriesOpen = status.data?.filter((s) => s.type === 'eatery' && s.is_open).length;
@@ -58,11 +83,15 @@ export default function StudentHome() {
 
       <OverrideBanner overrides={overrides.data} />
 
-      <Link href="/mess" asChild>
-        <PressableScale accessibilityRole="link" accessibilityLabel="Open Mess Hub">
-          <MealHero schedule={schedule.data} loading={schedule.isPending} menu={menu.data?.items[today.dayKey]} />
-        </PressableScale>
-      </Link>
+      {claims?.bhawan_id ? (
+        <Link href="/mess" asChild>
+          <PressableScale accessibilityRole="link" accessibilityLabel="Open Mess Hub">
+            <MealHero schedule={schedule.data} loading={schedule.isPending} />
+          </PressableScale>
+        </Link>
+      ) : (
+        <NoHostelCard />
+      )}
 
       {myCanteens.length > 0 ? (
         <View className="gap-space-sm">

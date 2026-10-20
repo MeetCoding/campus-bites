@@ -54,9 +54,9 @@ Timezone for every business rule: **`Asia/Kolkata`** (IST, no DST). Times of day
 
 | Role (`app_role`) | How they get it | App area (mode) | Can do today |
 | --- | --- | --- | --- |
-| `student` | Automatic for every IITR Google account (except officials, below) | `(student)` | Home dashboard; Mess Hub (live meal status, noticeboard photo + zoom, weekly menu, extra items, report outdated photo); canteens (Day/Night, live status, menu, Institute rate card); eateries directory + food search; apply for mess rebates and track them; raise complaints (≤ 2 photos), confirm/reopen fixes, nudge after 7 days, public anonymised issue board |
-| `vendor` | Phone number whitelisted for ≥ 1 outlet (a **master vendor** for every outlet, §4.1) | `(staff)` | Per canteen/eatery: open/closed toggle, regular hours, temporary shift change, menu photo, menu items + stock, eatery location. Per mess they are whitelisted for: noticeboard photos, weekly menu, extra items (timing overrides and mess complaints stay with the Mess Secretary) |
-| `mess_secretary` | Assigned by admin (one per Bhawan) | `(staff)` + student | Mess noticeboard photo, weekly menu, extra items, mess timing overrides (residents are pushed); handles mess complaints |
+| `student` | Automatic for every IITR Google account (except officials, below) | `(student)` | Home dashboard; Mess Hub (live meal status, menu photos + zoom, extras price-list photos, report outdated photo; any Bhawan can be browsed); canteens (Day/Night, live status, menu photos, Institute rate card); eateries directory + search by name; apply for mess rebates and track them; raise complaints (≤ 2 photos), confirm/reopen fixes, nudge after 7 days, public anonymised issue board |
+| `vendor` | Phone number whitelisted for ≥ 1 outlet (a **master vendor** for every outlet, §4.1) | `(staff)` | Per canteen/eatery: open/closed toggle, regular hours (+ optional weekend hours), temporary shift change, menu photos, eatery location. Per mess they are whitelisted for: menu photos and extras photos (timing overrides and mess complaints stay with the Mess Secretary) |
+| `mess_secretary` | Assigned by admin (one per Bhawan) | `(staff)` + student | Mess menu photos, extras (pay-to-get) photos, mess timing overrides (residents are pushed); handles mess complaints |
 | `bhawan_secretary` | Assigned by admin (per Bhawan) | `(staff)` + student | Same outlet tools as a vendor for both canteens of their Bhawan; Institute fixed-rate card; handles hostel-canteen complaints |
 | `mess_authority` (Warden office) | Assigned by admin (per Bhawan) | `(authority)` | Rebate queue for their Bhawan(s): biometric cross-check → approve / reject with remarks; sees (read-only) and is alerted about escalated complaints of their Bhawan |
 | `adosw` | Assigned by admin (campus-wide) | `(authority)` | Handles campus-eatery complaints; oversees every complaint, incl. a cross-Bhawan long-standing queue |
@@ -66,7 +66,7 @@ A user can hold several roles (e.g. a student who is also Mess Secretary). Offic
 
 ### 2.3 A request, end to end
 
-*Student opens a canteen:* `useLiveStatus()` (TanStack Query) → `supabase.from('outlet_live_status').select()` with the user's JWT → PostgREST runs the view under RLS → the view calls `outlet_status_at()` which computes open/closed in IST (§6.4) → the app renders `OpenStatusPill`. A Realtime subscription on `outlets` / `outlet_shifts` / `menu_items` invalidates the query when a vendor changes something; the query also refetches every 60 s because shift boundaries pass with time.
+*Student opens a canteen:* `useLiveStatus()` (TanStack Query) → `supabase.from('outlet_live_status').select()` with the user's JWT → PostgREST runs the view under RLS → the view calls `outlet_status_at()` which computes open/closed in IST (§6.4) → the app renders `OpenStatusPill`. A Realtime subscription on `outlets` / `outlet_shifts` invalidates the query when a vendor changes something; the query also refetches every 60 s because shift boundaries pass with time.
 
 *Vendor toggles "Closed":* `update outlets set is_open = false` direct to Supabase → RLS policy `app.can_run_outlet(id)` re-checks the whitelist **live** → trigger stamps `status_updated_at = now()` → Realtime notifies every subscribed device → their status query refetches.
 
@@ -99,7 +99,8 @@ Every access token Supabase issues carries:
 | --- | --- | --- |
 | `roles[]` | All roles, e.g. `["student","mess_secretary"]` | `student` for IITR emails (unless an official), assigned roles from `role_assignments`, `vendor` if the phone has active whitelist rows |
 | `app_role` | Highest role (admin > adosw > mess_authority > mess_secretary > bhawan_secretary > vendor > student) | derived |
-| `bhawan_id` | The student's own Bhawan (`profiles.bhawan_id`) | profile |
+| `bhawan_id` | The student's own Bhawan (`profiles.bhawan_id`); null for "no hostel" accounts | profile |
+| `onboarded` | First-login choice made: a Bhawan or "I don't live in a hostel" (`profiles.onboarded_at` set, migration `020`) | profile |
 | `scope_bhawan_ids[]` | Bhawans of all Bhawan-scoped role assignments | `role_assignments` |
 | `outlet_ids[]` | Outlets the vendor phone is whitelisted for | `whitelisted_vendors` |
 
@@ -109,7 +110,7 @@ Claims are computed when a token is issued, so a change (new role, Bhawan chosen
 
 `SessionProvider` (`features/auth/session.tsx`) decodes the claims (unverified — UI decisions only) and derives:
 - **modes** — role groups the user may enter: `student → (student)`, `vendor | mess_secretary | bhawan_secretary → (staff)`, `mess_authority | adosw → (authority)`, `admin → (admin)`. Default mode = the group of `app_role`; multi-role users switch in the Account panel.
-- **needsOnboarding** — a student with no Bhawan must pick one first (written once: column grant + RLS + trigger make `profiles.bhawan_id` set-once).
+- **needsOnboarding** — a student with no Bhawan and `onboarded = false` must choose first: a Bhawan (written once: column grant + RLS + trigger make `profiles.bhawan_id` set-once) **or** "I don't live in a hostel" (staff, faculty, day scholars; sets only `profiles.onboarded_at`, column grant). No-hostel accounts browse any mess, see a "No hostel selected" card on Home, cannot apply for rebates (`REBATE_NO_BHAWAN`), and can pick a Bhawan once later (`/choose-bhawan`).
 
 The root stack gates every group with `Stack.Protected guard={…}`; a screen whose guard is false is unreachable (no render-then-hide). `index.tsx` redirects: signed out → `/sign-in`; signed in without any role (e.g. vendor whose whitelist was removed) → `/no-access`; onboarding → `/onboarding`; otherwise the mode's home (`/home`, `/console`, `/review`, `/admin`).
 
@@ -149,7 +150,7 @@ All admin actions go through FastAPI (`/v1/admin/*`), which re-checks `admin` in
 - **Unassign one outlet:** delete the whitelist row (`DELETE /v1/admin/vendor-whitelist/{id}`). Writes stop immediately (live checks); the console disappears at their next token refresh. With no outlets left the account remains but has no role (→ `/no-access`). Refused for a master vendor (`MASTER_VENDOR_OUTLET`).
 - **Delete a vendor:** *Delete vendor* → `DELETE /v1/admin/vendors/{phone}` → service-role RPC `admin_delete_vendor` (master status + every whitelist row) and then the Supabase sign-in account (`auth.admin.delete_user`; profiles cascade, history keeps a null actor). `VENDOR_NOT_FOUND`, `INVALID_PHONE`.
 - **Master vendor:** one phone that runs **every** mess, canteen and eatery. *Master vendor* when adding, or *Make master vendor* on a card → `POST /v1/admin/master-vendors {phone, label?}` → RPC `admin_make_master_vendor` (row in `master_vendors` + a whitelist row per outlet). Trigger `outlets_assign_master_vendors` whitelists every master for each outlet created later (a new eatery, or a new Bhawan's three outlets). `DELETE /v1/admin/master-vendors/{phone}` stops the auto-assignment and keeps the current outlets (`MASTER_VENDOR_NOT_FOUND`).
-- **Vendors on a mess** (migration `019`): `app.can_manage_outlet` lets a whitelisted vendor manage a mess outlet (noticeboard photos) and `app.can_manage_mess(bhawan)` (Mess Secretary **or** that mess's vendor) guards `weekly_menus` / `extra_items`. `app.can_run_outlet` still excludes messes (no open/closed toggle), timing overrides check `mess_secretary` in the API, and mess complaints still route to the Mess Secretary. In the app the Staff console shows the mess tools (minus *Timing override*) and `SecretaryScope role="mess_manager"` offers a Bhawan picker.
+- **Vendors on a mess** (migration `019`): `app.can_manage_outlet` lets a whitelisted vendor manage a mess outlet's photo stacks (menu and extras). `app.can_run_outlet` still excludes messes (no open/closed toggle), timing overrides check `mess_secretary` in the API, and mess complaints still route to the Mess Secretary. In the app the Staff console shows the mess tools (minus *Timing override*) and `SecretaryScope role="mess_manager"` offers a Bhawan picker.
 
 ### 4.2 Assign a role (secretary, authority, ADoSW, admin)
 1. The person signs in once with their IITR Google account (so a profile exists).
@@ -221,7 +222,7 @@ components/                ui.tsx (Alexandria primitives) · Layout.tsx
 Tailwind 4 loads `tailwind.config.js`, which reuses `apps/mobile/src/theme/tokens.js` (colors, sizes, radii, spacing); fonts come from Google Fonts. Types come from `apps/mobile/src/lib/database.types.ts`.
 
 ### 5.3 Database (`supabase/`)
-Migrations `001`–`019` are the only way the schema changes (applied to the linked project, version = file prefix); `seed.sql` holds the roster; `tests/*.sql` are regression scripts run inside a rolled-back transaction (`auth_rls`, `mess`, `canteens`, `rebates`, `complaints`, `admin_campus`, `maps`, `admin_web`, `master_vendors`) plus the read-only `hardening` check (RLS everywhere, no anon grants, API-only tables unwritable, indexed FKs, definer functions pin `search_path`, private buckets, cron scheduled). After each migration: regenerate `database.types.ts`, run the security + performance advisors.
+Migrations `001`–`020` are the only way the schema changes (applied to the linked project, version = file prefix); `seed.sql` holds the roster; `tests/*.sql` are regression scripts run inside a rolled-back transaction (`auth_rls`, `mess`, `canteens`, `rebates`, `complaints`, `admin_campus`, `maps`, `admin_web`, `master_vendors`) plus the read-only `hardening` check (RLS everywhere, no anon grants, API-only tables unwritable, indexed FKs, definer functions pin `search_path`, private buckets, cron scheduled). After each migration: regenerate `database.types.ts`, run the security + performance advisors.
 
 ### 5.4 Adding a feature (scales the same way)
 1. Migration: table + RLS + explicit grants (+ helper/trigger) in one file; extend a `supabase/tests/*.sql` script.
@@ -234,21 +235,21 @@ Migrations `001`–`019` are the only way the schema changes (applied to the lin
 ### 6.1 Mess Hub (migration `004_mess`)
 - **Timings:** `meal_timings` (institute default or per Bhawan, weekday/weekend) + `timing_overrides` (newest active wins). `mess_day_schedule(bhawan, date)` and `mess_schedule_at(bhawan, instant)` resolve them in IST; view `mess_schedule_today` feeds the live "Serving now · closes in N min" card.
 - **Timing override:** Mess Secretary → `POST /v1/outlets/{id}/timing-overrides` → validated (`PAST_DATE`, `SLOT_REQUIRED`, `INVALID_WINDOW`…) → inserted → **every resident of the Bhawan is pushed** (batches of 100, receipts checked, dead tokens pruned). `DELETE /v1/timing-overrides/{id}` ends it early.
-- **Weekly menu / extra items:** direct RLS writes by the Mess Secretary (`weekly_menus.items` JSON validated in SQL).
-- **Noticeboard photo:** pick → `compressForUpload` (≤ 2560 px, JPEG 0.82, EXIF stripped) → `noticeboard-photos/{outlet_id}/{date}-{random}.jpg` (public bucket; upload allowed by `app.can_manage_outlet` on the folder) → `menu_photos` row on top of the outlet's **photo stack** (migration `015`): every photo stays published, newest first, until an outlet manager deletes it (row first under RLS `app.can_manage_outlet`, then the storage object). The stack is capped at `app_settings.max_menu_photos` by a trigger (`MENU_PHOTO_LIMIT`; the app removes the just-uploaded file and disables upload when full). Students swipe through the stack (dots for web), zoom (pinch/double-tap) and can report each photo outdated once. Managers see every photo with its report count. Canteen and eatery menu photos use the same stack.
+- **Menus are photos only** (migration `020`, owner decision): the typed weekly menu, mess extra items and canteen/eatery menu items were dropped with their data. A mess has two stacks in `menu_photos`: `kind = 'menu'` (the weekly menu / noticeboard) and `kind = 'extras'` (the pay-to-get price list, messes only: `EXTRAS_PHOTO_MESS_ONLY`); canteens and eateries have `menu`. Staff console: *Menu photos*, *Extra items photos*, *Timing override*.
+- **Noticeboard photo:** pick → `compressForUpload` (≤ 2560 px, JPEG 0.82, EXIF stripped) → `noticeboard-photos/{outlet_id}/{date}-{random}.jpg` (public bucket; upload allowed by `app.can_manage_outlet` on the folder) → `menu_photos` row on top of the outlet's **photo stack** (migration `015`): every photo stays published, newest first, until an outlet manager deletes it (row first under RLS `app.can_manage_outlet`, then the storage object). Each stack (outlet × kind) is capped at `app_settings.max_menu_photos` by a trigger (`MENU_PHOTO_LIMIT`; the app removes the just-uploaded file and disables upload when full). Students swipe through the stack (dots for web), zoom (pinch/double-tap) and can report each photo outdated once. Managers see every photo with its report count. Canteen and eatery menu photos use the same stack.
 
 ### 6.2 Canteens & eateries (migrations `005`–`008`)
-- **Regular hours** `outlet_shifts`: defaults by trigger — Day 10:30–22:30, Night 22:30–10:30, eateries 10:00–22:00 (owner decision; adjust in the app). Edited directly by the outlet's vendor / Bhawan Secretary (no push).
+- **Regular hours** `outlet_shifts`: defaults by trigger — Day 10:30–22:30, Night 22:30–10:30, eateries 10:00–22:00 (owner decision; adjust in the app). Optional **weekend hours** (`weekend_opens_at` / `weekend_closes_at`, both or neither, migration `020`) apply to shifts starting on Saturday or Sunday (IST); a Friday-night shift keeps weekday hours. Edited directly by the outlet's vendor / Bhawan Secretary (no push).
 - **Temporary change:** same override endpoint with `slot = null`, overnight allowed; canteens push residents only when `notify = true`; eateries never push. Push data carries `outlet_type` so a tap opens that canteen.
-- **Menu & stock** `menu_items` (vendor-managed); **Institute Fixed-Rate Card** `fixed_rate_items` (Bhawan Secretary only — vendors cannot write it).
+- **Menu photos** (`menu_photos`, same stack as the mess, §6.1; no typed menu); **Institute Fixed-Rate Card** `fixed_rate_items` (Bhawan Secretary only — vendors cannot write it).
 - **Campus map** (migration `016`): `outlets.latitude/longitude` (both or neither) — set by the admin (API, above) or the eatery's own vendor (Staff console → Location; column grant + `app.can_run_outlet`). `outlet_live_status` carries the pin, so the map colours pins by live status (green open, grey closed) and Realtime/60 s refetch keep them current. `features/map/CampusMap` is Google Maps everywhere: `react-native-maps` with `PROVIDER_GOOGLE` on Android/iOS (`CampusMap.tsx`) and the Maps JavaScript API via `@vis.gl/react-google-maps` on web (`CampusMap.web.tsx`), sharing one minimal style (`mapStyle.ts`: no POI/transit, surface-tier land and roads). Screens: Home "Around campus" still map → `/eateries-map` (full map, tap a pin → status, View menu, Directions); eatery detail location card; "View on map" in the directory. Directions open Google Maps by URL (no key). Native maps need a development build with the keys in §3.5 (Expo Go on Android works without one).
-- **Search** `search_food(q)`: trigram-indexed substring match ranked first, fuzzy `word_similarity` for typos, messes excluded.
+- **Search** `search_food(q)`: canteen and eatery **names** (menus are photos since `020`): trigram-indexed substring match ranked first, fuzzy `word_similarity` for typos, messes excluded.
 
 ### 6.3 Push notifications
 App registers an Expo token per device (`push_tokens`, needs `eas init` + a development build). FastAPI resolves the audience (Bhawan residents or one user), sends in batches of ≤ 100, checks receipts and deletes `DeviceNotRegistered` tokens. Android channels: `mess-updates`, `nudges`. Tapping: rebate → Rebates; mess override → Mess Hub; canteen override → that canteen.
 
 ### 6.4 Live open/closed status (`outlet_status_at`)
-1. One **shift occurrence** per IST date: newest active slot-less override, else `outlet_shifts`; ends next day if it crosses midnight; a closed override yields none.
+1. One **shift occurrence** per IST date: newest active slot-less override, else `outlet_shifts` (weekend hours on Saturday/Sunday when set); ends next day if it crosses midnight; a closed override yields none.
 2. **Schedule:** open iff the instant is inside an occurrence (end-exclusive) → `closes_at`; otherwise `next_opens_at` (within 7 days).
 3. **Manual toggle** (`outlets.is_open`) wins only if made after the latest shift boundary — it expires when the schedule next changes, so a forgotten toggle never sticks. Re-asserting the same value still counts (clients touch `status_updated_at`; a trigger pins it to `now()`).
 4. App: `OpenStatusPill` ("OPEN NOW • Closes at 10:30 PM" / "OPENS TOMORROW 10:30 AM" / "CLOSED"), applying boundaries passed since the last fetch.
@@ -287,10 +288,8 @@ Enums: `app_role` · `outlet_type` (`mess`, `day_canteen`, `night_canteen`, `eat
 | `master_vendors` | `phone_e164`, `label`, `added_by` — whitelisted for every outlet, now and later (trigger on `outlets`) | API (admin) |
 | `push_tokens` | `user_id`, `expo_token` (unique), `platform` | RPC / owner delete |
 | `meal_timings`, `timing_overrides` | defaults per slot/day type; overrides with dates, window or closed, reason | migration; API |
-| `weekly_menus`, `extra_items` | per Bhawan | Mess Secretary |
-| `menu_photos`, `photo_reports` | photo stack per outlet (`is_current`, newest first, ≤ `max_menu_photos`); one report per student per photo | outlet managers (insert/delete); students (reports) |
-| `outlet_shifts` | one regular window per outlet | outlet managers |
-| `menu_items` | per outlet, `price_paise`, `in_stock` | outlet managers (not messes) |
+| `menu_photos`, `photo_reports` | photo stacks per outlet and `kind` (`menu`, or `extras` for messes; newest first, ≤ `max_menu_photos` each); one report per student per photo | outlet managers (insert/delete); students (reports) |
+| `outlet_shifts` | one regular window per outlet + optional weekend window | outlet managers |
 | `fixed_rate_items` | per Bhawan, `ceiling_price_paise`, `circular_ref` | Bhawan Secretary |
 | `rebate_applications`, `rebate_events` | application + audit trail | API only |
 | `complaints` | `created_by`, `outlet_id`, routed `domain`/`bhawan_id`/`assignee_role`, `category`, `title`, `body`, `attachment_paths` (≤ 2), `status`, `opened_at`, `resolved_at`, `nudge_count`, `last_nudged_at`, `long_standing_at`, `escalated_at` | student insert (5 columns); everything else via API RPCs |

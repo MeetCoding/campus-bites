@@ -8,31 +8,31 @@ do $$
 declare
   b public.bhawans;
 begin
-  select * into b from public.admin_create_bhawan('Kasturba Bhawan', 'kasturba');
+  select * into b from public.admin_create_bhawan('Testpur Bhawan', 'testpur');
   assert b.sort_order = (select max(sort_order) from public.bhawans), 'appended to the end';
   assert (select array_agg(name order by name) from public.outlets where bhawan_id = b.id)
-         = array['Kasturba Bhawan Day Canteen', 'Kasturba Bhawan Mess', 'Kasturba Bhawan Night Canteen'],
+         = array['Testpur Bhawan Day Canteen', 'Testpur Bhawan Mess', 'Testpur Bhawan Night Canteen'],
          'three outlets named like the seed';
-  assert (select count(*) from public.outlets where slug in ('kasturba-mess', 'kasturba-day-canteen', 'kasturba-night-canteen')) = 3, 'outlet slugs';
+  assert (select count(*) from public.outlets where slug in ('testpur-mess', 'testpur-day-canteen', 'testpur-night-canteen')) = 3, 'outlet slugs';
   assert (select count(*) from public.outlet_shifts s join public.outlets o on o.id = s.outlet_id
           where o.bhawan_id = b.id) = 2, 'both canteens get default shifts';
   assert (select count(*) from public.mess_day_schedule(b.id, '2026-10-19')) = 3, 'mess uses the default meal timings';
 
   begin
-    perform public.admin_create_bhawan('Kasturba Bhawan', 'kasturba-2');
+    perform public.admin_create_bhawan('Testpur Bhawan', 'testpur-2');
     assert false, 'duplicate name rejected';
   exception when unique_violation then null;
   end;
 
-  select * into b from public.admin_update_bhawan(b.id, 'Kasturba Gandhi Bhawan', 40);
-  assert b.name = 'Kasturba Gandhi Bhawan' and b.sort_order = 40 and b.slug = 'kasturba', 'renamed, reordered, slug kept';
-  assert (select name from public.outlets where slug = 'kasturba-mess') = 'Kasturba Gandhi Bhawan Mess', 'outlets renamed';
+  select * into b from public.admin_update_bhawan(b.id, 'Testpur Gandhi Bhawan', 40);
+  assert b.name = 'Testpur Gandhi Bhawan' and b.sort_order = 40 and b.slug = 'testpur', 'renamed, reordered, slug kept';
+  assert (select name from public.outlets where slug = 'testpur-mess') = 'Testpur Gandhi Bhawan Mess', 'outlets renamed';
   select * into b from public.admin_update_bhawan(b.id, null, 41);
-  assert b.name = 'Kasturba Gandhi Bhawan' and b.sort_order = 41, 'null leaves the name alone';
+  assert b.name = 'Testpur Gandhi Bhawan' and b.sort_order = 41, 'null leaves the name alone';
   assert not exists (select 1 from public.admin_update_bhawan(gen_random_uuid(), 'Ghost Bhawan')), 'unknown id → no row';
 
   assert public.admin_delete_bhawan(b.id), 'empty Bhawan removed';
-  assert not exists (select 1 from public.outlets where slug like 'kasturba-%'), 'with its outlets';
+  assert not exists (select 1 from public.outlets where slug like 'testpur-%'), 'with its outlets';
   assert not public.admin_delete_bhawan(b.id), 'second delete → false';
 
   -- A Bhawan someone lives in stays.

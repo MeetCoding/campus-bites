@@ -10,6 +10,8 @@ export type AppClaims = {
   app_role: AppRole | null;
   roles: AppRole[];
   bhawan_id: string | null;
+  /** Finished first-login onboarding: picked a Bhawan or chose "no hostel" (020). */
+  onboarded: boolean;
   scope_bhawan_ids: string[];
   outlet_ids: string[];
 };
@@ -44,6 +46,7 @@ export function decodeClaims(accessToken: string): AppClaims {
     app_role: (payload.app_role as AppRole | null) ?? null,
     roles: stringArray(payload.roles) as AppRole[],
     bhawan_id: typeof payload.bhawan_id === 'string' ? payload.bhawan_id : null,
+    onboarded: payload.onboarded === true,
     scope_bhawan_ids: stringArray(payload.scope_bhawan_ids),
     outlet_ids: stringArray(payload.outlet_ids),
   };
