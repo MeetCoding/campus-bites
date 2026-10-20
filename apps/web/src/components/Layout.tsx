@@ -1,4 +1,4 @@
-import { LogOut, Shield, Store, UtensilsCrossed } from 'lucide-react';
+import { Building2, LogOut, Shield, Store, UtensilsCrossed } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { NavLink } from 'react-router';
 
@@ -9,6 +9,7 @@ import { useSession } from '@/lib/session';
 
 const NAV = [
   { to: '/vendors', label: 'Vendors', icon: Store },
+  { to: '/hostels', label: 'Hostels', icon: Building2 },
   { to: '/eateries', label: 'Eateries', icon: UtensilsCrossed },
   { to: '/admins', label: 'Admins', icon: Shield },
 ];

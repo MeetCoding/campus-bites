@@ -17,6 +17,8 @@ export type WhitelistEntry = {
 export type VendorAccount = {
   phone_e164: string;
   has_account: boolean;
+  /** Runs every mess, canteen and eatery, including ones added later. */
+  is_master: boolean;
   passcode_set_at: string | null;
   last_sign_in_at: string | null;
 };
@@ -105,6 +107,35 @@ export function useSetPasscode() {
   return useMutation({
     mutationFn: (body: { phone: string; passcode: string }) =>
       api<VendorAccount>('/v1/admin/vendor-accounts/passcode', { method: 'POST', body }),
+    onSuccess: invalidate,
+  });
+}
+
+/** Whitelists the phone for every outlet (and every future one). Returns how many it now runs. */
+export function useMakeMasterVendor() {
+  const invalidate = useInvalidateVendors();
+  return useMutation({
+    mutationFn: (body: { phone: string; label?: string | null }) =>
+      api<{ phone_e164: string; outlets_linked: number }>('/v1/admin/master-vendors', { method: 'POST', body }),
+    onSuccess: invalidate,
+  });
+}
+
+/** Stops auto-assigning new outlets; the vendor keeps the outlets they run now. */
+export function useRemoveMasterVendor() {
+  const invalidate = useInvalidateVendors();
+  return useMutation({
+    mutationFn: (phone: string) =>
+      api<void>(`/v1/admin/master-vendors/${encodeURIComponent(phone)}`, { method: 'DELETE' }),
+    onSuccess: invalidate,
+  });
+}
+
+/** Removes every outlet link and the vendor's sign-in account. */
+export function useDeleteVendor() {
+  const invalidate = useInvalidateVendors();
+  return useMutation({
+    mutationFn: (phone: string) => api<void>(`/v1/admin/vendors/${encodeURIComponent(phone)}`, { method: 'DELETE' }),
     onSuccess: invalidate,
   });
 }

@@ -52,6 +52,8 @@ class InMemoryAdminRepository:
         # Whitelisted phone → its auth user (absent = no account yet), and the passcodes set.
         self.vendor_users: dict[str, UUID] = {}
         self.passcodes: dict[str, str] = {}
+        self.masters: set[str] = set()
+        self.deleted_users: list[UUID] = []
         self.bhawan_rows = {
             RAJENDRA: BhawanOut(id=RAJENDRA, name="Rajendra Bhawan", slug="rajendra", sort_order=1)
         }
@@ -232,7 +234,11 @@ class InMemoryAdminRepository:
         phones = sorted({e.phone_e164 for e in self.whitelist.values()})
         return [
             (
-                VendorAccount(phone_e164=phone, has_account=phone in self.vendor_users),
+                VendorAccount(
+                    phone_e164=phone,
+                    has_account=phone in self.vendor_users,
+                    is_master=phone in self.masters,
+                ),
                 self.vendor_users.get(phone),
             )
             for phone in phones
@@ -249,6 +255,39 @@ class InMemoryAdminRepository:
         return VendorAccount(
             phone_e164=phone_e164, has_account=True, passcode_set_at=datetime.now(UTC)
         )
+
+    async def get_whitelist_entry(self, entry_id: UUID) -> WhitelistEntry | None:
+        return self.whitelist.get(entry_id)
+
+    async def is_master_vendor(self, phone_e164: str) -> bool:
+        return phone_e164 in self.masters
+
+    async def make_master_vendor(self, phone_e164: str, label: str | None, added_by: UUID) -> int:
+        self.masters.add(phone_e164)
+        for outlet_id in self.outlets:
+            if not any(
+                e.phone_e164 == phone_e164 and e.outlet_id == outlet_id
+                for e in self.whitelist.values()
+            ):
+                await self.add_whitelist(phone_e164, outlet_id, label, added_by)
+        return len(self.outlets)
+
+    async def remove_master_vendor(self, phone_e164: str) -> bool:
+        if phone_e164 not in self.masters:
+            return False
+        self.masters.discard(phone_e164)
+        return True
+
+    async def delete_vendor(self, phone_e164: str) -> tuple[int, UUID | None]:
+        self.masters.discard(phone_e164)
+        ids = [i for i, e in self.whitelist.items() if e.phone_e164 == phone_e164]
+        for entry_id in ids:
+            del self.whitelist[entry_id]
+        return len(ids), self.vendor_users.get(phone_e164)
+
+    async def delete_auth_user(self, user_id: UUID) -> None:
+        self.deleted_users.append(user_id)
+        self.vendor_users = {p: u for p, u in self.vendor_users.items() if u != user_id}
 
     def is_admin(self, user_id: UUID) -> bool:
         return any(
@@ -864,6 +903,7 @@ def test_set_passcode_creates_then_resets_account(
         {
             "phone_e164": "+919510709195",
             "has_account": False,
+            "is_master": False,
             "passcode_set_at": None,
             "last_sign_in_at": None,
         }
@@ -929,3 +969,92 @@ def test_students_cannot_set_passcodes(
     )
 
     assert response.status_code == 403
+
+
+# ─── Master vendors / deleting vendors ───────────────────────────────────────
+def test_make_master_vendor_links_every_outlet(
+    client: TestClient, repo: InMemoryAdminRepository, admin_headers: dict[str, str]
+) -> None:
+    response = client.post(
+        "/v1/admin/master-vendors",
+        headers=admin_headers,
+        json={"phone": "95107 09195", "label": " "},
+    )
+
+    assert response.status_code == 201
+    assert response.json() == {"phone_e164": "+919510709195", "outlets_linked": len(repo.outlets)}
+    accounts = client.get("/v1/admin/vendor-accounts", headers=admin_headers).json()
+    assert accounts[0]["is_master"] is True
+
+
+def test_master_vendor_outlets_cannot_be_unassigned_one_by_one(
+    client: TestClient, repo: InMemoryAdminRepository, admin_headers: dict[str, str]
+) -> None:
+    client.post("/v1/admin/master-vendors", headers=admin_headers, json={"phone": "9510709195"})
+    entry_id = next(iter(repo.whitelist))
+
+    blocked = client.delete(f"/v1/admin/vendor-whitelist/{entry_id}", headers=admin_headers)
+    removed = client.delete("/v1/admin/master-vendors/+919510709195", headers=admin_headers)
+    allowed = client.delete(f"/v1/admin/vendor-whitelist/{entry_id}", headers=admin_headers)
+
+    assert blocked.status_code == 409
+    assert blocked.json()["detail"]["code"] == "MASTER_VENDOR_OUTLET"
+    assert removed.status_code == 204
+    assert allowed.status_code == 204
+
+
+def test_remove_unknown_master_vendor_is_404(
+    client: TestClient, repo: InMemoryAdminRepository, admin_headers: dict[str, str]
+) -> None:
+    response = client.delete("/v1/admin/master-vendors/9510709195", headers=admin_headers)
+
+    assert response.status_code == 404
+    assert response.json()["detail"]["code"] == "MASTER_VENDOR_NOT_FOUND"
+
+
+def test_delete_vendor_removes_links_and_account(
+    client: TestClient, repo: InMemoryAdminRepository, admin_headers: dict[str, str]
+) -> None:
+    client.post("/v1/admin/master-vendors", headers=admin_headers, json={"phone": "9510709195"})
+    client.post(
+        "/v1/admin/vendor-accounts/passcode",
+        headers=admin_headers,
+        json={"phone": "9510709195", "passcode": "482915"},
+    )
+    account = repo.vendor_users["+919510709195"]
+
+    response = client.delete("/v1/admin/vendors/%2B919510709195", headers=admin_headers)
+
+    assert response.status_code == 204
+    assert repo.whitelist == {}
+    assert repo.masters == set()
+    assert repo.deleted_users == [account]
+
+
+def test_delete_unknown_vendor_is_404(
+    client: TestClient, repo: InMemoryAdminRepository, admin_headers: dict[str, str]
+) -> None:
+    response = client.delete("/v1/admin/vendors/9510709195", headers=admin_headers)
+
+    assert response.status_code == 404
+    assert response.json()["detail"]["code"] == "VENDOR_NOT_FOUND"
+
+
+def test_delete_vendor_with_bad_phone_is_422(
+    client: TestClient, repo: InMemoryAdminRepository, admin_headers: dict[str, str]
+) -> None:
+    response = client.delete("/v1/admin/vendors/12345", headers=admin_headers)
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "INVALID_PHONE"
+
+
+def test_students_cannot_make_master_vendors(
+    client: TestClient, repo: InMemoryAdminRepository, make_token: TokenFactory
+) -> None:
+    response = client.post(
+        "/v1/admin/master-vendors", headers=bearer(make_token()), json={"phone": "9510709195"}
+    )
+
+    assert response.status_code == 403
+    assert repo.masters == set()

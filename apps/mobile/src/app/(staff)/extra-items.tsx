@@ -15,7 +15,7 @@ import { colors } from '@/theme/tokens';
 export default function ExtraItemsScreen() {
   return (
     <Screen>
-      <SecretaryScope>{(bhawan) => <ExtraItemsEditor key={bhawan.id} bhawanId={bhawan.id} />}</SecretaryScope>
+      <SecretaryScope role="mess_manager">{(bhawan) => <ExtraItemsEditor key={bhawan.id} bhawanId={bhawan.id} />}</SecretaryScope>
     </Screen>
   );
 }

@@ -16,7 +16,7 @@ import { addDays, DAY_KEYS, DAY_LABEL, formatDateRange, istNow, timeAgo, weekSta
 export default function MessMenuScreen() {
   return (
     <Screen>
-      <SecretaryScope>{(bhawan) => <WeekPicker key={bhawan.id} bhawanId={bhawan.id} />}</SecretaryScope>
+      <SecretaryScope role="mess_manager">{(bhawan) => <WeekPicker key={bhawan.id} bhawanId={bhawan.id} />}</SecretaryScope>
     </Screen>
   );
 }

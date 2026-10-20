@@ -1,4 +1,4 @@
-import { KeyRound, Phone, Plus, Store, X } from 'lucide-react';
+import { Crown, KeyRound, Phone, Plus, Store, Trash2, X } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 
 import { Button, Card, ConfirmButton, EmptyState, Loading, Notice, PageHeader, Pill, TextField } from '@/components/ui';
@@ -7,6 +7,9 @@ import { useOutlets, type Outlet } from '@/features/eateries/queries';
 import { PasscodeField, PasscodeReveal } from '@/features/vendors/PasscodeFields';
 import {
   useAssignOutlet,
+  useDeleteVendor,
+  useMakeMasterVendor,
+  useRemoveMasterVendor,
   useSetPasscode,
   useUnassignOutlet,
   useVendors,
@@ -67,14 +70,16 @@ function AddVendorForm({
   onPasscodeSet: (r: Revealed) => void;
 }) {
   const assign = useAssignOutlet();
+  const makeMaster = useMakeMasterVendor();
   const setPasscode = useSetPasscode();
   const [phoneInput, setPhoneInput] = useState('');
   const [label, setLabel] = useState('');
   const [outletId, setOutletId] = useState('');
+  const [master, setMaster] = useState(false);
   const [passcode, setPasscodeValue] = useState(() => generatePasscode());
   const [problems, setProblems] = useState<{ phone?: string; outlet?: string; passcode?: string }>({});
 
-  const error = assign.error ?? setPasscode.error;
+  const error = assign.error ?? makeMaster.error ?? setPasscode.error;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -85,14 +90,18 @@ function AddVendorForm({
         : existingPhones.includes(phone)
           ? 'Already a vendor: use Assign outlet or Reset passcode on their card below.'
           : undefined,
-      outlet: outletId ? undefined : 'Pick the outlet they run.',
+      outlet: master || outletId ? undefined : 'Pick the outlet they run.',
       passcode: passcodeProblem(passcode) ?? undefined,
     };
     setProblems(found);
     if (!phone || found.phone || found.outlet || found.passcode) return;
 
     try {
-      await assign.mutateAsync({ phone, outlet_id: outletId, label: label.trim() || null });
+      if (master) {
+        await makeMaster.mutateAsync({ phone, label: label.trim() || null });
+      } else {
+        await assign.mutateAsync({ phone, outlet_id: outletId, label: label.trim() || null });
+      }
       await setPasscode.mutateAsync({ phone, passcode });
     } catch {
       return; // shown below; a vendor added without a passcode can get one from its card
@@ -101,6 +110,7 @@ function AddVendorForm({
     setPhoneInput('');
     setLabel('');
     setOutletId('');
+    setMaster(false);
     setPasscodeValue(generatePasscode());
   }
 
@@ -128,16 +138,36 @@ function AddVendorForm({
             onChange={(e) => setLabel(e.target.value)}
           />
           <div className="flex flex-col gap-space-xs">
-            <OutletSelect outlets={outlets} value={outletId} onChange={(e) => setOutletId(e.target.value)} />
-            {problems.outlet ? <p className="text-body-sm text-error">{problems.outlet}</p> : null}
+            <OutletSelect
+              outlets={outlets}
+              value={master ? '' : outletId}
+              disabled={master}
+              onChange={(e) => setOutletId(e.target.value)}
+            />
+            {problems.outlet && !master ? <p className="text-body-sm text-error">{problems.outlet}</p> : null}
           </div>
         </div>
+        <label className="flex cursor-pointer items-start gap-space-sm rounded-2xl bg-surface-container-low p-space-md">
+          <input
+            type="checkbox"
+            checked={master}
+            onChange={(e) => setMaster(e.target.checked)}
+            className="mt-0.5 size-4 accent-primary"
+          />
+          <span className="flex flex-col">
+            <span className="font-semibold text-on-surface">Master vendor</span>
+            <span className="text-body-sm text-on-surface-variant">
+              Runs every mess, canteen and eatery, including hostels and eateries added later. For messes
+              they get the menu, noticeboard and extra-item tools; timing changes stay with the Mess Secretary.
+            </span>
+          </span>
+        </label>
         <div className="flex flex-col gap-space-md sm:flex-row sm:items-start sm:justify-between">
           <PasscodeField value={passcode} onChange={setPasscodeValue} error={problems.passcode} />
           <Button
             type="submit"
             variant="primary"
-            loading={assign.isPending || setPasscode.isPending}
+            loading={assign.isPending || makeMaster.isPending || setPasscode.isPending}
             icon={<Plus className="size-4" aria-hidden />}
             className="sm:mt-6">
             Add vendor
@@ -162,6 +192,7 @@ function VendorCard({
 }) {
   const account = vendor.account;
   const hasPasscode = Boolean(account?.passcode_set_at);
+  const isMaster = account?.is_master ?? false;
 
   return (
     <Card className="flex flex-col gap-space-md">
@@ -173,11 +204,18 @@ function VendorCard({
           </span>
           {vendor.label ? <span className="text-body-sm text-on-surface-variant">{vendor.label}</span> : null}
         </div>
-        {hasPasscode ? (
-          <Pill tone="open">Passcode set</Pill>
-        ) : (
-          <Pill tone="warning">No passcode · can't sign in</Pill>
-        )}
+        <div className="flex flex-wrap gap-space-xs">
+          {isMaster ? (
+            <Pill tone="official">
+              <Crown className="size-3" aria-hidden /> Master vendor
+            </Pill>
+          ) : null}
+          {hasPasscode ? (
+            <Pill tone="open">Passcode set</Pill>
+          ) : (
+            <Pill tone="warning">No passcode · can't sign in</Pill>
+          )}
+        </div>
       </div>
 
       <p className="text-body-sm text-on-surface-variant">
@@ -187,14 +225,79 @@ function VendorCard({
           : 'Has never signed in.'}
       </p>
 
-      <OutletList vendor={vendor} outlets={outlets} />
+      {isMaster ? <MasterOutlets vendor={vendor} /> : <OutletList vendor={vendor} outlets={outlets} />}
 
       {revealed ? (
         <PasscodeReveal {...revealed} onDone={() => onPasscodeSet(null)} />
       ) : (
         <PasscodeEditor phone={vendor.phone} hasPasscode={hasPasscode} onSaved={onPasscodeSet} />
       )}
+
+      <VendorActions vendor={vendor} isMaster={isMaster} />
     </Card>
+  );
+}
+
+/** A master vendor runs everything, so outlets aren't assigned one by one; the list folds away. */
+function MasterOutlets({ vendor }: { vendor: Vendor }) {
+  return (
+    <details className="group rounded-2xl bg-surface-container-low px-space-md py-space-sm">
+      <summary className="cursor-pointer list-none text-body-md text-on-surface">
+        Runs all <span className="font-semibold">{vendor.outlets.length} outlets</span>, and every hostel
+        or eatery added later.{' '}
+        <span className="font-label text-label-md text-primary group-open:hidden">Show</span>
+        <span className="hidden font-label text-label-md text-primary group-open:inline">Hide</span>
+      </summary>
+      <ul className="mt-space-sm flex flex-col gap-1 text-body-sm text-on-surface-variant">
+        {vendor.outlets.map((outlet) => (
+          <li key={outlet.entryId}>{outlet.name}</li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
+function VendorActions({ vendor, isMaster }: { vendor: Vendor; isMaster: boolean }) {
+  const makeMaster = useMakeMasterVendor();
+  const removeMaster = useRemoveMasterVendor();
+  const deleteVendor = useDeleteVendor();
+  const error = makeMaster.error ?? removeMaster.error ?? deleteVendor.error;
+
+  return (
+    <div className="flex flex-col gap-space-sm">
+      <div className="flex flex-wrap items-center gap-space-xs">
+        {isMaster ? (
+          <ConfirmButton
+            label="Remove master status"
+            confirmLabel="Stop auto-assigning"
+            icon={<Crown className="size-4" aria-hidden />}
+            loading={removeMaster.isPending}
+            onConfirm={() => removeMaster.mutate(vendor.phone)}
+          />
+        ) : (
+          <ConfirmButton
+            label="Make master vendor"
+            confirmLabel="Assign every outlet"
+            icon={<Crown className="size-4" aria-hidden />}
+            loading={makeMaster.isPending}
+            onConfirm={() => makeMaster.mutate({ phone: vendor.phone, label: vendor.label })}
+          />
+        )}
+        <ConfirmButton
+          label="Delete vendor"
+          confirmLabel="Delete vendor and sign-in"
+          icon={<Trash2 className="size-4" aria-hidden />}
+          loading={deleteVendor.isPending}
+          onConfirm={() => deleteVendor.mutate(vendor.phone)}
+        />
+      </div>
+      {isMaster ? (
+        <p className="text-body-sm text-on-surface-variant">
+          Removing master status keeps the outlets they run now; unassign any you no longer want.
+        </p>
+      ) : null}
+      {error ? <Notice>{errorMessage(error)}</Notice> : null}
+    </div>
   );
 }
 

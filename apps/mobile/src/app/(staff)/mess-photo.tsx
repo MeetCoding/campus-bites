@@ -11,7 +11,7 @@ import { istNow, weekStart } from '@/lib/time';
 export default function MessPhotoScreen() {
   return (
     <Screen>
-      <SecretaryScope>{(bhawan) => <PhotoUploader bhawanId={bhawan.id} bhawanName={bhawan.name} />}</SecretaryScope>
+      <SecretaryScope role="mess_manager">{(bhawan) => <PhotoUploader bhawanId={bhawan.id} bhawanName={bhawan.name} />}</SecretaryScope>
     </Screen>
   );
 }

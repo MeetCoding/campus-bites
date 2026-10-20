@@ -202,6 +202,9 @@ end $$;
 
 -- ─── The same device signs in as the vendor: token moves to them ─────────────
 reset role;
+-- Live data may link the vendor to messes (allowed since 019); this check is about one it isn't.
+delete from public.whitelisted_vendors wv using public.outlets o
+ where o.id = wv.outlet_id and o.slug = 'rajendra-mess';
 set local role authenticated;
 select set_config('request.jwt.claims', json_build_object(
   'sub', '00000000-0000-0000-0000-00000000b003', 'role', 'authenticated',
@@ -217,7 +220,7 @@ begin
   assert (select count(*) from public.push_tokens) = 1, 'vendor now owns the device token';
 
   assert app.can_manage_outlet(rajendra_canteen), 'whitelisted vendor manages canteen';
-  assert not app.can_manage_outlet(rajendra_mess), 'vendors never manage a mess';
+  assert not app.can_manage_outlet(rajendra_mess), 'vendors only manage messes they are whitelisted for';
 
   begin
     insert into public.photo_reports (photo_id, reason) values (current_photo, 'outdated');

@@ -5,6 +5,13 @@
 
 begin;
 
+-- Live roster sizes (admins add Bhawans, eateries and vendor links), read as postgres.
+create temp table expected_counts on commit drop as
+select (select count(*) from public.bhawans) as bhawans,
+       (select count(*) from public.outlets) as outlets,
+       (select count(*) from public.whitelisted_vendors) as whitelist;
+grant select on expected_counts to authenticated;
+
 -- ─── Fixtures (as postgres) ──────────────────────────────────────────────────
 insert into auth.users (id, instance_id, aud, role, email, phone, raw_user_meta_data, created_at, updated_at)
 values
@@ -67,7 +74,9 @@ begin
          'claims', '{"email": "", "phone": "919510709195"}'::jsonb)) -> 'claims';
   assert c ->> 'app_role' = 'vendor', 'vendor app_role';
   assert c -> 'roles' = '["vendor"]', 'vendor roles';
-  assert jsonb_array_length(c -> 'outlet_ids') = 26, 'vendor owns 22 canteens + 4 eateries';
+  assert jsonb_array_length(c -> 'outlet_ids') = (
+    select count(*) from public.whitelisted_vendors where phone_e164 = '+919510709195' and active
+  ), 'vendor claims every outlet it is whitelisted for';
 end $$;
 
 -- ─── RLS as a student ────────────────────────────────────────────────────────
@@ -82,8 +91,8 @@ declare
   n int;
   ganga uuid := (select id from public.bhawans where slug = 'ganga');
 begin
-  assert (select count(*) from public.bhawans) = 11, 'student reads 11 bhawans';
-  assert (select count(*) from public.outlets) = 37, 'student reads 37 outlets';
+  assert (select count(*) from public.bhawans) = (select bhawans from expected_counts), 'student reads every bhawan';
+  assert (select count(*) from public.outlets) = (select outlets from expected_counts), 'student reads every outlet';
   assert (select min_rebate_days from public.app_settings) = 3, 'student reads app_settings';
   assert (select count(*) from public.profiles) = 1, 'student sees only own profile';
   assert (select count(*) from public.role_assignments) = 0, 'student sees no role assignments';
@@ -153,7 +162,7 @@ set local role authenticated;
 do $$
 declare n int;
 begin
-  assert cardinality(app.outlet_ids()) = 26, 'outlet_ids helper';
+  assert cardinality(app.outlet_ids()) = (select whitelist from expected_counts), 'outlet_ids helper';
   update public.profiles set bhawan_id = (select id from public.bhawans where slug = 'ganga') where id = auth.uid();
   get diagnostics n = row_count;
   assert n = 0, 'vendors cannot set a bhawan';

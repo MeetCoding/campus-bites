@@ -52,7 +52,7 @@ export default function WhitelistScreen() {
         <Text className="font-body-semibold text-body-md text-on-surface">Vendor passcodes</Text>
         <Text className="font-body text-body-sm text-on-surface-variant">
           Vendors sign in with their phone and a 6-digit passcode. Set or reset passcodes in the Campus
-          Bites admin website (Vendors page); a number whitelisted here can't sign in until it has one.
+          Bites admin website (Vendors page); a number whitelisted here cannot sign in until it has one.
         </Text>
       </Card>
 

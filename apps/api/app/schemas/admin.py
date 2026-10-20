@@ -188,6 +188,7 @@ class AdminOut(BaseModel):
 class VendorAccount(BaseModel):
     phone_e164: str
     has_account: bool
+    is_master: bool = Field(default=False, description="Runs every outlet, now and later.")
     passcode_set_at: datetime | None = None
     last_sign_in_at: datetime | None = None
 
@@ -216,3 +217,25 @@ class VendorPasscodeSet(BaseModel):
         if len(set(value)) == 1 or value in _WEAK_PASSCODES:
             raise ValueError("That passcode is too easy to guess.")
         return value
+
+
+class MasterVendorCreate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    phone: str = Field(description="Any common Indian format; normalised to E.164.")
+    label: str | None = Field(default=None, max_length=80)
+
+    @field_validator("phone")
+    @classmethod
+    def _normalize_phone(cls, value: str) -> str:
+        return normalize_phone(value)
+
+    @field_validator("label")
+    @classmethod
+    def _blank_is_none(cls, value: str | None) -> str | None:
+        return value or None
+
+
+class MasterVendorOut(BaseModel):
+    phone_e164: str
+    outlets_linked: int = Field(description="Outlets the phone is now whitelisted for.")

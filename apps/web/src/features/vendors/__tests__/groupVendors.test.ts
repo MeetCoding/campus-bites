@@ -23,7 +23,7 @@ describe('groupVendors', () => {
         entry({ id: 'e2', outlet_id: 'ccd', outlet_name: 'Cafe Coffee Day', label: 'Owner' }),
         entry({ id: 'e3', phone_e164: '+919000000001', created_at: '2026-10-05T00:00:00Z' }),
       ],
-      [{ phone_e164: '+919510709195', has_account: true, passcode_set_at: '2026-10-02T00:00:00Z', last_sign_in_at: null }],
+      [{ phone_e164: '+919510709195', has_account: true, is_master: false, passcode_set_at: '2026-10-02T00:00:00Z', last_sign_in_at: null }],
     );
 
     expect(vendors.map((v) => v.phone)).toEqual(['+919000000001', '+919510709195']);

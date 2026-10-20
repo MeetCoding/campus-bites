@@ -22,15 +22,18 @@ import { useBhawans } from '@/features/campus/queries';
 import { OpenStatusPill } from '@/features/canteens/components';
 import { useLiveStatus, useLiveUpdates } from '@/features/canteens/queries';
 import { useManagedOutlets } from '@/features/canteens/useManagedOutlets';
+import { useMessManagerBhawans } from '@/features/mess/queries';
 import { colors } from '@/theme/tokens';
 
 type Tool = { href: Href; title: string; icon: LucideIcon; tone: IconTone };
 
-const MESS_TOOLS: Tool[] = [
+// Mess Secretaries and vendors running a mess publish these; timing overrides push every resident,
+// so they stay with the Mess Secretary.
+const MESS_TOOLS: (Tool & { secretaryOnly?: boolean })[] = [
   { href: '/mess-photo', title: 'Noticeboard photo', icon: Camera, tone: 'primary' },
   { href: '/mess-menu', title: 'Weekly menu', icon: BookOpen, tone: 'primary' },
   { href: '/extra-items', title: 'Extra items', icon: ReceiptText, tone: 'tertiary' },
-  { href: '/mess-timings', title: 'Timing override', icon: AlarmClock, tone: 'warning' },
+  { href: '/mess-timings', title: 'Timing override', icon: AlarmClock, tone: 'warning', secretaryOnly: true },
 ];
 
 /** Vendor + secretary console per stitch-reference/vendor_secretary_upload_portal. */
@@ -42,6 +45,9 @@ export default function StaffConsole() {
   useLiveUpdates();
 
   const isMessSecretary = claims?.roles.includes('mess_secretary') ?? false;
+  const messes = useMessManagerBhawans();
+  const managesMess = isMessSecretary || (messes.data?.length ?? 0) > 0;
+  const messTools = MESS_TOOLS.filter((tool) => isMessSecretary || !tool.secretaryOnly);
   const myOutlets = managed.data ?? [];
   const myBhawans = bhawans.data?.filter((b) => claims?.scope_bhawan_ids.includes(b.id)) ?? [];
   const staffRoles = (claims?.roles ?? []).filter((r) =>
@@ -69,11 +75,11 @@ export default function StaffConsole() {
         ) : null}
       </HeroCard>
 
-      {isMessSecretary ? (
+      {managesMess ? (
         <>
-          <SectionHeader title="Mess" />
+          <SectionHeader title={messes.data && messes.data.length > 1 ? `Mess · ${messes.data.length} Bhawans` : 'Mess'} />
           <View className="flex-row flex-wrap justify-between gap-y-space-sm">
-            {MESS_TOOLS.map((tool) => (
+            {messTools.map((tool) => (
               <Link key={tool.title} href={tool.href} asChild>
                 <PressableScale accessibilityRole="link" className="w-[48.5%]">
                   <Card className="min-h-28 justify-between gap-space-md">

@@ -14,6 +14,8 @@ from app.schemas.admin import (
     EateryCreate,
     EateryOut,
     EateryUpdate,
+    MasterVendorCreate,
+    MasterVendorOut,
     RoleAssignmentCreate,
     RoleAssignmentOut,
     VendorAccount,
@@ -133,3 +135,20 @@ async def set_vendor_passcode(
     actor: Admin, service: Service, body: VendorPasscodeSet
 ) -> VendorAccount:
     return await service.set_vendor_passcode(actor, body)
+
+
+@router.post("/master-vendors", response_model=MasterVendorOut, status_code=status.HTTP_201_CREATED)
+async def make_master_vendor(
+    actor: Admin, service: Service, body: MasterVendorCreate
+) -> MasterVendorOut:
+    return await service.make_master_vendor(actor, body)
+
+
+@router.delete("/master-vendors/{phone}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_master_vendor(actor: Admin, service: Service, phone: str) -> None:
+    await service.remove_master_vendor(actor, phone)
+
+
+@router.delete("/vendors/{phone}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_vendor(actor: Admin, service: Service, phone: str) -> None:
+    await service.delete_vendor(actor, phone)

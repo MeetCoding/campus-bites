@@ -4,6 +4,7 @@ import { Layout } from '@/components/Layout';
 import { Loading, Notice } from '@/components/ui';
 import { AdminsPage } from '@/features/admins/AdminsPage';
 import { EateriesPage } from '@/features/eateries/EateriesPage';
+import { HostelsPage } from '@/features/hostels/HostelsPage';
 import { VendorsPage } from '@/features/vendors/VendorsPage';
 import { SignInPage } from '@/pages/SignInPage';
 import { useSession } from '@/lib/session';
@@ -34,6 +35,7 @@ export function App() {
     <Layout>
       <Routes>
         <Route path="/vendors" element={<VendorsPage />} />
+        <Route path="/hostels" element={<HostelsPage />} />
         <Route path="/eateries" element={<EateriesPage />} />
         <Route path="/admins" element={<AdminsPage />} />
         <Route path="*" element={<Navigate to="/vendors" replace />} />

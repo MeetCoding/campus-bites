@@ -44,7 +44,7 @@ campus-bites/
 │   │   └── .env.example            # copy to .env.local (only EXPO_PUBLIC_* values)
 │   ├── web/                        # admin website: Vite + React + Tailwind 4 (tokens from apps/mobile/src/theme/tokens.js)
 │   │   ├── src/lib/                # supabase.ts (publishable key), api.ts (FastAPI), session.tsx (admin-only gate)
-│   │   ├── src/features/           # admins, vendors (whitelist + passcodes), eateries
+│   │   ├── src/features/           # admins, vendors (whitelist, passcodes, master vendors), hostels, eateries
 │   │   └── .env.example            # copy to .env.local (only VITE_* values)
 │   └── api/
 │       ├── pyproject.toml          # deps, ruff + pytest config
@@ -60,7 +60,7 @@ campus-bites/
 ├── supabase/
 │   ├── config.toml
 │   ├── migrations/                 # 001_init, 002_grants, 003_auth, then <timestamp>_<name>.sql — the only way schema changes
-│   ├── tests/                      # SQL regression tests, each in a rolled-back transaction (auth_rls_test.sql, mess_test.sql, canteens_test.sql, rebates_test.sql, complaints_test.sql, admin_campus_test.sql, maps_test.sql, admin_web_test.sql; plus read-only hardening_test.sql)
+│   ├── tests/                      # SQL regression tests, each in a rolled-back transaction (auth_rls_test.sql, mess_test.sql, canteens_test.sql, rebates_test.sql, complaints_test.sql, admin_campus_test.sql, maps_test.sql, admin_web_test.sql, master_vendors_test.sql; plus read-only hardening_test.sql)
 │   └── seed.sql                    # 11 Bhawans × 3 outlets, 4 eateries, V1 vendor whitelist
 ├── stitch-reference/               # design reference — read-only
 ├── PRD.md  ARCHITECTURE.md  CLAUDE.md  TASKS.md

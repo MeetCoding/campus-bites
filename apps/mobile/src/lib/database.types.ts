@@ -426,6 +426,35 @@ export type Database = {
           },
         ]
       }
+      master_vendors: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          label: string | null
+          phone_e164: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          label?: string | null
+          phone_e164: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          label?: string | null
+          phone_e164?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "master_vendors_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meal_timings: {
         Row: {
           bhawan_id: string | null
@@ -1214,6 +1243,17 @@ export type Database = {
         }
       }
       admin_delete_bhawan: { Args: { p_id: string }; Returns: boolean }
+      admin_delete_vendor: {
+        Args: { p_phone: string }
+        Returns: {
+          removed_links: number
+          user_id: string
+        }[]
+      }
+      admin_make_master_vendor: {
+        Args: { p_added_by: string; p_label: string; p_phone: string }
+        Returns: number
+      }
       admin_update_bhawan: {
         Args: { p_id: string; p_name?: string; p_sort_order?: number }
         Returns: {
@@ -1234,6 +1274,7 @@ export type Database = {
       admin_vendor_accounts: {
         Args: never
         Returns: {
+          is_master: boolean
           last_sign_in_at: string
           passcode_set_at: string
           phone_e164: string

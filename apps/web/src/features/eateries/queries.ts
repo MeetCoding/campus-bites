@@ -10,6 +10,7 @@ export type Outlet = {
   name: string;
   type: OutletType;
   location_tag: string | null;
+  bhawan_id: string | null;
 };
 
 export const outletKeys = { all: ['outlets'] as const };
@@ -21,7 +22,7 @@ export function useOutlets() {
     queryFn: async (): Promise<Outlet[]> => {
       const { data, error } = await supabase
         .from('outlets')
-        .select('id, name, type, location_tag')
+        .select('id, name, type, location_tag, bhawan_id')
         .order('name');
       if (error) throw new Error(error.message);
       return data;

@@ -18,6 +18,8 @@ from app.schemas.admin import (
     EateryCreate,
     EateryOut,
     EateryUpdate,
+    MasterVendorCreate,
+    MasterVendorOut,
     RoleAssignmentCreate,
     RoleAssignmentOut,
     VendorAccount,
@@ -26,6 +28,7 @@ from app.schemas.admin import (
     WhitelistEntry,
 )
 from app.schemas.common import AppRole
+from app.services.phone import normalize_phone
 
 MESS_SECRETARY_CONSTRAINT = "role_assignments_one_mess_secy"
 
@@ -70,6 +73,13 @@ class AdminService:
 
     async def remove_whitelist(self, actor: CurrentUser, entry_id: UUID) -> None:
         await self._ensure_admin(actor)
+        entry = await self._repo.get_whitelist_entry(entry_id)
+        if entry is not None and await self._repo.is_master_vendor(entry.phone_e164):
+            raise ApiError(
+                409,
+                "MASTER_VENDOR_OUTLET",
+                "A master vendor runs every outlet. Remove master status first.",
+            )
         if not await self._repo.delete_whitelist(entry_id):
             raise ApiError(404, "WHITELIST_NOT_FOUND", "Whitelist entry not found.")
 
@@ -261,3 +271,34 @@ class AdminService:
             )
         except PasscodeRejectedError as exc:
             raise ApiError(422, "PASSCODE_REJECTED", f"Supabase refused it: {exc}") from exc
+
+    # ─── Master vendors / deleting vendors ───────────────────────────────────
+    async def make_master_vendor(
+        self, actor: CurrentUser, body: MasterVendorCreate
+    ) -> MasterVendorOut:
+        """Whitelists the phone for every outlet; outlets added later follow (DB trigger)."""
+        await self._ensure_admin(actor)
+        linked = await self._repo.make_master_vendor(body.phone, body.label, actor.id)
+        return MasterVendorOut(phone_e164=body.phone, outlets_linked=linked)
+
+    async def remove_master_vendor(self, actor: CurrentUser, phone: str) -> None:
+        """Stops auto-assigning new outlets; the vendor keeps the outlets they have now."""
+        await self._ensure_admin(actor)
+        if not await self._repo.remove_master_vendor(_path_phone(phone)):
+            raise ApiError(404, "MASTER_VENDOR_NOT_FOUND", "That number is not a master vendor.")
+
+    async def delete_vendor(self, actor: CurrentUser, phone: str) -> None:
+        """Removes every outlet link and the vendor's sign-in account (passcode included)."""
+        await self._ensure_admin(actor)
+        removed, user_id = await self._repo.delete_vendor(_path_phone(phone))
+        if not removed and user_id is None:
+            raise ApiError(404, "VENDOR_NOT_FOUND", "That number is not a vendor.")
+        if user_id is not None and user_id != actor.id:
+            await self._repo.delete_auth_user(user_id)
+
+
+def _path_phone(raw: str) -> str:
+    try:
+        return normalize_phone(raw)
+    except ValueError as exc:
+        raise ApiError(422, "INVALID_PHONE", str(exc)) from exc

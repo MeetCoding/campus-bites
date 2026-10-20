@@ -79,6 +79,14 @@ class AdminRepository(Protocol):
     async def set_vendor_passcode(
         self, phone_e164: str, user_id: UUID | None, passcode: str
     ) -> VendorAccount: ...
+    async def get_whitelist_entry(self, entry_id: UUID) -> WhitelistEntry | None: ...
+    async def is_master_vendor(self, phone_e164: str) -> bool: ...
+    async def make_master_vendor(
+        self, phone_e164: str, label: str | None, added_by: UUID
+    ) -> int: ...
+    async def remove_master_vendor(self, phone_e164: str) -> bool: ...
+    async def delete_vendor(self, phone_e164: str) -> tuple[int, UUID | None]: ...
+    async def delete_auth_user(self, user_id: UUID) -> None: ...
 
 
 _WHITELIST_COLUMNS = "id, phone_e164, outlet_id, label, active, created_at, outlets(name)"
@@ -429,6 +437,45 @@ class SupabaseAdminRepository:
             passcode_set_at=set_at,
             last_sign_in_at=last_sign_in,
         )
+
+    # ─── Master vendors / deleting vendors ───────────────────────────────────
+    async def get_whitelist_entry(self, entry_id: UUID) -> WhitelistEntry | None:
+        res = await (
+            self._db.table("whitelisted_vendors")
+            .select(_WHITELIST_COLUMNS)
+            .eq("id", str(entry_id))
+            .execute()
+        )
+        return _whitelist_entry(res.data[0]) if res.data else None
+
+    async def is_master_vendor(self, phone_e164: str) -> bool:
+        res = await (
+            self._db.table("master_vendors")
+            .select("phone_e164")
+            .eq("phone_e164", phone_e164)
+            .execute()
+        )
+        return bool(res.data)
+
+    async def make_master_vendor(self, phone_e164: str, label: str | None, added_by: UUID) -> int:
+        res = await self._db.rpc(
+            "admin_make_master_vendor",
+            {"p_phone": phone_e164, "p_label": label, "p_added_by": str(added_by)},
+        ).execute()
+        return int(res.data)
+
+    async def remove_master_vendor(self, phone_e164: str) -> bool:
+        res = await self._db.table("master_vendors").delete().eq("phone_e164", phone_e164).execute()
+        return bool(res.data)
+
+    async def delete_vendor(self, phone_e164: str) -> tuple[int, UUID | None]:
+        res = await self._db.rpc("admin_delete_vendor", {"p_phone": phone_e164}).execute()
+        row = res.data[0]
+        return row["removed_links"], UUID(row["user_id"]) if row["user_id"] else None
+
+    async def delete_auth_user(self, user_id: UUID) -> None:
+        # Profiles cascade; history rows keep a null actor (every FK is cascade / set null).
+        await self._db.auth.admin.delete_user(str(user_id))
 
 
 def get_admin_repository(

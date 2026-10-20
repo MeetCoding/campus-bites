@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { useOutlets } from '@/features/campus/queries';
+import { useSession } from '@/features/auth/session';
+import { useBhawans, useOutlets } from '@/features/campus/queries';
 import { canteenKeys } from '@/features/canteens/queries';
 import { api } from '@/lib/api';
 import type { Enums, Json, Tables, TablesInsert } from '@/lib/database.types';
@@ -204,6 +205,38 @@ export function useSecretaryBhawans(role: SecretaryRole = 'mess_secretary') {
         .map((row) => ({ id: row.bhawan_id, name: row.bhawans?.name ?? 'Bhawan' }));
     },
   });
+}
+
+/**
+ * Bhawans whose mess the user publishes for (noticeboard photos, weekly menu, extra items): as
+ * Mess Secretary (live) or as a vendor whitelisted for that mess (JWT outlet_ids, e.g. a master
+ * vendor). Mirrors app.can_manage_mess(); RLS is the real check. Timing overrides stay
+ * secretary-only (useSecretaryBhawans).
+ */
+export function useMessManagerBhawans() {
+  const { claims } = useSession();
+  const secretary = useSecretaryBhawans('mess_secretary');
+  const outlets = useOutlets();
+  const bhawans = useBhawans();
+
+  const vendorBhawanIds = new Set(
+    (outlets.data ?? [])
+      .filter((o) => o.type === 'mess' && o.bhawan_id !== null && claims?.outlet_ids.includes(o.id))
+      .map((o) => o.bhawan_id as string),
+  );
+  const secretaryIds = new Set((secretary.data ?? []).map((b) => b.id));
+  const data =
+    secretary.data && bhawans.data
+      ? bhawans.data
+          .filter((b) => secretaryIds.has(b.id) || vendorBhawanIds.has(b.id))
+          .map((b) => ({ id: b.id, name: b.name }))
+      : undefined;
+
+  return {
+    data,
+    isPending: secretary.isPending || outlets.isPending || bhawans.isPending,
+    error: secretary.error ?? outlets.error ?? bhawans.error,
+  };
 }
 
 export function useSaveWeeklyMenu() {

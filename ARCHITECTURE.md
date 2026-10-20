@@ -55,7 +55,7 @@ Timezone for every business rule: **`Asia/Kolkata`** (IST, no DST). Times of day
 | Role (`app_role`) | How they get it | App area (mode) | Can do today |
 | --- | --- | --- | --- |
 | `student` | Automatic for every IITR Google account (except officials, below) | `(student)` | Home dashboard; Mess Hub (live meal status, noticeboard photo + zoom, weekly menu, extra items, report outdated photo); canteens (Day/Night, live status, menu, Institute rate card); eateries directory + food search; apply for mess rebates and track them; raise complaints (≤ 2 photos), confirm/reopen fixes, nudge after 7 days, public anonymised issue board |
-| `vendor` | Phone number whitelisted for ≥ 1 outlet | `(staff)` | Per outlet: open/closed toggle, regular hours, temporary shift change, menu photo, menu items + stock, eatery location |
+| `vendor` | Phone number whitelisted for ≥ 1 outlet (a **master vendor** for every outlet, §4.1) | `(staff)` | Per canteen/eatery: open/closed toggle, regular hours, temporary shift change, menu photo, menu items + stock, eatery location. Per mess they are whitelisted for: noticeboard photos, weekly menu, extra items (timing overrides and mess complaints stay with the Mess Secretary) |
 | `mess_secretary` | Assigned by admin (one per Bhawan) | `(staff)` + student | Mess noticeboard photo, weekly menu, extra items, mess timing overrides (residents are pushed); handles mess complaints |
 | `bhawan_secretary` | Assigned by admin (per Bhawan) | `(staff)` + student | Same outlet tools as a vendor for both canteens of their Bhawan; Institute fixed-rate card; handles hostel-canteen complaints |
 | `mess_authority` (Warden office) | Assigned by admin (per Bhawan) | `(authority)` | Rebate queue for their Bhawan(s): biometric cross-check → approve / reject with remarks; sees (read-only) and is alerted about escalated complaints of their Bhawan |
@@ -138,7 +138,7 @@ Templates: `apps/mobile/.env.example`, `apps/web/.env.example`, `apps/api/env.ex
 ## 4. Admin operations (runbook)
 
 All admin actions go through FastAPI (`/v1/admin/*`), which re-checks `admin` in the database on **every** call. Two front ends use it:
-- **Admin website** (`apps/web`, §4.6): Vendors (phones, their outlets, passcodes), Eateries (add / rename / remove), Admins (by email).
+- **Admin website** (`apps/web`, §4.6): Vendors (phones, their outlets, passcodes, master vendors, delete), Hostels and Eateries (add / rename / remove), Admins (by email).
 - **App → `(admin)` area:** Whitelist, Roles, Bhawans and Campus eateries (incl. map pins).
 
 ### 4.1 Onboard a vendor (canteen owner / eatery staff)
@@ -146,7 +146,10 @@ All admin actions go through FastAPI (`/v1/admin/*`), which re-checks `admin` in
 2. The website shows the passcode **once** — give it to the vendor privately. Lost it? *Reset passcode* (the old one stops working at once; signed-in devices stay signed in).
 3. Vendor signs in with phone + passcode → lands in the Staff console with those outlets.
 - **Status:** `GET /v1/admin/vendor-accounts` (service-role RPC `admin_vendor_accounts()`: one row per whitelisted phone with `has_account`, `passcode_set_at`, `last_sign_in_at`).
-- **Remove / unassign:** delete the whitelist row (`DELETE /v1/admin/vendor-whitelist/{id}`). Writes stop immediately (live checks); the console disappears at their next token refresh. With no outlets left the account remains but has no role (→ `/no-access`).
+- **Unassign one outlet:** delete the whitelist row (`DELETE /v1/admin/vendor-whitelist/{id}`). Writes stop immediately (live checks); the console disappears at their next token refresh. With no outlets left the account remains but has no role (→ `/no-access`). Refused for a master vendor (`MASTER_VENDOR_OUTLET`).
+- **Delete a vendor:** *Delete vendor* → `DELETE /v1/admin/vendors/{phone}` → service-role RPC `admin_delete_vendor` (master status + every whitelist row) and then the Supabase sign-in account (`auth.admin.delete_user`; profiles cascade, history keeps a null actor). `VENDOR_NOT_FOUND`, `INVALID_PHONE`.
+- **Master vendor:** one phone that runs **every** mess, canteen and eatery. *Master vendor* when adding, or *Make master vendor* on a card → `POST /v1/admin/master-vendors {phone, label?}` → RPC `admin_make_master_vendor` (row in `master_vendors` + a whitelist row per outlet). Trigger `outlets_assign_master_vendors` whitelists every master for each outlet created later (a new eatery, or a new Bhawan's three outlets). `DELETE /v1/admin/master-vendors/{phone}` stops the auto-assignment and keeps the current outlets (`MASTER_VENDOR_NOT_FOUND`).
+- **Vendors on a mess** (migration `019`): `app.can_manage_outlet` lets a whitelisted vendor manage a mess outlet (noticeboard photos) and `app.can_manage_mess(bhawan)` (Mess Secretary **or** that mess's vendor) guards `weekly_menus` / `extra_items`. `app.can_run_outlet` still excludes messes (no open/closed toggle), timing overrides check `mess_secretary` in the API, and mess complaints still route to the Mess Secretary. In the app the Staff console shows the mess tools (minus *Timing override*) and `SecretaryScope role="mess_manager"` offers a Bhawan picker.
 
 ### 4.2 Assign a role (secretary, authority, ADoSW, admin)
 1. The person signs in once with their IITR Google account (so a profile exists).
@@ -167,6 +170,7 @@ All admin actions go through FastAPI (`/v1/admin/*`), which re-checks `admin` in
 - **Rename / reorder:** `PATCH /v1/admin/bhawans/{id}` (`name`, `sort_order`) → `admin_update_bhawan` renames its three outlets to match; slugs never change.
 - **Remove:** `DELETE /v1/admin/bhawans/{id}` → `admin_delete_bhawan`, only for a Bhawan added by mistake: refused with `BHAWAN_IN_USE` once a student has picked it or it has rebate/complaint history. Menus, rate cards, shifts, overrides, whitelist rows and role assignments cascade.
 - **App → Admin → Campus eateries:** `POST /v1/admin/eateries` (`name`, optional `location_tag`, optional map pin `latitude` + `longitude`; default 10:00–22:00 hours), `PATCH /v1/admin/eateries/{id}` (only the fields sent; `location_tag: null` clears it; the pin is sent as a pair, both `null` removes it — set by tapping the map), `DELETE /v1/admin/eateries/{id}` (`EATERY_IN_USE` if it has complaints; its menu, hours and whitelist rows cascade). Whitelist the owner afterwards (§4.1).
+- **Website → Hostels:** add (`POST /v1/admin/bhawans` → Mess + Day Canteen + Night Canteen, auto-assigned to master vendors), rename (outlets follow), remove (`BHAWAN_IN_USE` once students live there or it has history), with each outlet's vendor phones.
 - **Website → Eateries:** the same `POST` / `PATCH` (name, location) / `DELETE` endpoints, listing each eatery's vendor phones. Map pins stay in the app.
 - Errors: `BHAWAN_DUPLICATE` / `EATERY_DUPLICATE` (name or slug taken), `NOTHING_TO_UPDATE`, `INVALID_NAME`, `BHAWAN_NOT_FOUND` / `EATERY_NOT_FOUND`. Mutations refetch every query in the app, since Bhawans and outlets feed most screens.
 
@@ -211,13 +215,13 @@ Errors are `{"detail": {"code": "REBATE_OVERLAP", "message": "…"}}`; the app m
 main.tsx / App.tsx         QueryClient, SessionProvider, router; nothing but sign-in renders until the session is an admin's
 lib/                       supabase.ts (publishable key, PKCE) · api.ts (single FastAPI client) · session.tsx (admin gate)
                            · jwt.ts · format.ts (phones, IST dates) · passcode.ts (rules shared with the API) (+ __tests__)
-features/<module>/         queries.ts + page: admins/ vendors/ eateries/
+features/<module>/         queries.ts + page: admins/ vendors/ hostels/ eateries/
 components/                ui.tsx (Alexandria primitives) · Layout.tsx
 ```
 Tailwind 4 loads `tailwind.config.js`, which reuses `apps/mobile/src/theme/tokens.js` (colors, sizes, radii, spacing); fonts come from Google Fonts. Types come from `apps/mobile/src/lib/database.types.ts`.
 
 ### 5.3 Database (`supabase/`)
-Migrations `001`–`018` are the only way the schema changes (applied to the linked project, version = file prefix); `seed.sql` holds the roster; `tests/*.sql` are regression scripts run inside a rolled-back transaction (`auth_rls`, `mess`, `canteens`, `rebates`, `complaints`, `admin_campus`, `maps`, `admin_web`) plus the read-only `hardening` check (RLS everywhere, no anon grants, API-only tables unwritable, indexed FKs, definer functions pin `search_path`, private buckets, cron scheduled). After each migration: regenerate `database.types.ts`, run the security + performance advisors.
+Migrations `001`–`019` are the only way the schema changes (applied to the linked project, version = file prefix); `seed.sql` holds the roster; `tests/*.sql` are regression scripts run inside a rolled-back transaction (`auth_rls`, `mess`, `canteens`, `rebates`, `complaints`, `admin_campus`, `maps`, `admin_web`, `master_vendors`) plus the read-only `hardening` check (RLS everywhere, no anon grants, API-only tables unwritable, indexed FKs, definer functions pin `search_path`, private buckets, cron scheduled). After each migration: regenerate `database.types.ts`, run the security + performance advisors.
 
 ### 5.4 Adding a feature (scales the same way)
 1. Migration: table + RLS + explicit grants (+ helper/trigger) in one file; extend a `supabase/tests/*.sql` script.
@@ -280,6 +284,7 @@ Enums: `app_role` · `outlet_type` (`mess`, `day_canteen`, `night_canteen`, `eat
 | `role_assignments` | `user_id`, `role`, `bhawan_id?`, `assigned_by` — one Mess Secretary per Bhawan | API (admin) |
 | `whitelisted_vendors` | `phone_e164`, `outlet_id`, `label`, `active` | API (admin) |
 | `admin_invites` | `email` (lower-case IITR), `invited_by` — redeemed into an `admin` role by `handle_new_user` at first sign-in | API (admin) |
+| `master_vendors` | `phone_e164`, `label`, `added_by` — whitelisted for every outlet, now and later (trigger on `outlets`) | API (admin) |
 | `push_tokens` | `user_id`, `expo_token` (unique), `platform` | RPC / owner delete |
 | `meal_timings`, `timing_overrides` | defaults per slot/day type; overrides with dates, window or closed, reason | migration; API |
 | `weekly_menus`, `extra_items` | per Bhawan | Mess Secretary |
