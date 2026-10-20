@@ -12,6 +12,10 @@ values
 -- b003 is a vendor: give its profile the whitelisted number (auth.users.phone is unique, so set it on the profile)
 update public.profiles set phone = '+919510709195' where id = '00000000-0000-0000-0000-00000000b003';
 
+-- A photo on another Bhawan's mess (the secretary below must not be able to delete it).
+insert into public.menu_photos (outlet_id, storage_path, uploaded_by)
+select id, id || '/2026-10-19-ganga.jpg', null from public.outlets where slug = 'ganga-mess';
+
 insert into public.role_assignments (user_id, role, bhawan_id)
 select '00000000-0000-0000-0000-00000000b002'::uuid, 'mess_secretary'::public.app_role, id
 from public.bhawans where slug = 'rajendra';
@@ -123,8 +127,18 @@ begin
   returning id into first_photo;
   insert into public.menu_photos (outlet_id, storage_path, width, height)
   values (rajendra_mess, rajendra_mess || '/2026-10-19-b.jpg', 2560, 1920);
-  assert (select count(*) from public.menu_photos where outlet_id = rajendra_mess and is_current) = 1, 'one current photo';
-  assert not (select is_current from public.menu_photos where id = first_photo), 'previous photo retired';
+  insert into public.menu_photos (outlet_id, storage_path, width, height)
+  values (rajendra_mess, rajendra_mess || '/2026-10-19-c.jpg', 2560, 1920);
+  assert (select count(*) from public.menu_photos where outlet_id = rajendra_mess and is_current) = 3, 'photos stack up';
+  assert (select is_current from public.menu_photos where id = first_photo), 'older photo stays published';
+
+  delete from public.menu_photos where id = first_photo;
+  assert not exists (select 1 from public.menu_photos where id = first_photo), 'manager deletes a photo';
+  assert (select count(*) from public.menu_photos where outlet_id = rajendra_mess) = 2, 'only that photo removed';
+
+  -- Another outlet's photo: RLS hides it from DELETE.
+  delete from public.menu_photos where outlet_id = ganga_mess;
+  assert (select count(*) from public.menu_photos where outlet_id = ganga_mess) = 1, 'cannot delete another mess photo';
 
   begin
     insert into public.menu_photos (outlet_id, storage_path) values (ganga_mess, ganga_mess || '/x.jpg');
@@ -157,9 +171,16 @@ do $$
 declare
   rajendra uuid := (select id from public.bhawans where slug = 'rajendra');
   current_photo uuid := (select id from public.menu_photos where is_current limit 1);
+  visible_photos bigint;
 begin
   assert (select count(*) from public.weekly_menus) = 1, 'students read menus';
   assert (select count(*) from public.extra_items) = 1, 'students read rate card';
+  assert (select count(*) from public.menu_photos where outlet_id = (select id from public.outlets where slug = 'rajendra-mess')) = 2,
+    'students see the whole photo stack';
+
+  visible_photos := (select count(*) from public.menu_photos);
+  delete from public.menu_photos;
+  assert (select count(*) from public.menu_photos) = visible_photos, 'students cannot delete photos';
 
   begin
     update public.extra_items set price_paise = 1 where bhawan_id = rajendra;
@@ -234,6 +255,51 @@ begin
     insert into storage.objects (bucket_id, name, owner_id) values ('noticeboard-photos', 'not-a-uuid/x.jpg', auth.uid()::text);
     assert false, 'uploaded outside an outlet folder';
   exception when insufficient_privilege then null;
+  end;
+
+  -- Removing a stacked photo deletes its object (Storage API needs SELECT + DELETE).
+  perform set_config('storage.allow_delete_query', 'true', true);
+  delete from storage.objects where bucket_id = 'noticeboard-photos' and name = own;
+  assert not exists (select 1 from storage.objects where bucket_id = 'noticeboard-photos' and name = own),
+    'manager deletes own outlet object';
+end $$;
+
+reset role;
+insert into storage.objects (bucket_id, name)
+select 'noticeboard-photos', id || '/2026-10-19-keep.jpg' from public.outlets where slug = 'ganga-mess';
+select set_config('request.jwt.claims', json_build_object(
+  'sub', '00000000-0000-0000-0000-00000000b002', 'role', 'authenticated')::text, true);
+set local role authenticated;
+do $$
+declare
+  other text := (select id from public.outlets where slug = 'ganga-mess') || '/2026-10-19-keep.jpg';
+begin
+  perform set_config('storage.allow_delete_query', 'true', true);
+  delete from storage.objects where bucket_id = 'noticeboard-photos' and name = other;
+end $$;
+reset role;
+do $$
+begin
+  assert exists (select 1 from storage.objects where bucket_id = 'noticeboard-photos'
+                 and name = (select id from public.outlets where slug = 'ganga-mess') || '/2026-10-19-keep.jpg'),
+    'cannot delete another outlet object';
+end $$;
+
+-- ─── Photo stack cap (app_settings.max_menu_photos) ──────────────────────────
+reset role;
+update public.app_settings set max_menu_photos = 2; -- Rajendra mess already has 2
+select set_config('request.jwt.claims', json_build_object(
+  'sub', '00000000-0000-0000-0000-00000000b002', 'role', 'authenticated')::text, true);
+set local role authenticated;
+do $$
+declare
+  rajendra_mess uuid := (select id from public.outlets where slug = 'rajendra-mess');
+begin
+  begin
+    insert into public.menu_photos (outlet_id, storage_path) values (rajendra_mess, rajendra_mess || '/2026-10-19-d.jpg');
+    assert false, 'stack is capped';
+  exception when raise_exception then
+    assert sqlerrm = 'MENU_PHOTO_LIMIT', 'stable error code';
   end;
 end $$;
 

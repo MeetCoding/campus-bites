@@ -72,14 +72,18 @@ export function toIndianE164(input: string): string | null {
   return /^[6-9]\d{9}$/.test(digits) ? `+91${digits}` : null;
 }
 
-/** Step 1 of vendor sign-in. V1 numbers are Supabase test numbers, so no SMS is sent. */
-export async function sendVendorOtp(phoneE164: string): Promise<AuthResult> {
-  const { error } = await supabase.auth.signInWithOtp({ phone: phoneE164 });
-  return error ? { ok: false, message: error.message } : { ok: true };
-}
-
-/** Step 2: the 6-digit OTP / passcode. */
-export async function verifyVendorOtp(phoneE164: string, token: string): Promise<AuthResult> {
-  const { error } = await supabase.auth.verifyOtp({ phone: phoneE164, token, type: 'sms' });
-  return error ? { ok: false, message: error.message } : { ok: true };
+/**
+ * Vendor sign-in: phone + the 6-digit passcode an admin set in the web console (a Supabase
+ * password on the vendor's phone account). No SMS is sent.
+ */
+export async function signInVendor(phoneE164: string, passcode: string): Promise<AuthResult> {
+  const { error } = await supabase.auth.signInWithPassword({ phone: phoneE164, password: passcode });
+  if (!error) return { ok: true };
+  return {
+    ok: false,
+    message:
+      error.code === 'invalid_credentials'
+        ? 'Wrong number or passcode. Ask the Campus Bites admin to reset your passcode.'
+        : error.message,
+  };
 }

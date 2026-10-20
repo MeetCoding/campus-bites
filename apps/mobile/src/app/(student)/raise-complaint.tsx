@@ -70,7 +70,14 @@ export default function RaiseComplaint() {
     setFormError(null);
     raise.mutate(
       { userId: claims.sub, outletId: outlet.id, category, title: title.trim(), body: body.trim(), photos },
-      { onSuccess: (id) => router.replace({ pathname: '/complaint/[id]', params: { id } }) },
+      {
+        // `complaint/[id]` lives in the root stack: `replace` would swap out the whole (student) group,
+        // leaving no screen to go back to. Close the form, then push the detail on top of the student stack.
+        onSuccess: (id) => {
+          router.back();
+          router.push({ pathname: '/complaint/[id]', params: { id } });
+        },
+      },
     );
   }
 

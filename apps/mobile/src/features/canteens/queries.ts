@@ -24,6 +24,9 @@ export type OutletStatus = {
   shift_starts_at: string | null;
   shift_ends_at: string | null;
   status_updated_at: string | null;
+  /** Map pin (016); both null when unset. */
+  latitude: number | null;
+  longitude: number | null;
 };
 
 export type SearchHit = {
@@ -195,6 +198,24 @@ export function useSetLocation() {
         queryClient.invalidateQueries({ queryKey: canteenKeys.status }),
         queryClient.invalidateQueries({ queryKey: campusKeys.outlets }),
       ]),
+  });
+}
+
+/** Map pin (016): column grant + RLS app.can_run_outlet. null removes the pin. */
+export function useSetPin() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { outletId: string; pin: { latitude: number; longitude: number } | null }) => {
+      const { data, error } = await supabase
+        .from('outlets')
+        .update({ latitude: params.pin?.latitude ?? null, longitude: params.pin?.longitude ?? null })
+        .eq('id', params.outletId)
+        .select('id');
+      if (error) throw error;
+      // RLS hides outlets you don't run from UPDATE instead of erroring.
+      if (data.length === 0) throw new Error("You can't change this outlet's location.");
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: canteenKeys.status }),
   });
 }
 

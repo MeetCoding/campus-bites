@@ -1,10 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as DocumentPicker from 'expo-document-picker';
-import { File } from 'expo-file-system';
 
 import { api } from '@/lib/api';
 import type { Enums, Tables } from '@/lib/database.types';
-import { compressForUpload, pickImage } from '@/lib/images';
+import { ATTACHMENT_COMPRESSION, compressForUpload, pickImage, readBytes } from '@/lib/images';
 import { supabase } from '@/lib/supabase';
 import { istNow } from '@/lib/time';
 
@@ -131,8 +130,9 @@ export async function pickDocument(source: 'camera' | 'library' | 'pdf'): Promis
 /** Upload to rebate-documents/{uid}/{date}-{random}.{jpg|pdf}. Photos are compressed to ≤ 1600 px. */
 async function uploadDocument(doc: PickedDocument, studentId: string): Promise<string> {
   const isImage = doc.kind === 'image';
-  const uri = isImage ? (await compressForUpload(doc, { maxEdge: 1600 })).uri : doc.uri;
-  const bytes = await new File(uri).arrayBuffer();
+  const bytes = isImage
+    ? (await compressForUpload(doc, ATTACHMENT_COMPRESSION)).bytes
+    : await readBytes(doc.uri);
   if (bytes.byteLength > MAX_DOCUMENT_BYTES) throw new Error('The document must be 5 MB or smaller.');
   const path = `${studentId}/${istNow().date}-${Math.random().toString(36).slice(2, 10)}.${isImage ? 'jpg' : 'pdf'}`;
   const { error } = await supabase.storage

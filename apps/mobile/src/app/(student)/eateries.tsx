@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { Link, type Href } from 'expo-router';
-import { ChevronRight, Coffee, MapPin, Moon, Search, Sun, X } from 'lucide-react-native';
+import { ChevronRight, Coffee, Map as MapIcon, MapPin, Moon, Search, Sun, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 
@@ -15,7 +15,7 @@ import {
   type OutletStatus,
   type SearchHit,
 } from '@/features/canteens/queries';
-import { useCurrentPhoto } from '@/features/mess/queries';
+import { useMenuPhotos } from '@/features/mess/queries';
 import { noticeboardUrl } from '@/lib/images';
 import { colors } from '@/theme/tokens';
 
@@ -106,6 +106,17 @@ export default function EateriesDirectory() {
             value={tab}
             onChange={setTab}
           />
+          {tab === 'eateries' ? (
+            <Link href="/eateries-map" asChild>
+              <Pressable
+                accessibilityRole="link"
+                hitSlop={8}
+                className="flex-row items-center gap-1.5 self-end active:opacity-60">
+                <MapIcon size={16} color={colors.primary} />
+                <Text className="font-label-bold text-label-md text-primary">View on map</Text>
+              </Pressable>
+            </Link>
+          ) : null}
           {status.isPending ? (
             <ActivityIndicator />
           ) : status.isError ? (
@@ -121,7 +132,8 @@ export default function EateriesDirectory() {
 
 /** Photo thumbnail (latest menu photo) + name + live pill + one tag. */
 function DirectoryCard({ outlet }: { outlet: OutletStatus }) {
-  const photo = useCurrentPhoto(outlet.outlet_id);
+  const photos = useMenuPhotos(outlet.outlet_id);
+  const latest = photos.data?.[0];
   const fallback = outlet.type === 'day_canteen' ? Sun : outlet.type === 'night_canteen' ? Moon : Coffee;
   const name = outlet.type === 'eatery' ? outlet.name : OUTLET_TYPE_LABEL[outlet.type];
 
@@ -130,9 +142,9 @@ function DirectoryCard({ outlet }: { outlet: OutletStatus }) {
       <PressableScale accessibilityRole="link">
         <Card className="flex-row items-center gap-space-md p-space-sm">
           <View className="h-20 w-20 items-center justify-center overflow-hidden rounded-2xl bg-surface-container-low">
-            {photo.data ? (
+            {latest ? (
               <Image
-                source={{ uri: noticeboardUrl(photo.data.storage_path) }}
+                source={{ uri: noticeboardUrl(latest.storage_path) }}
                 style={{ width: '100%', height: '100%' }}
                 contentFit="cover"
                 transition={150}

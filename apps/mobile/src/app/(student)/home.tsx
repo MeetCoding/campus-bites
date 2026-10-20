@@ -19,6 +19,7 @@ import { useBhawans } from '@/features/campus/queries';
 import { OpenStatusPill } from '@/features/canteens/components';
 import { useLiveStatus } from '@/features/canteens/queries';
 import { MealHero, OverrideBanner } from '@/features/mess/components';
+import { EateriesMapCard } from '@/features/map/components';
 import { useActiveOverrides, useMessOutlet, useMessSchedule, useWeeklyMenu } from '@/features/mess/queries';
 import { DAY_LABEL, istNow, weekStart } from '@/lib/time';
 import { colors } from '@/theme/tokens';
@@ -84,6 +85,11 @@ export default function StudentHome() {
           ))}
         </View>
       ) : null}
+
+      <View className="gap-space-sm">
+        <SectionHeader title="Around campus" />
+        <EateriesMapCard />
+      </View>
 
       <SectionHeader title="Explore" />
       <View className="flex-row flex-wrap justify-between gap-y-space-sm">

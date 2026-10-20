@@ -15,6 +15,7 @@ export default function StudentLayout() {
       <Stack.Screen name="mess" options={{ title: 'Mess Hub' }} />
       <Stack.Screen name="canteens" options={{ title: 'Canteens' }} />
       <Stack.Screen name="eateries" options={{ title: 'Food directory' }} />
+      <Stack.Screen name="eateries-map" options={{ title: 'Eateries map' }} />
       <Stack.Screen name="eatery/[id]" options={{ title: 'Eatery' }} />
       <Stack.Screen name="rebates" options={{ title: 'Rebates' }} />
       <Stack.Screen name="complaints" options={{ title: 'Complaints' }} />

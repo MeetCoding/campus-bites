@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
-import { Camera, Flag, Megaphone, Moon, Pin, Sun, Sunrise, ZoomIn, type LucideIcon } from 'lucide-react-native';
-import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { Camera, Flag, Megaphone, Moon, Pin, Sun, Sunrise, Trash2, ZoomIn, type LucideIcon } from 'lucide-react-native';
+import { useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Text, View, type ScrollViewInstance } from 'react-native';
 
 import { Badge, Card, HeroCard, IconBadge, LiveDot, Pill, PressableScale, SectionHeader } from '@/components/ui';
 import { ZoomableImage } from '@/components/ui/ZoomableImage';
@@ -9,12 +9,15 @@ import { PriceChip } from '@/features/canteens/components';
 import {
   MEAL_LABEL,
   MEAL_SLOTS,
-  useCurrentPhoto,
+  useDeleteMenuPhoto,
   useExtraItems,
+  useMenuPhotoLimit,
+  useMenuPhotos,
   usePhotoReports,
   useReportPhoto,
   useWeeklyMenu,
   type MealSlot,
+  type MenuPhoto,
   type ScheduleRow,
   type TimingOverride,
 } from '@/features/mess/queries';
@@ -186,7 +189,8 @@ export function OverrideBanner({ overrides }: { overrides: TimingOverride[] | un
   );
 }
 
-// ─── Noticeboard photo ───────────────────────────────────────────────────────
+// ─── Noticeboard / menu photo stack ──────────────────────────────────────────
+/** Published photos of an outlet, newest first: swipe (or tap a dot) between them, tap to zoom. */
 export function NoticeboardCard({
   outletId,
   title,
@@ -196,19 +200,25 @@ export function NoticeboardCard({
   title: string;
   canReport: boolean;
 }) {
-  const photo = useCurrentPhoto(outletId);
-  const reports = usePhotoReports(canReport ? photo.data?.id : null);
+  const photos = useMenuPhotos(outletId);
   const report = useReportPhoto();
+  const pager = useRef<ScrollViewInstance>(null);
+  const [frameWidth, setFrameWidth] = useState(0);
+  const [index, setIndex] = useState(0);
   const [zoomed, setZoomed] = useState(false);
 
-  if (photo.isPending) {
+  const list = photos.data ?? [];
+  const current = list[Math.min(index, list.length - 1)];
+  const reports = usePhotoReports(canReport ? current?.id : null);
+
+  if (photos.isPending) {
     return (
       <Card>
         <ActivityIndicator />
       </Card>
     );
   }
-  if (!photo.data) {
+  if (!current) {
     return (
       <Card className="flex-row items-center gap-space-md">
         <IconBadge icon={Camera} tone="neutral" />
@@ -217,10 +227,16 @@ export function NoticeboardCard({
     );
   }
 
-  const uri = noticeboardUrl(photo.data.storage_path);
-  const age = timeAgo(photo.data.created_at);
+  const age = timeAgo(current.created_at);
   const alreadyReported = (reports.data?.length ?? 0) > 0;
-  const aspect = photo.data.width && photo.data.height ? photo.data.width / photo.data.height : 4 / 3;
+  // One frame for the whole stack (the newest photo's shape); other photos fit inside it uncropped.
+  const newest = list[0];
+  const aspect = newest.width && newest.height ? newest.width / newest.height : 4 / 3;
+
+  function goTo(next: number) {
+    setIndex(next);
+    pager.current?.scrollTo({ x: next * frameWidth, animated: true });
+  }
 
   return (
     <Card className="gap-space-sm">
@@ -230,18 +246,58 @@ export function NoticeboardCard({
         <Badge label={age} />
       </View>
 
-      <PressableScale
-        accessibilityRole="imagebutton"
-        accessibilityLabel={`${title}. Tap to zoom.`}
-        onPress={() => setZoomed(true)}>
-        <View className="overflow-hidden rounded-2xl bg-surface-container-low">
-          <Image source={{ uri }} style={{ width: '100%', aspectRatio: aspect }} contentFit="cover" transition={150} />
-          <View className="absolute bottom-2 right-2 flex-row items-center gap-1 rounded-full bg-inverse-surface/80 px-2.5 py-1">
-            <ZoomIn size={14} color={colors['inverse-on-surface']} />
-            <Text className="font-label text-label-sm text-inverse-on-surface">Tap to zoom</Text>
-          </View>
+      <View
+        className="overflow-hidden rounded-2xl bg-surface-container-low"
+        onLayout={(event) => setFrameWidth(event.nativeEvent.layout.width)}>
+        <ScrollView
+          ref={pager}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={(event) => {
+            if (frameWidth > 0) setIndex(Math.round(event.nativeEvent.contentOffset.x / frameWidth));
+          }}>
+          {list.map((photo, i) => (
+            <PressableScale
+              key={photo.id}
+              accessibilityRole="imagebutton"
+              accessibilityLabel={`${title}, photo ${i + 1} of ${list.length}. Tap to zoom.`}
+              onPress={() => setZoomed(true)}>
+              <Image
+                source={{ uri: noticeboardUrl(photo.storage_path) }}
+                style={{ width: frameWidth || 1, aspectRatio: aspect }}
+                contentFit={i === 0 ? 'cover' : 'contain'}
+                transition={150}
+              />
+            </PressableScale>
+          ))}
+        </ScrollView>
+        <View
+          pointerEvents="none"
+          className="absolute bottom-2 right-2 flex-row items-center gap-1 rounded-full bg-inverse-surface/80 px-2.5 py-1">
+          <ZoomIn size={14} color={colors['inverse-on-surface']} />
+          <Text className="font-label text-label-sm text-inverse-on-surface">
+            {list.length > 1 ? `${index + 1} / ${list.length} · ` : ''}Tap to zoom
+          </Text>
         </View>
-      </PressableScale>
+      </View>
+
+      {list.length > 1 ? (
+        <View className="flex-row justify-center gap-2">
+          {list.map((photo, i) => (
+            <Pressable
+              key={photo.id}
+              accessibilityRole="button"
+              accessibilityLabel={`Show photo ${i + 1}`}
+              accessibilityState={{ selected: i === index }}
+              hitSlop={8}
+              onPress={() => goTo(i)}
+              className={cn('h-2 rounded-full', i === index ? 'w-5 bg-primary' : 'w-2 bg-outline-variant')}
+            />
+          ))}
+        </View>
+      ) : null}
 
       {canReport ? (
         alreadyReported ? (
@@ -250,7 +306,7 @@ export function NoticeboardCard({
           <Pressable
             accessibilityRole="button"
             disabled={report.isPending}
-            onPress={() => report.mutate({ photoId: photo.data!.id, reason: 'outdated' })}
+            onPress={() => report.mutate({ photoId: current.id, reason: 'outdated' })}
             hitSlop={8}
             className="flex-row items-center gap-1.5 self-end active:opacity-60">
             {report.isPending ? <ActivityIndicator size="small" /> : <Flag size={14} color={colors.primary} />}
@@ -260,7 +316,7 @@ export function NoticeboardCard({
       ) : null}
 
       <ZoomableImage
-        uri={uri}
+        uri={noticeboardUrl(current.storage_path)}
         visible={zoomed}
         onClose={() => setZoomed(false)}
         caption={`Uploaded ${age}`}
@@ -268,6 +324,116 @@ export function NoticeboardCard({
       />
     </Card>
   );
+}
+
+/** Room left in an outlet's photo stack (app_settings.max_menu_photos). */
+export function useMenuPhotoStack(outletId: string | null | undefined) {
+  const photos = useMenuPhotos(outletId);
+  const limit = useMenuPhotoLimit();
+  const count = photos.data?.length ?? 0;
+  return { photos, limit: limit.data, count, full: limit.data !== undefined && count >= limit.data };
+}
+
+/** Manager view of the stack: every published photo with its reports, zoom and delete. */
+export function MenuPhotoStackEditor({ outletId }: { outletId: string }) {
+  const { photos, limit, count } = useMenuPhotoStack(outletId);
+  const remove = useDeleteMenuPhoto();
+  const [confirming, setConfirming] = useState<string | null>(null);
+  const [zoomed, setZoomed] = useState<MenuPhoto | null>(null);
+
+  if (photos.isPending) return <ActivityIndicator />;
+  const list = photos.data ?? [];
+
+  return (
+    <View className="gap-space-sm">
+      <SectionHeader title={`Published photos${limit ? ` · ${count} of ${limit}` : ''}`} />
+      {list.length === 0 ? (
+        <Card tone="low">
+          <Text className="font-body text-body-md text-on-surface-variant">Nothing published yet.</Text>
+        </Card>
+      ) : (
+        <View className="flex-row flex-wrap gap-space-sm">
+          {list.map((photo, i) => (
+            <View key={photo.id} className="w-[48.5%] gap-space-xs rounded-2xl bg-surface-container-lowest p-space-xs">
+              <PressableScale
+                accessibilityRole="imagebutton"
+                accessibilityLabel={`Photo ${i + 1}. Tap to zoom.`}
+                onPress={() => setZoomed(photo)}>
+                <View className="overflow-hidden rounded-xl bg-surface-container-low">
+                  <Image
+                    source={{ uri: noticeboardUrl(photo.storage_path) }}
+                    style={{ width: '100%', aspectRatio: 3 / 4 }}
+                    contentFit="cover"
+                    transition={150}
+                  />
+                  {i === 0 ? (
+                    <View className="absolute left-1.5 top-1.5">
+                      <Badge label="Newest" tone="official" />
+                    </View>
+                  ) : null}
+                </View>
+              </PressableScale>
+              <View className="flex-row flex-wrap items-center gap-1 px-1">
+                <Text className="font-label text-label-md text-on-surface-variant">{timeAgo(photo.created_at)}</Text>
+                <PhotoReportCount photoId={photo.id} />
+              </View>
+              {confirming === photo.id ? (
+                <View className="flex-row gap-space-xs">
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setConfirming(null)}
+                    className="flex-1 items-center rounded-full bg-surface-container-high py-2 active:opacity-60">
+                    <Text className="font-label-bold text-label-md text-on-surface">Keep</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Confirm delete photo"
+                    disabled={remove.isPending}
+                    onPress={() => remove.mutate(photo, { onSettled: () => setConfirming(null) })}
+                    className="flex-1 items-center rounded-full bg-error py-2 active:opacity-60">
+                    {remove.isPending && remove.variables?.id === photo.id ? (
+                      <ActivityIndicator size="small" color={colors['on-error']} />
+                    ) : (
+                      <Text className="font-label-bold text-label-md text-on-error">Delete</Text>
+                    )}
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Delete photo ${i + 1}`}
+                  onPress={() => setConfirming(photo.id)}
+                  hitSlop={6}
+                  className="flex-row items-center justify-center gap-1.5 py-1.5 active:opacity-60">
+                  <Trash2 size={14} color={colors.error} />
+                  <Text className="font-label-bold text-label-md text-error">Delete</Text>
+                </Pressable>
+              )}
+            </View>
+          ))}
+        </View>
+      )}
+      {remove.isError ? (
+        <Text accessibilityRole="alert" className="font-body text-body-sm text-error">
+          {remove.error.message}
+        </Text>
+      ) : null}
+
+      <ZoomableImage
+        uri={zoomed ? noticeboardUrl(zoomed.storage_path) : ''}
+        visible={zoomed !== null}
+        onClose={() => setZoomed(null)}
+        caption={zoomed ? `Uploaded ${timeAgo(zoomed.created_at)}` : undefined}
+        accessibilityLabel="Published photo"
+      />
+    </View>
+  );
+}
+
+function PhotoReportCount({ photoId }: { photoId: string }) {
+  const reports = usePhotoReports(photoId);
+  const n = reports.data?.length ?? 0;
+  return n > 0 ? <Badge label={`${n} report${n === 1 ? '' : 's'}`} tone="longStanding" /> : null;
 }
 
 // ─── Weekly menu ─────────────────────────────────────────────────────────────

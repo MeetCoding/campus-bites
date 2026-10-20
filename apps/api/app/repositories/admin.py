@@ -1,16 +1,20 @@
+from datetime import UTC, datetime
 from typing import Annotated, Any, Protocol
 from uuid import UUID
 
 from fastapi import Depends
 from postgrest.exceptions import APIError
 from supabase import AsyncClient
+from supabase_auth.errors import AuthApiError, AuthWeakPasswordError
 
 from app.core.supabase import get_supabase
 from app.schemas.admin import (
+    AdminOut,
     BhawanOut,
     EateryOut,
     ProfileSummary,
     RoleAssignmentOut,
+    VendorAccount,
     WhitelistEntry,
 )
 from app.schemas.common import AppRole
@@ -29,6 +33,10 @@ class DuplicateError(Exception):
 
 class InUseError(Exception):
     """A foreign key (or the Bhawan residents check) refused a delete: the row has history."""
+
+
+class PasscodeRejectedError(Exception):
+    """Supabase Auth refused the passcode (its password policy); the message says why."""
 
 
 class AdminRepository(Protocol):
@@ -52,9 +60,25 @@ class AdminRepository(Protocol):
         self, bhawan_id: UUID, name: str | None, sort_order: int | None
     ) -> BhawanOut | None: ...
     async def delete_bhawan(self, bhawan_id: UUID) -> bool: ...
-    async def create_eatery(self, name: str, slug: str, location_tag: str | None) -> EateryOut: ...
+    async def create_eatery(
+        self,
+        name: str,
+        slug: str,
+        location_tag: str | None,
+        latitude: float | None = None,
+        longitude: float | None = None,
+    ) -> EateryOut: ...
     async def update_eatery(self, eatery_id: UUID, changes: dict[str, Any]) -> EateryOut | None: ...
     async def delete_eatery(self, eatery_id: UUID) -> bool: ...
+    async def owner_admin_email(self) -> str | None: ...
+    async def list_admins(self) -> list[AdminOut]: ...
+    async def add_admin_invite(self, email: str, invited_by: UUID) -> AdminOut: ...
+    async def delete_admin_invite(self, email: str) -> bool: ...
+    async def delete_user_role(self, user_id: UUID, role: AppRole) -> bool: ...
+    async def list_vendor_accounts(self) -> list[tuple[VendorAccount, UUID | None]]: ...
+    async def set_vendor_passcode(
+        self, phone_e164: str, user_id: UUID | None, passcode: str
+    ) -> VendorAccount: ...
 
 
 _WHITELIST_COLUMNS = "id, phone_e164, outlet_id, label, active, created_at, outlets(name)"
@@ -246,12 +270,26 @@ class SupabaseAdminRepository:
             raise
         return bool(res.data)
 
-    async def create_eatery(self, name: str, slug: str, location_tag: str | None) -> EateryOut:
+    async def create_eatery(
+        self,
+        name: str,
+        slug: str,
+        location_tag: str | None,
+        latitude: float | None = None,
+        longitude: float | None = None,
+    ) -> EateryOut:
         try:
             res = await (
                 self._db.table("outlets")
                 .insert(
-                    {"type": "eatery", "name": name, "slug": slug, "location_tag": location_tag}
+                    {
+                        "type": "eatery",
+                        "name": name,
+                        "slug": slug,
+                        "location_tag": location_tag,
+                        "latitude": latitude,
+                        "longitude": longitude,
+                    }
                 )
                 .execute()
             )
@@ -283,6 +321,114 @@ class SupabaseAdminRepository:
             _raise_in_use(exc)
             raise
         return bool(res.data)
+
+    # ─── Admins ──────────────────────────────────────────────────────────────
+    async def owner_admin_email(self) -> str | None:
+        res = await self._db.table("app_settings").select("owner_admin_email").single().execute()
+        return res.data["owner_admin_email"]
+
+    async def list_admins(self) -> list[AdminOut]:
+        owner = await self.owner_admin_email()
+        active = await (
+            self._db.table("role_assignments")
+            .select("created_at, profiles!role_assignments_user_id_fkey(email, full_name)")
+            .eq("role", AppRole.ADMIN.value)
+            .order("created_at")
+            .execute()
+        )
+        invites = await (
+            self._db.table("admin_invites")
+            .select("email, created_at")
+            .order("created_at")
+            .execute()
+        )
+        admins = [
+            AdminOut(
+                email=row["profiles"]["email"],
+                full_name=row["profiles"]["full_name"],
+                status="active",
+                is_owner=row["profiles"]["email"] == owner,
+                created_at=row["created_at"],
+            )
+            for row in active.data
+            if (row.get("profiles") or {}).get("email")
+        ]
+        admins += [
+            AdminOut(**row, status="invited", is_owner=row["email"] == owner)
+            for row in invites.data
+        ]
+        return admins
+
+    async def add_admin_invite(self, email: str, invited_by: UUID) -> AdminOut:
+        try:
+            res = await (
+                self._db.table("admin_invites")
+                .insert({"email": email, "invited_by": str(invited_by)})
+                .execute()
+            )
+        except APIError as exc:
+            _raise_duplicate(exc)
+            raise
+        return AdminOut(**res.data[0], status="invited")
+
+    async def delete_admin_invite(self, email: str) -> bool:
+        res = await self._db.table("admin_invites").delete().eq("email", email).execute()
+        return bool(res.data)
+
+    async def delete_user_role(self, user_id: UUID, role: AppRole) -> bool:
+        res = await (
+            self._db.table("role_assignments")
+            .delete()
+            .eq("user_id", str(user_id))
+            .eq("role", role.value)
+            .execute()
+        )
+        return bool(res.data)
+
+    # ─── Vendor sign-in accounts ─────────────────────────────────────────────
+    async def list_vendor_accounts(self) -> list[tuple[VendorAccount, UUID | None]]:
+        res = await self._db.rpc("admin_vendor_accounts").execute()
+        return [
+            (
+                VendorAccount(**row, has_account=row["user_id"] is not None),
+                UUID(row["user_id"]) if row["user_id"] else None,
+            )
+            for row in res.data
+        ]
+
+    async def set_vendor_passcode(
+        self, phone_e164: str, user_id: UUID | None, passcode: str
+    ) -> VendorAccount:
+        set_at = datetime.now(UTC)
+        app_metadata = {"passcode_set_at": set_at.isoformat()}
+        try:
+            if user_id is None:
+                res = await self._db.auth.admin.create_user(
+                    {
+                        "phone": phone_e164,
+                        "password": passcode,
+                        "phone_confirm": True,
+                        "app_metadata": app_metadata,
+                    }
+                )
+            else:
+                # GoTrue merges app_metadata keys, so the provider fields are kept.
+                res = await self._db.auth.admin.update_user_by_id(
+                    str(user_id), {"password": passcode, "app_metadata": app_metadata}
+                )
+        except AuthWeakPasswordError as exc:
+            raise PasscodeRejectedError(exc.message) from exc
+        except AuthApiError as exc:
+            if exc.code == "weak_password":
+                raise PasscodeRejectedError(exc.message) from exc
+            raise
+        last_sign_in = res.user.last_sign_in_at
+        return VendorAccount(
+            phone_e164=phone_e164,
+            has_account=True,
+            passcode_set_at=set_at,
+            last_sign_in_at=last_sign_in,
+        )
 
 
 def get_admin_repository(

@@ -3,8 +3,15 @@ from uuid import UUID
 
 from app.core.auth import CurrentUser
 from app.core.errors import ApiError
-from app.repositories.admin import AdminRepository, DuplicateError, InUseError
+from app.repositories.admin import (
+    AdminRepository,
+    DuplicateError,
+    InUseError,
+    PasscodeRejectedError,
+)
 from app.schemas.admin import (
+    AdminCreate,
+    AdminOut,
     BhawanCreate,
     BhawanOut,
     BhawanUpdate,
@@ -13,6 +20,8 @@ from app.schemas.admin import (
     EateryUpdate,
     RoleAssignmentCreate,
     RoleAssignmentOut,
+    VendorAccount,
+    VendorPasscodeSet,
     WhitelistCreate,
     WhitelistEntry,
 )
@@ -150,7 +159,9 @@ class AdminService:
     async def create_eatery(self, actor: CurrentUser, body: EateryCreate) -> EateryOut:
         await self._ensure_admin(actor)
         try:
-            return await self._repo.create_eatery(body.name, slugify(body.name), body.location_tag)
+            return await self._repo.create_eatery(
+                body.name, slugify(body.name), body.location_tag, body.latitude, body.longitude
+            )
         except DuplicateError as exc:
             raise ApiError(
                 409, "EATERY_DUPLICATE", "An outlet with this name already exists."
@@ -160,7 +171,7 @@ class AdminService:
         self, actor: CurrentUser, eatery_id: UUID, body: EateryUpdate
     ) -> EateryOut:
         await self._ensure_admin(actor)
-        # Only the fields the admin sent: an explicit null clears the location tag.
+        # Only the fields the admin sent: an explicit null clears the location tag or the pin.
         changes = body.model_dump(include=body.model_fields_set)
         if changes.get("name", "") is None:
             del changes["name"]
@@ -183,3 +194,70 @@ class AdminService:
             ) from exc
         if not deleted:
             raise ApiError(404, "EATERY_NOT_FOUND", "That eatery does not exist.")
+
+    # ─── Admins (web console) ────────────────────────────────────────────────
+    async def list_admins(self, actor: CurrentUser) -> list[AdminOut]:
+        await self._ensure_admin(actor)
+        return await self._repo.list_admins()
+
+    async def add_admin(self, actor: CurrentUser, body: AdminCreate) -> AdminOut:
+        """Admin right away if they have signed in before; otherwise an invite that
+        handle_new_user redeems at their first Google sign-in."""
+        await self._ensure_admin(actor)
+        profile = await self._repo.find_profile_by_email(body.email)
+        try:
+            if profile is None:
+                return await self._repo.add_admin_invite(body.email, actor.id)
+            assignment = await self._repo.add_role_assignment(
+                profile.id, AppRole.ADMIN, None, actor.id
+            )
+        except DuplicateError as exc:
+            raise ApiError(409, "ADMIN_DUPLICATE", "This email is already an admin.") from exc
+        return AdminOut(
+            email=body.email,
+            full_name=profile.full_name,
+            status="active",
+            is_owner=body.email == await self._repo.owner_admin_email(),
+            created_at=assignment.created_at,
+        )
+
+    async def remove_admin(self, actor: CurrentUser, email: str) -> None:
+        await self._ensure_admin(actor)
+        email = email.strip().lower()
+        if email == await self._repo.owner_admin_email():
+            raise ApiError(409, "OWNER_ADMIN", "The owner's admin access can't be removed.")
+        profile = await self._repo.find_profile_by_email(email)
+        if profile is not None and profile.id == actor.id:
+            raise ApiError(
+                409, "CANNOT_REMOVE_OWN_ADMIN", "Ask another admin to remove your admin role."
+            )
+        removed = await self._repo.delete_admin_invite(email)
+        if profile is not None:
+            removed = await self._repo.delete_user_role(profile.id, AppRole.ADMIN) or removed
+        if not removed:
+            raise ApiError(404, "ADMIN_NOT_FOUND", "That email isn't an admin.")
+
+    # ─── Vendor passcodes ────────────────────────────────────────────────────
+    async def list_vendor_accounts(self, actor: CurrentUser) -> list[VendorAccount]:
+        await self._ensure_admin(actor)
+        return [account for account, _ in await self._repo.list_vendor_accounts()]
+
+    async def set_vendor_passcode(
+        self, actor: CurrentUser, body: VendorPasscodeSet
+    ) -> VendorAccount:
+        """Vendors sign in with phone + passcode (a Supabase password). Only whitelisted
+        phones get an account, so the passcode alone never grants access to an outlet."""
+        await self._ensure_admin(actor)
+        accounts = {a.phone_e164: user_id for a, user_id in await self._repo.list_vendor_accounts()}
+        if body.phone not in accounts:
+            raise ApiError(
+                404,
+                "VENDOR_NOT_WHITELISTED",
+                "Assign this number to an outlet before setting its passcode.",
+            )
+        try:
+            return await self._repo.set_vendor_passcode(
+                body.phone, accounts[body.phone], body.passcode
+            )
+        except PasscodeRejectedError as exc:
+            raise ApiError(422, "PASSCODE_REJECTED", f"Supabase refused it: {exc}") from exc

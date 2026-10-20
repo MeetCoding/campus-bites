@@ -1,0 +1,11 @@
+@import 'tailwindcss';
+@config '../tailwind.config.js';
+
+@layer base {
+  body {
+    @apply bg-background font-body text-body-md text-on-surface antialiased;
+  }
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+}

@@ -9,6 +9,8 @@ import {
   useUpdateEatery,
   type AdminEatery,
 } from '@/features/admin/queries';
+import type { LatLng } from '@/features/map/campus';
+import { PinPicker } from '@/features/map/components';
 
 /** Admin master list of campus eateries (PRD §2 System Admin, Module C). */
 export default function EateriesAdminScreen() {
@@ -73,10 +75,14 @@ function EateryRow({ eatery }: { eatery: AdminEatery }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [name, setName] = useState(eatery.name);
   const [location, setLocation] = useState(eatery.location_tag ?? '');
+  const savedPin = eatery.latitude !== null && eatery.longitude !== null ? { latitude: eatery.latitude, longitude: eatery.longitude } : null;
+  // undefined = unchanged, null = remove the pin
+  const [pin, setPin] = useState<LatLng | null | undefined>(undefined);
 
   function close() {
     setEditing(false);
     setConfirmDelete(false);
+    setPin(undefined);
     update.reset();
     remove.reset();
   }
@@ -88,8 +94,9 @@ function EateryRow({ eatery }: { eatery: AdminEatery }) {
       name: trimmedName !== eatery.name ? trimmedName : undefined,
       // null clears the tag; undefined leaves it alone
       location_tag: trimmedLocation !== eatery.location_tag ? trimmedLocation : undefined,
+      ...(pin !== undefined ? { latitude: pin?.latitude ?? null, longitude: pin?.longitude ?? null } : {}),
     };
-    if (changes.name === undefined && changes.location_tag === undefined) return close();
+    if (changes.name === undefined && changes.location_tag === undefined && pin === undefined) return close();
     update.mutate({ id: eatery.id, ...changes }, { onSuccess: close });
   }
 
@@ -104,7 +111,7 @@ function EateryRow({ eatery }: { eatery: AdminEatery }) {
         <View className="flex-1 gap-space-xs">
           <Text className="font-body-semibold text-body-lg text-on-surface">{eatery.name}</Text>
           <Text className="font-label text-label-sm text-on-surface-variant">
-            {eatery.location_tag ?? 'No location set'}
+            {eatery.location_tag ?? 'No location set'} · {savedPin ? 'On the map' : 'No map pin'}
           </Text>
         </View>
         <Button label="Edit" variant="tertiary" onPress={() => setEditing(true)} />
@@ -117,6 +124,11 @@ function EateryRow({ eatery }: { eatery: AdminEatery }) {
     <Card className="gap-space-md">
       <TextField label="Name" value={name} onChangeText={setName} maxLength={60} />
       <TextField label="Location" placeholder="Optional" value={location} onChangeText={setLocation} maxLength={60} />
+      <PinPicker
+        value={pin === undefined ? savedPin : pin}
+        onChange={setPin}
+        onClear={(pin === undefined ? savedPin : pin) ? () => setPin(null) : undefined}
+      />
       {error ? (
         <Text accessibilityRole="alert" className="font-body text-body-sm text-error">
           {error}

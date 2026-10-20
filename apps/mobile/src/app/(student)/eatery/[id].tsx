@@ -4,6 +4,7 @@ import { Button, Screen, SectionHeader } from '@/components/ui';
 import { useSession } from '@/features/auth/session';
 import { MenuItemsList, OutletHeader } from '@/features/canteens/components';
 import { useLiveUpdates } from '@/features/canteens/queries';
+import { EateryLocationCard } from '@/features/map/components';
 import { NoticeboardCard, OverrideBanner } from '@/features/mess/components';
 import { useActiveOverrides } from '@/features/mess/queries';
 
@@ -18,6 +19,7 @@ export default function EateryDetail() {
     <Screen>
       <OutletHeader outletId={id} />
       <OverrideBanner overrides={overrides.data} />
+      <EateryLocationCard outletId={id} />
       <SectionHeader title="Menu" />
       <MenuItemsList outletId={id} />
       <NoticeboardCard outletId={id} title="Menu photo" canReport={claims?.roles.includes('student') ?? false} />

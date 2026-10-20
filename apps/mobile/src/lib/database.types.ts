@@ -41,31 +41,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_invites: {
+        Row: {
+          created_at: string
+          email: string
+          invited_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          invited_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          invited_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_settings: {
         Row: {
           id: boolean
           long_standing_after_hours: number
+          max_menu_photos: number
           min_rebate_days: number
           nudge_cooldown_hours: number
           nudge_eligible_after_hours: number
+          owner_admin_email: string | null
           rebate_backdate_days: number
           updated_at: string
         }
         Insert: {
           id?: boolean
           long_standing_after_hours?: number
+          max_menu_photos?: number
           min_rebate_days?: number
           nudge_cooldown_hours?: number
           nudge_eligible_after_hours?: number
+          owner_admin_email?: string | null
           rebate_backdate_days?: number
           updated_at?: string
         }
         Update: {
           id?: boolean
           long_standing_after_hours?: number
+          max_menu_photos?: number
           min_rebate_days?: number
           nudge_cooldown_hours?: number
           nudge_eligible_after_hours?: number
+          owner_admin_email?: string | null
           rebate_backdate_days?: number
           updated_at?: string
         }
@@ -615,7 +647,9 @@ export type Database = {
           created_at: string
           id: string
           is_open: boolean
+          latitude: number | null
           location_tag: string | null
+          longitude: number | null
           name: string
           slug: string
           status_updated_at: string | null
@@ -627,7 +661,9 @@ export type Database = {
           created_at?: string
           id?: string
           is_open?: boolean
+          latitude?: number | null
           location_tag?: string | null
+          longitude?: number | null
           name: string
           slug: string
           status_updated_at?: string | null
@@ -639,7 +675,9 @@ export type Database = {
           created_at?: string
           id?: string
           is_open?: boolean
+          latitude?: number | null
           location_tag?: string | null
+          longitude?: number | null
           name?: string
           slug?: string
           status_updated_at?: string | null
@@ -1134,7 +1172,9 @@ export type Database = {
           bhawan_id: string | null
           closes_at: string | null
           is_open: boolean | null
+          latitude: number | null
           location_tag: string | null
+          longitude: number | null
           name: string | null
           next_opens_at: string | null
           outlet_id: string | null
@@ -1190,6 +1230,15 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      admin_vendor_accounts: {
+        Args: never
+        Returns: {
+          last_sign_in_at: string
+          passcode_set_at: string
+          phone_e164: string
+          user_id: string
+        }[]
       }
       complaint_board: {
         Args: {

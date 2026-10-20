@@ -15,11 +15,13 @@ export function OtpInput({
   value,
   onChange,
   error,
+  autoFocus = true,
 }: {
   label: string;
   value: string;
   onChange: (code: string) => void;
   error?: string;
+  autoFocus?: boolean;
 }) {
   const input = useRef<TextInputInstance>(null);
   const [focused, setFocused] = useState(false);
@@ -67,7 +69,7 @@ export function OtpInput({
         autoComplete="one-time-code"
         textContentType="oneTimeCode"
         maxLength={LENGTH}
-        autoFocus
+        autoFocus={autoFocus}
         caretHidden
         // Kept in the layout (not display:none) so it can take focus and receive autofill.
         className="absolute h-px w-px opacity-0"

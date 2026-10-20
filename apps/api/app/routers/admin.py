@@ -6,6 +6,8 @@ from fastapi import APIRouter, Depends, status
 from app.core.auth import CurrentUser, require_role
 from app.repositories.admin import AdminRepository, get_admin_repository
 from app.schemas.admin import (
+    AdminCreate,
+    AdminOut,
     BhawanCreate,
     BhawanOut,
     BhawanUpdate,
@@ -14,6 +16,8 @@ from app.schemas.admin import (
     EateryUpdate,
     RoleAssignmentCreate,
     RoleAssignmentOut,
+    VendorAccount,
+    VendorPasscodeSet,
     WhitelistCreate,
     WhitelistEntry,
 )
@@ -102,3 +106,30 @@ async def update_eatery(
 @router.delete("/eateries/{eatery_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_eatery(actor: Admin, service: Service, eatery_id: UUID) -> None:
     await service.delete_eatery(actor, eatery_id)
+
+
+@router.get("/admins", response_model=list[AdminOut])
+async def list_admins(actor: Admin, service: Service) -> list[AdminOut]:
+    return await service.list_admins(actor)
+
+
+@router.post("/admins", response_model=AdminOut, status_code=status.HTTP_201_CREATED)
+async def add_admin(actor: Admin, service: Service, body: AdminCreate) -> AdminOut:
+    return await service.add_admin(actor, body)
+
+
+@router.delete("/admins/{email}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_admin(actor: Admin, service: Service, email: str) -> None:
+    await service.remove_admin(actor, email)
+
+
+@router.get("/vendor-accounts", response_model=list[VendorAccount])
+async def list_vendor_accounts(actor: Admin, service: Service) -> list[VendorAccount]:
+    return await service.list_vendor_accounts(actor)
+
+
+@router.post("/vendor-accounts/passcode", response_model=VendorAccount)
+async def set_vendor_passcode(
+    actor: Admin, service: Service, body: VendorPasscodeSet
+) -> VendorAccount:
+    return await service.set_vendor_passcode(actor, body)

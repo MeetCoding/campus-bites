@@ -49,10 +49,10 @@ export default function WhitelistScreen() {
   return (
     <Screen>
       <Card tone="low" className="gap-space-xs">
-        <Text className="font-body-semibold text-body-md text-on-surface">Test-number login (V1)</Text>
+        <Text className="font-body-semibold text-body-md text-on-surface">Vendor passcodes</Text>
         <Text className="font-body text-body-sm text-on-surface-variant">
-          Vendor sign-in uses Supabase test phone numbers. After whitelisting a new number here, also add
-          it with a passcode under Supabase → Authentication → Phone → Phone numbers for testing.
+          Vendors sign in with their phone and a 6-digit passcode. Set or reset passcodes in the Campus
+          Bites admin website (Vendors page); a number whitelisted here can't sign in until it has one.
         </Text>
       </Card>
 

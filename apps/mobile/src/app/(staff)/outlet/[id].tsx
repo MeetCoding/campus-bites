@@ -8,6 +8,7 @@ import {
   MenuItemsEditor,
   MenuPhotoUploader,
   OpenToggleCard,
+  PinEditor,
   ShiftChangeEditor,
   ShiftEditor,
 } from '@/features/canteens/manage';
@@ -67,6 +68,7 @@ export default function OutletConsole() {
         <View className="gap-space-sm">
           <SectionHeader title="Location" />
           <LocationEditor outletId={outlet.id} />
+          <PinEditor outletId={outlet.id} />
         </View>
       ) : null}
     </Screen>

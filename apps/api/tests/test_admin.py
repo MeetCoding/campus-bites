@@ -7,12 +7,19 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.repositories.admin import DuplicateError, InUseError, get_admin_repository
+from app.repositories.admin import (
+    DuplicateError,
+    InUseError,
+    PasscodeRejectedError,
+    get_admin_repository,
+)
 from app.schemas.admin import (
+    AdminOut,
     BhawanOut,
     EateryOut,
     ProfileSummary,
     RoleAssignmentOut,
+    VendorAccount,
     WhitelistEntry,
 )
 from app.schemas.common import AppRole
@@ -20,6 +27,8 @@ from tests.conftest import TokenFactory, bearer
 
 ADMIN_ID = uuid.uuid4()
 STUDENT_ID = uuid.uuid4()
+OWNER_ID = uuid.uuid4()
+OWNER_EMAIL = "meet_s@ece.iitr.ac.in"
 RAJENDRA = uuid.uuid4()
 NIGHT_CANTEEN = uuid.uuid4()
 
@@ -33,10 +42,16 @@ class InMemoryAdminRepository:
         self.profiles = {
             ADMIN_ID: ProfileSummary(id=ADMIN_ID, email="admin@iitr.ac.in"),
             STUDENT_ID: ProfileSummary(id=STUDENT_ID, email="secy@ece.iitr.ac.in"),
+            OWNER_ID: ProfileSummary(id=OWNER_ID, email=OWNER_EMAIL),
         }
         self.whitelist: dict[UUID, WhitelistEntry] = {}
         self.assignments: dict[UUID, RoleAssignmentOut] = {}
         self._assign(ADMIN_ID, AppRole.ADMIN, None)
+        self._assign(OWNER_ID, AppRole.ADMIN, None)
+        self.invites: dict[str, datetime] = {}
+        # Whitelisted phone → its auth user (absent = no account yet), and the passcodes set.
+        self.vendor_users: dict[str, UUID] = {}
+        self.passcodes: dict[str, str] = {}
         self.bhawan_rows = {
             RAJENDRA: BhawanOut(id=RAJENDRA, name="Rajendra Bhawan", slug="rajendra", sort_order=1)
         }
@@ -146,10 +161,24 @@ class InMemoryAdminRepository:
             raise InUseError("bhawan has residents")
         return self.bhawan_rows.pop(bhawan_id, None) is not None
 
-    async def create_eatery(self, name: str, slug: str, location_tag: str | None) -> EateryOut:
+    async def create_eatery(
+        self,
+        name: str,
+        slug: str,
+        location_tag: str | None,
+        latitude: float | None = None,
+        longitude: float | None = None,
+    ) -> EateryOut:
         if any(e.slug == slug for e in self.eateries.values()):
             raise DuplicateError("outlets_slug_key")
-        row = EateryOut(id=uuid.uuid4(), name=name, slug=slug, location_tag=location_tag)
+        row = EateryOut(
+            id=uuid.uuid4(),
+            name=name,
+            slug=slug,
+            location_tag=location_tag,
+            latitude=latitude,
+            longitude=longitude,
+        )
         self.eateries[row.id] = row
         return row
 
@@ -164,6 +193,67 @@ class InMemoryAdminRepository:
         if eatery_id in self.eateries_with_complaints:
             raise InUseError("complaints_outlet_id_fkey")
         return self.eateries.pop(eatery_id, None) is not None
+
+    async def owner_admin_email(self) -> str | None:
+        return OWNER_EMAIL
+
+    async def list_admins(self) -> list[AdminOut]:
+        active = [
+            AdminOut(
+                email=a.email or "",
+                status="active",
+                is_owner=a.email == OWNER_EMAIL,
+                created_at=a.created_at,
+            )
+            for a in self.assignments.values()
+            if a.role is AppRole.ADMIN
+        ]
+        invited = [
+            AdminOut(email=e, status="invited", created_at=at) for e, at in self.invites.items()
+        ]
+        return active + invited
+
+    async def add_admin_invite(self, email: str, invited_by: UUID) -> AdminOut:
+        if email in self.invites:
+            raise DuplicateError("admin_invites_pkey")
+        self.invites[email] = datetime.now(UTC)
+        return AdminOut(email=email, status="invited", created_at=self.invites[email])
+
+    async def delete_admin_invite(self, email: str) -> bool:
+        return self.invites.pop(email, None) is not None
+
+    async def delete_user_role(self, user_id: UUID, role: AppRole) -> bool:
+        ids = [a.id for a in self.assignments.values() if a.user_id == user_id and a.role is role]
+        for assignment_id in ids:
+            del self.assignments[assignment_id]
+        return bool(ids)
+
+    async def list_vendor_accounts(self) -> list[tuple[VendorAccount, UUID | None]]:
+        phones = sorted({e.phone_e164 for e in self.whitelist.values()})
+        return [
+            (
+                VendorAccount(phone_e164=phone, has_account=phone in self.vendor_users),
+                self.vendor_users.get(phone),
+            )
+            for phone in phones
+        ]
+
+    async def set_vendor_passcode(
+        self, phone_e164: str, user_id: UUID | None, passcode: str
+    ) -> VendorAccount:
+        if passcode == "135790":  # stands in for a stricter Supabase password policy
+            raise PasscodeRejectedError("Password should contain letters")
+        assert user_id == self.vendor_users.get(phone_e164)  # reuses the account
+        self.vendor_users.setdefault(phone_e164, uuid.uuid4())
+        self.passcodes[phone_e164] = passcode
+        return VendorAccount(
+            phone_e164=phone_e164, has_account=True, passcode_set_at=datetime.now(UTC)
+        )
+
+    def is_admin(self, user_id: UUID) -> bool:
+        return any(
+            a.user_id == user_id and a.role is AppRole.ADMIN for a in self.assignments.values()
+        )
 
 
 @pytest.fixture
@@ -553,6 +643,55 @@ def test_update_eatery_only_sent_fields(
     )
 
 
+def test_eatery_pin_is_created_moved_and_cleared(
+    client: TestClient, repo: InMemoryAdminRepository, admin_headers: dict[str, str]
+) -> None:
+    created = client.post(
+        "/v1/admin/eateries",
+        headers=admin_headers,
+        json={"name": "Amul", "latitude": 29.8649, "longitude": 77.8966},
+    ).json()
+    url = f"/v1/admin/eateries/{created['id']}"
+
+    moved = client.patch(url, headers=admin_headers, json={"latitude": 29.87, "longitude": 77.9})
+    renamed = client.patch(url, headers=admin_headers, json={"name": "Amul Parlour"}).json()
+    cleared = client.patch(url, headers=admin_headers, json={"latitude": None, "longitude": None})
+
+    assert (created["latitude"], created["longitude"]) == (29.8649, 77.8966)
+    assert moved.status_code == 200
+    assert (renamed["latitude"], renamed["longitude"]) == (29.87, 77.9)
+    assert (cleared.json()["latitude"], cleared.json()["longitude"]) == (None, None)
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"latitude": 29.86},
+        {"longitude": 77.89},
+        {"latitude": 29.86, "longitude": None},
+        {"latitude": 91, "longitude": 77.89},
+        {"latitude": 29.86, "longitude": 181},
+    ],
+)
+def test_incomplete_or_invalid_pin_is_422(
+    client: TestClient,
+    repo: InMemoryAdminRepository,
+    admin_headers: dict[str, str],
+    body: dict[str, float | None],
+) -> None:
+    created = client.post("/v1/admin/eateries", headers=admin_headers, json={"name": "Amul"})
+
+    on_create = client.post(
+        "/v1/admin/eateries", headers=admin_headers, json={"name": "CCD", **body}
+    )
+    on_update = client.patch(
+        f"/v1/admin/eateries/{created.json()['id']}", headers=admin_headers, json=body
+    )
+
+    assert on_create.status_code == 422
+    assert on_update.status_code == 422
+
+
 def test_empty_eatery_update_is_422(
     client: TestClient, repo: InMemoryAdminRepository, admin_headers: dict[str, str]
 ) -> None:
@@ -602,3 +741,191 @@ def test_eatery_with_complaints_cannot_be_deleted(
 
     assert response.status_code == 409
     assert response.json()["detail"]["code"] == "EATERY_IN_USE"
+
+
+# ─── Admins (web console) ────────────────────────────────────────────────────
+def test_admin_list_marks_owner(
+    client: TestClient, repo: InMemoryAdminRepository, admin_headers: dict[str, str]
+) -> None:
+    response = client.get("/v1/admin/admins", headers=admin_headers)
+
+    assert response.status_code == 200
+    assert [a["email"] for a in response.json() if a["is_owner"]] == [OWNER_EMAIL]
+
+
+def test_add_admin_with_account_is_active(
+    client: TestClient, repo: InMemoryAdminRepository, admin_headers: dict[str, str]
+) -> None:
+    response = client.post(
+        "/v1/admin/admins", headers=admin_headers, json={"email": " Secy@ECE.iitr.ac.in "}
+    )
+
+    assert response.status_code == 201
+    assert response.json()["status"] == "active"
+    assert repo.is_admin(STUDENT_ID)
+
+
+def test_add_admin_without_account_is_invited(
+    client: TestClient, repo: InMemoryAdminRepository, admin_headers: dict[str, str]
+) -> None:
+    response = client.post(
+        "/v1/admin/admins", headers=admin_headers, json={"email": "new@iitr.ac.in"}
+    )
+
+    assert response.status_code == 201
+    assert response.json()["status"] == "invited"
+    assert "new@iitr.ac.in" in repo.invites
+
+
+@pytest.mark.parametrize("email", ["admin@iitr.ac.in", "new@iitr.ac.in"], ids=["active", "invited"])
+def test_duplicate_admin_is_409(
+    client: TestClient, repo: InMemoryAdminRepository, admin_headers: dict[str, str], email: str
+) -> None:
+    repo.invites["new@iitr.ac.in"] = datetime.now(UTC)
+
+    response = client.post("/v1/admin/admins", headers=admin_headers, json={"email": email})
+
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "ADMIN_DUPLICATE"
+
+
+def test_non_iitr_admin_is_422(
+    client: TestClient, repo: InMemoryAdminRepository, admin_headers: dict[str, str]
+) -> None:
+    response = client.post(
+        "/v1/admin/admins", headers=admin_headers, json={"email": "someone@gmail.com"}
+    )
+
+    assert response.status_code == 422
+
+
+def test_remove_admin_and_invite(
+    client: TestClient, repo: InMemoryAdminRepository, admin_headers: dict[str, str]
+) -> None:
+    repo._assign(STUDENT_ID, AppRole.ADMIN, None)
+    repo.invites["new@iitr.ac.in"] = datetime.now(UTC)
+
+    active = client.delete("/v1/admin/admins/secy@ece.iitr.ac.in", headers=admin_headers)
+    invited = client.delete("/v1/admin/admins/NEW@iitr.ac.in", headers=admin_headers)
+    missing = client.delete("/v1/admin/admins/new@iitr.ac.in", headers=admin_headers)
+
+    assert (active.status_code, invited.status_code) == (204, 204)
+    assert not repo.is_admin(STUDENT_ID)
+    assert missing.status_code == 404
+    assert missing.json()["detail"]["code"] == "ADMIN_NOT_FOUND"
+
+
+def test_owner_admin_cannot_be_removed(
+    client: TestClient, repo: InMemoryAdminRepository, admin_headers: dict[str, str]
+) -> None:
+    response = client.delete(f"/v1/admin/admins/{OWNER_EMAIL}", headers=admin_headers)
+
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "OWNER_ADMIN"
+    assert repo.is_admin(OWNER_ID)
+
+
+def test_admin_cannot_remove_themselves(
+    client: TestClient, repo: InMemoryAdminRepository, admin_headers: dict[str, str]
+) -> None:
+    response = client.delete("/v1/admin/admins/admin@iitr.ac.in", headers=admin_headers)
+
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "CANNOT_REMOVE_OWN_ADMIN"
+
+
+# ─── Vendor passcodes ────────────────────────────────────────────────────────
+def _whitelist(client: TestClient, headers: dict[str, str]) -> None:
+    client.post(
+        "/v1/admin/vendor-whitelist",
+        headers=headers,
+        json={"phone": "9510709195", "outlet_id": str(NIGHT_CANTEEN)},
+    )
+
+
+def test_set_passcode_creates_then_resets_account(
+    client: TestClient, repo: InMemoryAdminRepository, admin_headers: dict[str, str]
+) -> None:
+    _whitelist(client, admin_headers)
+    before = client.get("/v1/admin/vendor-accounts", headers=admin_headers).json()
+
+    first = client.post(
+        "/v1/admin/vendor-accounts/passcode",
+        headers=admin_headers,
+        json={"phone": "95107 09195", "passcode": "482915"},
+    )
+    second = client.post(
+        "/v1/admin/vendor-accounts/passcode",
+        headers=admin_headers,
+        json={"phone": "+919510709195", "passcode": "730264"},
+    )
+
+    assert before == [
+        {
+            "phone_e164": "+919510709195",
+            "has_account": False,
+            "passcode_set_at": None,
+            "last_sign_in_at": None,
+        }
+    ]
+    assert first.status_code == 200
+    assert first.json()["has_account"] is True
+    assert second.status_code == 200
+    assert repo.passcodes == {"+919510709195": "730264"}
+    assert len(repo.vendor_users) == 1
+
+
+def test_passcode_needs_whitelisted_phone(
+    client: TestClient, repo: InMemoryAdminRepository, admin_headers: dict[str, str]
+) -> None:
+    response = client.post(
+        "/v1/admin/vendor-accounts/passcode",
+        headers=admin_headers,
+        json={"phone": "9510709195", "passcode": "482915"},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"]["code"] == "VENDOR_NOT_WHITELISTED"
+
+
+@pytest.mark.parametrize("passcode", ["12345", "1234567", "12a456", "000000", "123456"])
+def test_weak_or_malformed_passcode_is_422(
+    client: TestClient, repo: InMemoryAdminRepository, admin_headers: dict[str, str], passcode: str
+) -> None:
+    _whitelist(client, admin_headers)
+
+    response = client.post(
+        "/v1/admin/vendor-accounts/passcode",
+        headers=admin_headers,
+        json={"phone": "9510709195", "passcode": passcode},
+    )
+
+    assert response.status_code == 422
+    assert repo.passcodes == {}
+
+
+def test_passcode_refused_by_supabase_policy_is_422(
+    client: TestClient, repo: InMemoryAdminRepository, admin_headers: dict[str, str]
+) -> None:
+    _whitelist(client, admin_headers)
+
+    response = client.post(
+        "/v1/admin/vendor-accounts/passcode",
+        headers=admin_headers,
+        json={"phone": "9510709195", "passcode": "135790"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "PASSCODE_REJECTED"
+
+
+def test_students_cannot_set_passcodes(
+    client: TestClient, repo: InMemoryAdminRepository, make_token: TokenFactory
+) -> None:
+    response = client.post(
+        "/v1/admin/vendor-accounts/passcode",
+        headers=bearer(make_token()),
+        json={"phone": "9510709195", "passcode": "482915"},
+    )
+
+    assert response.status_code == 403

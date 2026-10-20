@@ -4,7 +4,7 @@ import { useOutlets } from '@/features/campus/queries';
 import { canteenKeys } from '@/features/canteens/queries';
 import { api } from '@/lib/api';
 import type { Enums, Json, Tables, TablesInsert } from '@/lib/database.types';
-import { uploadMenuPhoto } from '@/lib/images';
+import { deleteMenuPhoto, uploadMenuPhoto } from '@/lib/images';
 import { supabase } from '@/lib/supabase';
 import { istNow, type DayKey } from '@/lib/time';
 
@@ -34,7 +34,8 @@ export const messKeys = {
   all: ['mess'] as const,
   schedule: (bhawanId: string) => ['mess', 'schedule', bhawanId] as const,
   overrides: (outletId: string) => ['mess', 'overrides', outletId] as const,
-  photo: (outletId: string) => ['mess', 'photo', outletId] as const,
+  photos: (outletId: string) => ['mess', 'photos', outletId] as const,
+  photoLimit: ['mess', 'photo-limit'] as const,
   photoReports: (photoId: string) => ['mess', 'photo-reports', photoId] as const,
   menu: (bhawanId: string, weekStart: string) => ['mess', 'menu', bhawanId, weekStart] as const,
   extras: (bhawanId: string) => ['mess', 'extras', bhawanId] as const,
@@ -85,19 +86,33 @@ export function useActiveOverrides(outletId: string | null | undefined) {
   });
 }
 
-export function useCurrentPhoto(outletId: string | null | undefined) {
+/** The outlet's published photo stack, newest first. */
+export function useMenuPhotos(outletId: string | null | undefined) {
   return useQuery({
-    queryKey: messKeys.photo(outletId ?? ''),
+    queryKey: messKeys.photos(outletId ?? ''),
     enabled: !!outletId,
-    queryFn: async (): Promise<MenuPhoto | null> => {
+    queryFn: async (): Promise<MenuPhoto[]> => {
       const { data, error } = await supabase
         .from('menu_photos')
         .select('*')
         .eq('outlet_id', outletId!)
         .eq('is_current', true)
-        .maybeSingle();
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
+    },
+  });
+}
+
+/** app_settings.max_menu_photos (never hard-coded): uploads beyond it are refused by the DB. */
+export function useMenuPhotoLimit() {
+  return useQuery({
+    queryKey: messKeys.photoLimit,
+    staleTime: 60 * 60 * 1000,
+    queryFn: async (): Promise<number> => {
+      const { data, error } = await supabase.from('app_settings').select('max_menu_photos').single();
+      if (error) throw error;
+      return data.max_menu_photos;
     },
   });
 }
@@ -242,7 +257,16 @@ export function useUploadMenuPhoto() {
   return useMutation({
     mutationFn: uploadMenuPhoto,
     onSuccess: (_data, { outletId }) =>
-      queryClient.invalidateQueries({ queryKey: messKeys.photo(outletId) }),
+      queryClient.invalidateQueries({ queryKey: messKeys.photos(outletId) }),
+  });
+}
+
+export function useDeleteMenuPhoto() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteMenuPhoto,
+    onSuccess: (_data, photo) =>
+      queryClient.invalidateQueries({ queryKey: messKeys.photos(photo.outlet_id) }),
   });
 }
 

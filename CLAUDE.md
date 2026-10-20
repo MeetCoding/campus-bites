@@ -10,6 +10,7 @@ Official IIT Roorkee dining platform: mess menus & timings, hostel canteens, cam
 
 ## Stack (zero Docker)
 - `apps/mobile` — Expo SDK 58 (React Native 0.88, React 19.3, React Compiler on), Expo Router, NativeWind 4.2 (Tailwind CSS 3.4 — NativeWind v4 is **not** compatible with Tailwind v4), TypeScript 6 strict. See `apps/mobile/AGENTS.md`: check the versioned Expo docs before using any Expo API.
+- `apps/web` — admin website: Vite 8, React 19, React Router 7, TanStack Query, Tailwind CSS 4 (allowed here: no NativeWind), TypeScript 6 strict. Same boundary as the app: reads via supabase-js (publishable key), writes via FastAPI.
 - `apps/api` — FastAPI, Pydantic v2, Python 3.12 (uv-managed, non-packaged app), `uv`.
 - `supabase/` — Supabase CLI project **linked to the cloud dev project** (`sdjghovuyhsiyufhmlga`). There is no local Supabase stack: never run `supabase start`.
 
@@ -21,13 +22,13 @@ campus-bites/
 │   │   ├── src/                    # `@/` alias → src/
 │   │   │   ├── app/                # Expo Router routes only (thin screens)
 │   │   │   │   ├── _layout.tsx     # imports global.css; fonts, splash, QueryClient (+ Session in M2)
-│   │   │   │   ├── (auth)/         # sign-in (Google / vendor OTP), bhawan onboarding
+│   │   │   │   ├── (auth)/         # sign-in (Google / vendor phone + passcode), bhawan onboarding
 │   │   │   │   ├── (student)/      # stack: home, mess, canteens, eateries, eatery/[id], rebates (+ complaints in M6)
 │   │   │   │   ├── (staff)/        # vendor + mess/bhawan secretary consoles
 │   │   │   │   ├── (authority)/    # mess authority (rebates), ADoSW (eatery complaints)
 │   │   │   │   └── (admin)/        # whitelist + role assignment
 │   │   │   ├── components/ui/      # primitives: Button, Card, Pill, Badge, Screen, SectionHeader, TextField, ZoomableImage, HeroCard, IconBadge, LiveDot, PressableScale, Segmented
-│   │   │   ├── features/<module>/  # mess, canteens, eateries, rebates, complaints, auth: hooks, components, queries
+│   │   │   ├── features/<module>/  # mess, canteens, eateries, rebates, complaints, auth, map: hooks, components, queries
 │   │   │   ├── lib/
 │   │   │   │   ├── supabase.ts     # single supabase-js client (chunked SecureStore session, PKCE)
 │   │   │   │   ├── api.ts          # single FastAPI client; attaches session JWT
@@ -41,6 +42,10 @@ campus-bites/
 │   │   ├── tailwind.config.js      # extends theme from src/theme/tokens.js
 │   │   ├── babel.config.js / metro.config.js / nativewind-env.d.ts
 │   │   └── .env.example            # copy to .env.local (only EXPO_PUBLIC_* values)
+│   ├── web/                        # admin website: Vite + React + Tailwind 4 (tokens from apps/mobile/src/theme/tokens.js)
+│   │   ├── src/lib/                # supabase.ts (publishable key), api.ts (FastAPI), session.tsx (admin-only gate)
+│   │   ├── src/features/           # admins, vendors (whitelist + passcodes), eateries
+│   │   └── .env.example            # copy to .env.local (only VITE_* values)
 │   └── api/
 │       ├── pyproject.toml          # deps, ruff + pytest config
 │       ├── env.example             # copy to .env.local (git-ignored; Render uses its Environment tab)
@@ -55,7 +60,7 @@ campus-bites/
 ├── supabase/
 │   ├── config.toml
 │   ├── migrations/                 # 001_init, 002_grants, 003_auth, then <timestamp>_<name>.sql — the only way schema changes
-│   ├── tests/                      # SQL regression tests, each in a rolled-back transaction (auth_rls_test.sql, mess_test.sql, canteens_test.sql, rebates_test.sql, complaints_test.sql, admin_campus_test.sql; plus read-only hardening_test.sql)
+│   ├── tests/                      # SQL regression tests, each in a rolled-back transaction (auth_rls_test.sql, mess_test.sql, canteens_test.sql, rebates_test.sql, complaints_test.sql, admin_campus_test.sql, maps_test.sql, admin_web_test.sql; plus read-only hardening_test.sql)
 │   └── seed.sql                    # 11 Bhawans × 3 outlets, 4 eateries, V1 vendor whitelist
 ├── stitch-reference/               # design reference — read-only
 ├── PRD.md  ARCHITECTURE.md  CLAUDE.md  TASKS.md
@@ -73,7 +78,7 @@ campus-bites/
 - **Data**: TanStack Query for all server state; query keys live in `features/<module>/queries.ts`. Supabase reads via typed client (`Database` from `database.types.ts`). Realtime subscriptions invalidate queries, they don't hold state.
 - **FastAPI calls**: only through `lib/api.ts`. Never call `fetch` to the API elsewhere.
 - **Images**: display with `expo-image` (disk cache). **Every upload must pass through `compressForUpload()`** in `lib/images.ts` (`expo-image-manipulator`: long edge ≤ 2560 px, JPEG ≈ 0.82; ≤ 1600 px for complaint/rebate attachments). Pinch-to-zoom viewer = `react-native-gesture-handler` + `react-native-reanimated`.
-- **Auth**: Google via `signInWithOAuth` (PKCE) + `expo-web-browser` `openAuthSessionAsync` + `exchangeCodeForSession`, redirecting to `campusbites://` / `exp://`. Vendors via `signInWithOtp({ phone })` → `verifyOtp({ type: 'sms' })`; the code field is labelled "6-Digit Vendor OTP / Passcode". V1 vendor numbers are Supabase test numbers with a static passcode — never hard-code or commit the passcode. Session persisted with an `expo-secure-store` adapter.
+- **Auth**: Google via `signInWithOAuth` (PKCE) + `expo-web-browser` `openAuthSessionAsync` + `exchangeCodeForSession`, redirecting to `campusbites://` / `exp://`. Vendors via `signInWithPassword({ phone, password })`; the field is labelled "6-Digit Vendor Passcode". Passcodes are set by admins in the admin website (FastAPI → Supabase Auth admin API) and stored only as password hashes — never hard-code, log or commit one. Session persisted with an `expo-secure-store` adapter.
 - **Business constants** (`min_rebate_days`, 48 h long-standing, 7-day nudge eligibility, 24 h cooldown) come from the `app_settings` row — never hard-code them in the app or API.
 - **Secrets**: only `EXPO_PUBLIC_*` vars in the app. Never import or reference the Supabase secret/service-role key in `apps/mobile`.
 - **Time**: all "open now" / "closes at" / 48 h logic uses IST helpers in `lib/time.ts`; handle overnight windows (`closes_at < opens_at`).
@@ -121,6 +126,12 @@ npx expo lint
 npm test                             # Jest (jest-expo); import describe/it/expect from '@jest/globals'
 npx expo install <pkg>               # always use this for RN/Expo deps (SDK-compatible versions)
 
+# Admin website (apps/web)
+cd apps/web && npm install
+npm run dev                          # http://localhost:5173 (Supabase redirect URL + API CORS origin)
+npm run build                        # tsc + vite build → dist/
+npm test                             # Vitest
+
 # API (apps/api)
 cd apps/api && uv sync
 uv run fastapi dev app/main.py       # http://127.0.0.1:8000/docs
@@ -142,4 +153,4 @@ npx supabase gen types typescript --linked > apps/mobile/src/lib/database.types.
 - Do not write code that the current task doesn't need. No speculative abstractions.
 - Never read or print `.env*` files (blocked in settings). Add new vars to `apps/mobile/.env.example` / `apps/api/env.example` with a placeholder.
 - Keep `ARCHITECTURE.md` in sync when a boundary, table, or endpoint changes — in the same commit.
-- Before marking a milestone done: `npx tsc --noEmit`, `npm test`, `npx expo lint`, `uv run pytest`, `uv run ruff check .`, the `supabase/tests/*.sql` scripts, and security advisors clean.
+- Before marking a milestone done: `npx tsc --noEmit`, `npm test`, `npx expo lint`, `apps/web`: `npm run build` + `npm test`, `uv run pytest`, `uv run ruff check .`, the `supabase/tests/*.sql` scripts, and security advisors clean.

@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { File } from 'expo-file-system';
 import { useEffect, useId } from 'react';
 
 import type { ComplaintCategory, ComplaintDomain, ComplaintRules, ComplaintStatus } from '@/features/complaints/logic';
@@ -7,7 +6,7 @@ import { useSecretaryBhawans } from '@/features/mess/queries';
 import { useSession } from '@/features/auth/session';
 import { api } from '@/lib/api';
 import type { Database, Tables, TablesInsert } from '@/lib/database.types';
-import { compressForUpload, type PickedImage } from '@/lib/images';
+import { ATTACHMENT_COMPRESSION, compressForUpload, type PickedImage } from '@/lib/images';
 import { supabase } from '@/lib/supabase';
 import { istNow } from '@/lib/time';
 
@@ -157,8 +156,7 @@ export function useComplaintsLive() {
 
 /** Compress (≤ 1600 px) and upload to complaint-attachments/{uid}/{date}-{random}.jpg. */
 async function uploadPhoto(image: PickedImage, userId: string): Promise<string> {
-  const compressed = await compressForUpload(image, { maxEdge: 1600 });
-  const bytes = await new File(compressed.uri).arrayBuffer();
+  const { bytes } = await compressForUpload(image, ATTACHMENT_COMPRESSION);
   const path = `${userId}/${istNow().date}-${Math.random().toString(36).slice(2, 10)}.jpg`;
   const { error } = await supabase.storage
     .from(COMPLAINT_BUCKET)

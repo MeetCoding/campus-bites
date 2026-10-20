@@ -36,7 +36,7 @@ export const BHAWAN_SCOPED_ROLES: readonly AssignableRole[] = [
 ];
 
 export type AdminBhawan = Pick<Tables<'bhawans'>, 'id' | 'name' | 'slug' | 'sort_order'>;
-export type AdminEatery = Pick<Tables<'outlets'>, 'id' | 'name' | 'slug' | 'location_tag'>;
+export type AdminEatery = Pick<Tables<'outlets'>, 'id' | 'name' | 'slug' | 'location_tag' | 'latitude' | 'longitude'>;
 
 const keys = {
   whitelist: ['admin', 'whitelist'] as const,
@@ -118,7 +118,7 @@ export function useAdminEateries() {
     queryFn: async (): Promise<AdminEatery[]> => {
       const { data, error } = await supabase
         .from('outlets')
-        .select('id, name, slug, location_tag')
+        .select('id, name, slug, location_tag, latitude, longitude')
         .eq('type', 'eatery')
         .order('name');
       if (error) throw error;
@@ -156,7 +156,17 @@ export function useCreateEatery() {
 
 export function useUpdateEatery() {
   return useCampusMutation(
-    ({ id, ...body }: { id: string; name?: string; location_tag?: string | null }) =>
+    ({
+      id,
+      ...body
+    }: {
+      id: string;
+      name?: string;
+      location_tag?: string | null;
+      /** Sent together; both null removes the pin. */
+      latitude?: number | null;
+      longitude?: number | null;
+    }) =>
       api<AdminEatery>(`/v1/admin/eateries/${id}`, { method: 'PATCH', body }),
   );
 }

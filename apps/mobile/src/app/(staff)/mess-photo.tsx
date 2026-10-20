@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Button, Card, Screen } from '@/components/ui';
-import { NoticeboardCard } from '@/features/mess/components';
+import { MenuPhotoStackEditor, useMenuPhotoStack } from '@/features/mess/components';
 import { SecretaryScope } from '@/features/mess/SecretaryScope';
-import { useCurrentPhoto, useMessOutlet, usePhotoReports, useUploadMenuPhoto } from '@/features/mess/queries';
+import { useMessOutlet, useUploadMenuPhoto } from '@/features/mess/queries';
 import { pickImage } from '@/lib/images';
 import { istNow, weekStart } from '@/lib/time';
 
@@ -18,8 +18,7 @@ export default function MessPhotoScreen() {
 
 function PhotoUploader({ bhawanId, bhawanName }: { bhawanId: string; bhawanName: string }) {
   const outlet = useMessOutlet(bhawanId);
-  const photo = useCurrentPhoto(outlet?.id);
-  const reports = usePhotoReports(photo.data?.id);
+  const stack = useMenuPhotoStack(outlet?.id);
   const upload = useUploadMenuPhoto();
   const [message, setMessage] = useState<string | null>(null);
 
@@ -42,22 +41,21 @@ function PhotoUploader({ bhawanId, bhawanName }: { bhawanId: string; bhawanName:
     }
   }
 
-  const outdatedReports = reports.data?.length ?? 0;
-
   return (
     <View className="gap-space-md">
       <View className="gap-space-xs">
         <Text className="font-headline text-headline-md text-on-surface">{bhawanName} Mess</Text>
         <Text className="font-body text-body-md text-on-surface-variant">
-          Photograph the signed weekly chart straight-on in good light. It is resized to 2560 px and
-          compressed before upload, so handwriting stays legible.
+          Photograph the signed weekly chart straight-on in good light. Add one photo per page; students
+          swipe through them, newest first. Each is resized to 2560 px and compressed before upload, so
+          handwriting stays legible.
         </Text>
       </View>
 
-      {outdatedReports > 0 ? (
+      {stack.full ? (
         <Card tone="low">
-          <Text className="font-body-semibold text-body-md text-error">
-            {outdatedReports} student{outdatedReports === 1 ? '' : 's'} reported the current photo as outdated or blurry.
+          <Text className="font-body-semibold text-body-md text-on-surface">
+            All {stack.limit} photo slots are used. Delete an old photo below to add a new one.
           </Text>
         </Card>
       ) : null}
@@ -67,9 +65,14 @@ function PhotoUploader({ bhawanId, bhawanName }: { bhawanId: string; bhawanName:
           label="Take photo of this week's menu board"
           onPress={() => void pick('camera')}
           loading={upload.isPending}
-          disabled={!outlet}
+          disabled={!outlet || stack.full}
         />
-        <Button label="Choose from gallery" variant="secondary" onPress={() => void pick('library')} disabled={upload.isPending || !outlet} />
+        <Button
+          label="Choose from gallery"
+          variant="secondary"
+          onPress={() => void pick('library')}
+          disabled={upload.isPending || !outlet || stack.full}
+        />
       </View>
 
       {upload.isError ? (
@@ -82,7 +85,7 @@ function PhotoUploader({ bhawanId, bhawanName }: { bhawanId: string; bhawanName:
         </Text>
       ) : null}
 
-      <NoticeboardCard outletId={outlet?.id} title="Currently published" canReport={false} />
+      {outlet ? <MenuPhotoStackEditor outletId={outlet.id} /> : null}
     </View>
   );
 }

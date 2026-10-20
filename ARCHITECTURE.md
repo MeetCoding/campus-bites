@@ -7,11 +7,12 @@
 
 ## 1. Stack at a glance
 
-Two deployable projects plus one managed backend. **No Docker anywhere** (no local Supabase stack, no containers).
+Three deployable projects plus one managed backend. **No Docker anywhere** (no local Supabase stack, no containers).
 
 | Layer | Tech | Hosting |
 | --- | --- | --- |
 | Mobile app (`apps/mobile`) | Expo SDK 58 (React Native 0.88, React 19.3, React Compiler) · Expo Router · NativeWind 4 (Tailwind 3.4) · TanStack Query · TypeScript strict | EAS Build |
+| Admin website (`apps/web`) | Vite · React 19 · React Router · TanStack Query · Tailwind 4 (same Alexandria tokens) · TypeScript strict | Any static host (SPA fallback to `index.html`) |
 | Business API (`apps/api`) | FastAPI · Pydantic v2 · Python 3.12 · `uv` · `supabase-py` (async) · `httpx` | Render web service, native Python runtime |
 | Data / Auth / Files / Realtime (`supabase/`) | Supabase Cloud: Postgres 17, GoTrue Auth, PostgREST, Storage, Realtime; extensions `pg_trgm`, `btree_gist`, `moddatetime`, `pg_cron`, `pg_net` | Supabase Cloud — dev project `sdjghovuyhsiyufhmlga` |
 | Push | Expo Push Service | Expo |
@@ -84,10 +85,9 @@ A user can hold several roles (e.g. a student who is also Mess Secretary). Offic
 5. Trigger `handle_new_user` creates the `profiles` row (email, name, avatar from Google).
 
 **Vendor phone + passcode** (canteen owners, eatery staff)
-1. App: `+91` phone field → `signInWithOtp({ phone })`.
-2. First sign-in: the same hook rejects any phone that is not an **active** row in `whitelisted_vendors` ("This number is not registered. Ask the Campus Bites admin to whitelist it."). GoTrue stores phones without `+`; the hook and `handle_new_user` normalise to E.164.
-3. User types the code in **"6-Digit Vendor OTP / Passcode"** → `verifyOtp({ type: 'sms' })`.
-4. **V1 has no SMS gateway.** Vendor numbers are registered in Supabase → Authentication → *Phone numbers for testing* with a static passcode, so no SMS is sent and `verifyOtp` accepts that code. The passcode lives only in the dashboard — never in the repo. Switching to a real SMS provider later needs no app change.
+1. An admin whitelists the phone for an outlet and sets a **6-digit passcode** in the admin website (§4.1). The API creates (or updates) the vendor's Supabase phone account with that passcode as its **password** (`auth.admin.create_user` / `update_user_by_id`, `phone_confirm: true`) and stamps `app_metadata.passcode_set_at`. Only whitelisted phones get an account (`VENDOR_NOT_WHITELISTED`), and `hook_before_user_created` still rejects any phone that is not an **active** `whitelisted_vendors` row. GoTrue stores phones without `+`; the hook and `handle_new_user` normalise to E.164.
+2. App: `+91` phone + **"6-Digit Vendor Passcode"** → `signInWithPassword({ phone, password })` in one step. No SMS is sent, so there's no SMS gateway or test-number list to maintain.
+3. Supabase stores only a hash: admins can set or reset a passcode but never read it back. Passcodes are exactly 6 digits and not trivially guessable (`000000`, `123456`… refused, API and website share the rule); Supabase's own sign-in rate limits slow guessing. Keep Auth's *leaked password protection* **off** — almost every 6-digit number is in HaveIBeenPwned, so it would refuse them (`PASSCODE_REJECTED`).
 
 **Session storage:** the Supabase session is persisted in `expo-secure-store` (chunked, `src/lib/supabase.ts`), never AsyncStorage. Tokens auto-refresh.
 
@@ -127,21 +127,26 @@ On sign-in the device registers for push (`register_push_token` RPC, which moves
 
 | Where | What | Secret? |
 | --- | --- | --- |
-| App bundle | `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `EXPO_PUBLIC_API_URL` | No — public by design; RLS protects data |
+| App bundle | `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_GOOGLE_MAPS_WEB_API_KEY` (Maps JavaScript API, HTTP-referrer restricted) | No — public by design; RLS protects data |
+| Native build config (`app.config.ts`, local `.env.local` or EAS env vars) | `GOOGLE_MAPS_ANDROID_API_KEY`, `GOOGLE_MAPS_IOS_API_KEY` (Maps SDKs, restricted to the app's package/SHA-1 and bundle id) | No — restricted keys, but kept out of the repo |
 | FastAPI host (Render env / local `apps/api/.env.local`) | `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (bypasses RLS), `INTERNAL_CRON_SECRET`, `EXPO_ACCESS_TOKEN?`, `ENVIRONMENT`, `CORS_ORIGINS?` | Yes |
-| Supabase dashboard | Vendor test-number passcode; Google OAuth client secret; Vault `internal_cron_secret` (generated inside Postgres; copy it to the API's `INTERNAL_CRON_SECRET`) and `api_base_url` | Yes |
+| Admin website bundle (`apps/web/.env.local` / host env) | `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_API_URL` | No — public by design |
+| Supabase dashboard | Google OAuth client secret; Vault `internal_cron_secret` (generated inside Postgres; copy it to the API's `INTERNAL_CRON_SECRET`) and `api_base_url` | Yes |
 
-Templates: `apps/mobile/.env.example`, `apps/api/env.example` (committed). Real files (`.env`, `.env.local`) are git-ignored.
+Templates: `apps/mobile/.env.example`, `apps/web/.env.example`, `apps/api/env.example` (committed). Vendor passcodes are stored only as Supabase password hashes. Real files (`.env`, `.env.local`) are git-ignored.
 
 ## 4. Admin operations (runbook)
 
-All admin actions go through FastAPI (`/v1/admin/*`), which re-checks `admin` in the database on **every** call. The app's `(admin)` area has Whitelist, Roles, Bhawans and Campus eateries screens.
+All admin actions go through FastAPI (`/v1/admin/*`), which re-checks `admin` in the database on **every** call. Two front ends use it:
+- **Admin website** (`apps/web`, §4.6): Vendors (phones, their outlets, passcodes), Eateries (add / rename / remove), Admins (by email).
+- **App → `(admin)` area:** Whitelist, Roles, Bhawans and Campus eateries (incl. map pins).
 
 ### 4.1 Onboard a vendor (canteen owner / eatery staff)
-1. **App → Admin → Whitelist:** enter the phone (`+91…`, normalised to E.164), pick the outlet, optional label → `POST /v1/admin/vendor-whitelist`. One phone may own many outlets (one row per outlet); duplicates → `WHITELIST_DUPLICATE`.
-2. **While V1 uses test numbers:** also add the number + a passcode in Supabase → Authentication → Providers → Phone → *Phone numbers for testing*, and give the vendor the passcode privately.
-3. Vendor signs in with phone + passcode → lands in the Staff console with that outlet.
-- **Remove:** delete the whitelist row (`DELETE /v1/admin/vendor-whitelist/{id}`). Writes stop immediately (live checks); the console disappears at their next token refresh. Remove the test number from the dashboard too.
+1. **Website → Vendors → Add a vendor:** phone (`+91…`, normalised to E.164), optional name, the outlet, and a 6-digit passcode (pre-filled with a random one) → `POST /v1/admin/vendor-whitelist` then `POST /v1/admin/vendor-accounts/passcode {phone, passcode}`. One phone may run many outlets (one whitelist row per outlet; *Assign outlet* on the vendor's card); duplicates → `WHITELIST_DUPLICATE`.
+2. The website shows the passcode **once** — give it to the vendor privately. Lost it? *Reset passcode* (the old one stops working at once; signed-in devices stay signed in).
+3. Vendor signs in with phone + passcode → lands in the Staff console with those outlets.
+- **Status:** `GET /v1/admin/vendor-accounts` (service-role RPC `admin_vendor_accounts()`: one row per whitelisted phone with `has_account`, `passcode_set_at`, `last_sign_in_at`).
+- **Remove / unassign:** delete the whitelist row (`DELETE /v1/admin/vendor-whitelist/{id}`). Writes stop immediately (live checks); the console disappears at their next token refresh. With no outlets left the account remains but has no role (→ `/no-access`).
 
 ### 4.2 Assign a role (secretary, authority, ADoSW, admin)
 1. The person signs in once with their IITR Google account (so a profile exists).
@@ -150,22 +155,25 @@ All admin actions go through FastAPI (`/v1/admin/*`), which re-checks `admin` in
 - **Revoke:** `DELETE /v1/admin/role-assignments/{id}`. An admin cannot remove their own admin role (`CANNOT_REMOVE_OWN_ADMIN`), so at least one admin always remains.
 
 ### 4.3 Change business constants
-`app_settings` (single row): `min_rebate_days` (3), `rebate_backdate_days` (0), `long_standing_after_hours` (48), `nudge_eligible_after_hours` (168), `nudge_cooldown_hours` (24). Change with a migration (`update public.app_settings set …`); the app and API read them live. Outlet hours are changed in the app (Staff console), not here.
+`app_settings` (single row): `min_rebate_days` (3), `rebate_backdate_days` (0), `long_standing_after_hours` (48), `nudge_eligible_after_hours` (168), `nudge_cooldown_hours` (24), `max_menu_photos` (10). Change with a migration (`update public.app_settings set …`); the app and API read them live. Outlet hours are changed in the app (Staff console), not here.
 
-### 4.4 Bootstrap the first admin (one time per Supabase project)
-Sign in once with your IITR Google account, then in the Supabase SQL editor:
-```sql
-insert into public.role_assignments (user_id, role)
-select id, 'admin' from public.profiles where email = '<you>@<dept>.iitr.ac.in';
-```
-Sign out and back in. Every later admin is added from the app.
+### 4.4 Admins and the owner
+- **Owner:** `app_settings.owner_admin_email` (`meet_s@ece.iitr.ac.in`, set by migration `017`). Migration `017` made the owner an admin (or, on a fresh project, an invite redeemed at first sign-in), and the API refuses to remove the owner's admin role (`OWNER_ADMIN`). Change the owner with a migration.
+- **Website → Admins:** add any IITR email → `POST /v1/admin/admins {email}`: an `admin` role assignment if they've signed in before, otherwise a row in `admin_invites`, which `handle_new_user` turns into the role at their first Google sign-in (so the very first token already says admin). `GET /v1/admin/admins` lists both (`status: active | invited`, `is_owner`); `DELETE /v1/admin/admins/{email}` removes either. Errors: `ADMIN_DUPLICATE`, `ADMIN_NOT_FOUND`, `OWNER_ADMIN`, `CANNOT_REMOVE_OWN_ADMIN`.
+- The admin website lets in **only** these accounts: after Google sign-in it checks the token's `roles` for `admin` and signs anyone else straight out ("… isn't a Campus Bites admin"). Non-IITR Google accounts are refused earlier by `hook_before_user_created`.
 
 ### 4.5 Manage the Bhawans and eateries (master list)
 - **App → Admin → Bhawans:** add by name → `POST /v1/admin/bhawans` (slug derived from the name minus "Bhawan", e.g. `kasturba`; appended to the end of lists). The service-role RPC `admin_create_bhawan` creates the Bhawan **and** its Mess, Day Canteen and Night Canteen in one transaction; canteens get default shifts (trigger, §6.4) and the mess uses the institute meal timings. Then assign its secretaries (§4.2) and whitelist the canteen owners (§4.1).
 - **Rename / reorder:** `PATCH /v1/admin/bhawans/{id}` (`name`, `sort_order`) → `admin_update_bhawan` renames its three outlets to match; slugs never change.
 - **Remove:** `DELETE /v1/admin/bhawans/{id}` → `admin_delete_bhawan`, only for a Bhawan added by mistake: refused with `BHAWAN_IN_USE` once a student has picked it or it has rebate/complaint history. Menus, rate cards, shifts, overrides, whitelist rows and role assignments cascade.
-- **App → Admin → Campus eateries:** `POST /v1/admin/eateries` (`name`, optional `location_tag`; default 10:00–22:00 hours), `PATCH /v1/admin/eateries/{id}` (only the fields sent; `location_tag: null` clears it), `DELETE /v1/admin/eateries/{id}` (`EATERY_IN_USE` if it has complaints; its menu, hours and whitelist rows cascade). Whitelist the owner afterwards (§4.1).
+- **App → Admin → Campus eateries:** `POST /v1/admin/eateries` (`name`, optional `location_tag`, optional map pin `latitude` + `longitude`; default 10:00–22:00 hours), `PATCH /v1/admin/eateries/{id}` (only the fields sent; `location_tag: null` clears it; the pin is sent as a pair, both `null` removes it — set by tapping the map), `DELETE /v1/admin/eateries/{id}` (`EATERY_IN_USE` if it has complaints; its menu, hours and whitelist rows cascade). Whitelist the owner afterwards (§4.1).
+- **Website → Eateries:** the same `POST` / `PATCH` (name, location) / `DELETE` endpoints, listing each eatery's vendor phones. Map pins stay in the app.
 - Errors: `BHAWAN_DUPLICATE` / `EATERY_DUPLICATE` (name or slug taken), `NOTHING_TO_UPDATE`, `INVALID_NAME`, `BHAWAN_NOT_FOUND` / `EATERY_NOT_FOUND`. Mutations refetch every query in the app, since Bhawans and outlets feed most screens.
+
+### 4.6 Admin website (`apps/web`)
+- **Sign-in:** Google via `signInWithOAuth` (PKCE, full-page redirect back to `<origin>/`; supabase-js exchanges the code). OAuth errors from the sign-up hook come back in the URL and are shown on the sign-in card. Session in `localStorage` (supabase-js default).
+- **Data:** reads outlets straight from Supabase (publishable key, RLS); every write and every admin list goes through `src/lib/api.ts` → FastAPI. No service-role key in the browser.
+- **Deploy:** `npm run build` → static `dist/` on any host with an SPA fallback (rewrite `/*` → `/index.html`). Add the site origin to Supabase → Authentication → URL Configuration → Redirect URLs (`https://<site>/**`, and `http://localhost:5173/**` for dev) and to the API's `CORS_ORIGINS`.
 
 ## 5. Code layout & conventions
 
@@ -198,8 +206,18 @@ tests/               pytest with in-memory repositories + an ES256 token factory
 ```
 Errors are `{"detail": {"code": "REBATE_OVERLAP", "message": "…"}}`; the app maps codes to copy.
 
+### 5.2a Admin website (`apps/web/src`)
+```
+main.tsx / App.tsx         QueryClient, SessionProvider, router; nothing but sign-in renders until the session is an admin's
+lib/                       supabase.ts (publishable key, PKCE) · api.ts (single FastAPI client) · session.tsx (admin gate)
+                           · jwt.ts · format.ts (phones, IST dates) · passcode.ts (rules shared with the API) (+ __tests__)
+features/<module>/         queries.ts + page: admins/ vendors/ eateries/
+components/                ui.tsx (Alexandria primitives) · Layout.tsx
+```
+Tailwind 4 loads `tailwind.config.js`, which reuses `apps/mobile/src/theme/tokens.js` (colors, sizes, radii, spacing); fonts come from Google Fonts. Types come from `apps/mobile/src/lib/database.types.ts`.
+
 ### 5.3 Database (`supabase/`)
-Migrations `001`–`013` are the only way the schema changes (applied to the linked project, version = file prefix); `seed.sql` holds the roster; `tests/*.sql` are regression scripts run inside a rolled-back transaction (`auth_rls`, `mess`, `canteens`, `rebates`, `complaints`) plus the read-only `hardening` check (RLS everywhere, no anon grants, API-only tables unwritable, indexed FKs, definer functions pin `search_path`, private buckets, cron scheduled). After each migration: regenerate `database.types.ts`, run the security + performance advisors.
+Migrations `001`–`018` are the only way the schema changes (applied to the linked project, version = file prefix); `seed.sql` holds the roster; `tests/*.sql` are regression scripts run inside a rolled-back transaction (`auth_rls`, `mess`, `canteens`, `rebates`, `complaints`, `admin_campus`, `maps`, `admin_web`) plus the read-only `hardening` check (RLS everywhere, no anon grants, API-only tables unwritable, indexed FKs, definer functions pin `search_path`, private buckets, cron scheduled). After each migration: regenerate `database.types.ts`, run the security + performance advisors.
 
 ### 5.4 Adding a feature (scales the same way)
 1. Migration: table + RLS + explicit grants (+ helper/trigger) in one file; extend a `supabase/tests/*.sql` script.
@@ -213,12 +231,13 @@ Migrations `001`–`013` are the only way the schema changes (applied to the lin
 - **Timings:** `meal_timings` (institute default or per Bhawan, weekday/weekend) + `timing_overrides` (newest active wins). `mess_day_schedule(bhawan, date)` and `mess_schedule_at(bhawan, instant)` resolve them in IST; view `mess_schedule_today` feeds the live "Serving now · closes in N min" card.
 - **Timing override:** Mess Secretary → `POST /v1/outlets/{id}/timing-overrides` → validated (`PAST_DATE`, `SLOT_REQUIRED`, `INVALID_WINDOW`…) → inserted → **every resident of the Bhawan is pushed** (batches of 100, receipts checked, dead tokens pruned). `DELETE /v1/timing-overrides/{id}` ends it early.
 - **Weekly menu / extra items:** direct RLS writes by the Mess Secretary (`weekly_menus.items` JSON validated in SQL).
-- **Noticeboard photo:** pick → `compressForUpload` (≤ 2560 px, JPEG 0.82, EXIF stripped) → `noticeboard-photos/{outlet_id}/{date}-{random}.jpg` (public bucket; upload allowed by `app.can_manage_outlet` on the folder) → `menu_photos` row; a trigger retires the previous photo. Students zoom (pinch/double-tap) and can report it outdated once.
+- **Noticeboard photo:** pick → `compressForUpload` (≤ 2560 px, JPEG 0.82, EXIF stripped) → `noticeboard-photos/{outlet_id}/{date}-{random}.jpg` (public bucket; upload allowed by `app.can_manage_outlet` on the folder) → `menu_photos` row on top of the outlet's **photo stack** (migration `015`): every photo stays published, newest first, until an outlet manager deletes it (row first under RLS `app.can_manage_outlet`, then the storage object). The stack is capped at `app_settings.max_menu_photos` by a trigger (`MENU_PHOTO_LIMIT`; the app removes the just-uploaded file and disables upload when full). Students swipe through the stack (dots for web), zoom (pinch/double-tap) and can report each photo outdated once. Managers see every photo with its report count. Canteen and eatery menu photos use the same stack.
 
 ### 6.2 Canteens & eateries (migrations `005`–`008`)
 - **Regular hours** `outlet_shifts`: defaults by trigger — Day 10:30–22:30, Night 22:30–10:30, eateries 10:00–22:00 (owner decision; adjust in the app). Edited directly by the outlet's vendor / Bhawan Secretary (no push).
 - **Temporary change:** same override endpoint with `slot = null`, overnight allowed; canteens push residents only when `notify = true`; eateries never push. Push data carries `outlet_type` so a tap opens that canteen.
 - **Menu & stock** `menu_items` (vendor-managed); **Institute Fixed-Rate Card** `fixed_rate_items` (Bhawan Secretary only — vendors cannot write it).
+- **Campus map** (migration `016`): `outlets.latitude/longitude` (both or neither) — set by the admin (API, above) or the eatery's own vendor (Staff console → Location; column grant + `app.can_run_outlet`). `outlet_live_status` carries the pin, so the map colours pins by live status (green open, grey closed) and Realtime/60 s refetch keep them current. `features/map/CampusMap` is Google Maps everywhere: `react-native-maps` with `PROVIDER_GOOGLE` on Android/iOS (`CampusMap.tsx`) and the Maps JavaScript API via `@vis.gl/react-google-maps` on web (`CampusMap.web.tsx`), sharing one minimal style (`mapStyle.ts`: no POI/transit, surface-tier land and roads). Screens: Home "Around campus" still map → `/eateries-map` (full map, tap a pin → status, View menu, Directions); eatery detail location card; "View on map" in the directory. Directions open Google Maps by URL (no key). Native maps need a development build with the keys in §3.5 (Expo Go on Android works without one).
 - **Search** `search_food(q)`: trigram-indexed substring match ranked first, fuzzy `word_similarity` for typos, messes excluded.
 
 ### 6.3 Push notifications
@@ -254,16 +273,17 @@ Enums: `app_role` · `outlet_type` (`mess`, `day_canteen`, `night_canteen`, `eat
 
 | Table | Key columns | Writes |
 | --- | --- | --- |
-| `app_settings` | single row of business constants (§4.3) | migration only |
+| `app_settings` | single row of business constants (§4.3) + `owner_admin_email` (§4.4) | migration only |
 | `bhawans` | `name`, `slug`, `sort_order` | seed; API (admin, via `admin_*_bhawan` RPCs) |
-| `outlets` | `type`, `bhawan_id?` (null = eatery), `name`, `slug`, `location_tag`, `is_open`, `status_updated_at` | seed; API (admin: Bhawan outlets via the RPCs, eateries directly); outlet managers: `is_open`, `location_tag` (column grants) |
+| `outlets` | `type`, `bhawan_id?` (null = eatery), `name`, `slug`, `location_tag`, `latitude`/`longitude` (map pin), `is_open`, `status_updated_at` | seed; API (admin: Bhawan outlets via the RPCs, eateries directly); outlet managers: `is_open`, `location_tag`, `latitude`, `longitude` (column grants) |
 | `profiles` | `id → auth.users`, `email`, `phone`, `full_name`, `bhawan_id` (set once), `onboarded_at` | trigger; owner sets Bhawan once |
 | `role_assignments` | `user_id`, `role`, `bhawan_id?`, `assigned_by` — one Mess Secretary per Bhawan | API (admin) |
 | `whitelisted_vendors` | `phone_e164`, `outlet_id`, `label`, `active` | API (admin) |
+| `admin_invites` | `email` (lower-case IITR), `invited_by` — redeemed into an `admin` role by `handle_new_user` at first sign-in | API (admin) |
 | `push_tokens` | `user_id`, `expo_token` (unique), `platform` | RPC / owner delete |
 | `meal_timings`, `timing_overrides` | defaults per slot/day type; overrides with dates, window or closed, reason | migration; API |
 | `weekly_menus`, `extra_items` | per Bhawan | Mess Secretary |
-| `menu_photos`, `photo_reports` | one current photo per outlet; one report per student per photo | outlet managers; students |
+| `menu_photos`, `photo_reports` | photo stack per outlet (`is_current`, newest first, ≤ `max_menu_photos`); one report per student per photo | outlet managers (insert/delete); students (reports) |
 | `outlet_shifts` | one regular window per outlet | outlet managers |
 | `menu_items` | per outlet, `price_paise`, `in_stock` | outlet managers (not messes) |
 | `fixed_rate_items` | per Bhawan, `ceiling_price_paise`, `circular_ref` | Bhawan Secretary |
@@ -281,7 +301,7 @@ Seeded with 11 Bhawans (admins add more in the app, §4.5) — Rajendra, Radhakr
 | Env | Supabase | API | App |
 | --- | --- | --- | --- |
 | dev | `sdjghovuyhsiyufhmlga` | Render `https://campus-bites-0dim.onrender.com` (free tier sleeps: ~40 s cold start) or `uv run fastapi dev app/main.py` locally | Expo Go for UI; a development build (`campusbites://`) for push |
-| prod (to create) | separate project — run migrations `001`–`013` + `seed.sql`, enable both auth hooks + Google provider, create the two Vault secrets | Render, `ENVIRONMENT=production` (hides `/docs`) | EAS `production` profile (point its `EXPO_PUBLIC_*` in `eas.json` at the prod project) |
+| prod (to create) | separate project — run migrations `001`–`016` + `seed.sql`, enable both auth hooks + Google provider, create the two Vault secrets | Render, `ENVIRONMENT=production` (hides `/docs`) | EAS `production` profile (point its `EXPO_PUBLIC_*` in `eas.json` at the prod project) |
 
 Render start command: `uv run fastapi run app/main.py --host 0.0.0.0 --port $PORT`. Redeploy the API whenever `apps/api` changes — the app's API features depend on the deployed version.
 
@@ -291,7 +311,7 @@ Render start command: `uv run fastapi run app/main.py --host 0.0.0.0 --port $POR
 
 | # | Decision | Value |
 | --- | --- | --- |
-| M0.1 | Vendor phone auth | Supabase *Phone numbers for testing* + static passcode; no SMS gateway in V1 |
+| M0.1 | Vendor phone auth | Phone + 6-digit passcode stored as the Supabase password, set by admins in the admin website (M8; replaced *Phone numbers for testing*); no SMS gateway |
 | M0.2 | API hosting | Render, native Python runtime |
 | M0.3 | Google OAuth | Google Web client + browser PKCE flow; redirect allow-list `campusbites://**`, `exp://**` |
 | M0.4 | Constants | `min_rebate_days` 3 · long-standing 48 h · nudge after 168 h, 24 h cooldown |

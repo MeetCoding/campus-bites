@@ -12,10 +12,13 @@ import {
   useSaveShift,
   useSetLocation,
   useSetOpen,
+  useSetPin,
   type MenuItem,
 } from '@/features/canteens/queries';
 import { describeLiveStatus } from '@/features/canteens/status';
-import { describeOverride, NoticeboardCard } from '@/features/mess/components';
+import type { LatLng } from '@/features/map/campus';
+import { PinPicker } from '@/features/map/components';
+import { describeOverride, MenuPhotoStackEditor, useMenuPhotoStack } from '@/features/mess/components';
 import { useActiveOverrides, useCreateOverride, useRevokeOverride, useUploadMenuPhoto } from '@/features/mess/queries';
 import type { Outlet } from '@/features/campus/queries';
 import { ImpactFeedbackStyle, impactTap } from '@/lib/haptics';
@@ -254,6 +257,7 @@ export function ShiftChangeEditor({ outlet }: { outlet: Outlet }) {
 // ─── Menu photo (compressed upload, same pipeline as the mess noticeboard) ───
 export function MenuPhotoUploader({ outletId }: { outletId: string }) {
   const upload = useUploadMenuPhoto();
+  const stack = useMenuPhotoStack(outletId);
   const [message, setMessage] = useState<string | null>(null);
 
   async function pick(source: 'camera' | 'library') {
@@ -277,18 +281,34 @@ export function MenuPhotoUploader({ outletId }: { outletId: string }) {
     <View className="gap-space-sm">
       <View className="flex-row gap-space-sm">
         <View className="flex-1">
-          <Button label="Photograph menu board" variant="secondary" onPress={() => void pick('camera')} loading={upload.isPending} />
+          <Button
+            label="Photograph menu board"
+            variant="secondary"
+            onPress={() => void pick('camera')}
+            loading={upload.isPending}
+            disabled={stack.full}
+          />
         </View>
         <View className="flex-1">
-          <Button label="From gallery" variant="secondary" onPress={() => void pick('library')} disabled={upload.isPending} />
+          <Button
+            label="From gallery"
+            variant="secondary"
+            onPress={() => void pick('library')}
+            disabled={upload.isPending || stack.full}
+          />
         </View>
       </View>
+      {stack.full ? (
+        <Text className="font-body text-body-sm text-on-surface-variant">
+          All {stack.limit} photo slots are used. Delete an old photo to add a new one.
+        </Text>
+      ) : null}
       {upload.isError ? (
         <Text accessibilityRole="alert" className="font-body text-body-sm text-error">{upload.error.message}</Text>
       ) : message ? (
         <Text className="font-body text-body-sm text-on-surface">{message}</Text>
       ) : null}
-      <NoticeboardCard outletId={outletId} title="Currently published" canReport={false} />
+      <MenuPhotoStackEditor outletId={outletId} />
     </View>
   );
 }
@@ -424,6 +444,32 @@ export function LocationEditor({ outletId }: { outletId: string }) {
         variant="secondary"
         loading={setLocation.isPending}
         onPress={() => setLocation.mutate({ outletId, locationTag: current.trim() || null })}
+      />
+    </Card>
+  );
+}
+
+// ─── Map pin (eateries) ──────────────────────────────────────────────────────
+export function PinEditor({ outletId }: { outletId: string }) {
+  const status = useOutletStatus(outletId);
+  const setPin = useSetPin();
+  const saved =
+    status.data && status.data.latitude !== null && status.data.longitude !== null
+      ? { latitude: status.data.latitude, longitude: status.data.longitude }
+      : null;
+  const [draft, setDraft] = useState<LatLng | null>(null);
+  const value = draft ?? saved;
+
+  if (status.isPending) return <ActivityIndicator />;
+  return (
+    <Card>
+      <PinPicker
+        value={value}
+        onChange={setDraft}
+        saving={setPin.isPending}
+        error={setPin.error?.message}
+        onSave={draft ? () => setPin.mutate({ outletId, pin: draft }, { onSuccess: () => setDraft(null) }) : undefined}
+        onClear={saved ? () => setPin.mutate({ outletId, pin: null }, { onSuccess: () => setDraft(null) }) : undefined}
       />
     </Card>
   );

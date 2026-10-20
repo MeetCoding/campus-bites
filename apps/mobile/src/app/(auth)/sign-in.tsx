@@ -2,12 +2,12 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image } from 'expo-image';
 import { Coffee, Moon, Store, Sunrise } from 'lucide-react-native';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 
 import { Button, Card, HeroCard, IconBadge, PressableScale, Screen, Segmented, TextField } from '@/components/ui';
 import { OtpInput } from '@/features/auth/OtpInput';
 import { useSession } from '@/features/auth/session';
-import { sendVendorOtp, toIndianE164, verifyVendorOtp } from '@/lib/auth';
+import { signInVendor, toIndianE164 } from '@/lib/auth';
 import { colors } from '@/theme/tokens';
 
 const crest = require('@/assets/images/iitr-crest.png');
@@ -95,36 +95,20 @@ function StudentSignIn() {
 
 function VendorSignIn() {
   const [phoneInput, setPhoneInput] = useState('');
-  const [sentTo, setSentTo] = useState<string | null>(null);
-  const [code, setCode] = useState('');
+  const [passcode, setPasscode] = useState('');
   const [pending, setPending] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function sendCode() {
+  async function signIn() {
     const phone = toIndianE164(phoneInput);
     if (!phone) {
-      setError('Enter your registered 10-digit mobile number.');
+      setPhoneError('Enter your registered 10-digit mobile number.');
       return;
     }
     setPending(true);
     setError(null);
-    const result = await sendVendorOtp(phone);
-    setPending(false);
-    if (result.ok) {
-      setSentTo(phone);
-    } else {
-      setError(result.message);
-    }
-  }
-
-  async function verifyCode() {
-    if (!sentTo || !/^\d{6}$/.test(code)) {
-      setError('Enter the 6-digit OTP / passcode.');
-      return;
-    }
-    setPending(true);
-    setError(null);
-    const result = await verifyVendorOtp(sentTo, code);
+    const result = await signInVendor(phone, passcode);
     setPending(false);
     // On success the session listener routes the vendor to their console.
     if (!result.ok) setError(result.message);
@@ -132,50 +116,35 @@ function VendorSignIn() {
 
   return (
     <Card className="gap-space-md">
-      {sentTo === null ? (
-        <>
-          <TextField
-            label="Registered mobile number"
-            prefix="+91"
-            placeholder="10-digit number"
-            keyboardType="phone-pad"
-            autoComplete="tel"
-            textContentType="telephoneNumber"
-            maxLength={14}
-            value={phoneInput}
-            onChangeText={setPhoneInput}
-            error={error ?? undefined}
-          />
-          <Button label="Send OTP" onPress={sendCode} loading={pending} />
-        </>
-      ) : (
-        <>
-          <OtpInput
-            label="6-Digit Vendor OTP / Passcode"
-            value={code}
-            onChange={(next) => {
-              setCode(next);
-              setError(null);
-            }}
-            error={error ?? undefined}
-          />
-          <Button label="Verify & sign in" onPress={verifyCode} loading={pending} disabled={code.length !== 6} />
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              setSentTo(null);
-              setCode('');
-              setError(null);
-            }}
-            hitSlop={8}
-            className="self-center active:opacity-60">
-            <Text className="font-label text-label-md text-primary">Sent to {sentTo} · Change</Text>
-          </Pressable>
-        </>
-      )}
+      <TextField
+        label="Registered mobile number"
+        prefix="+91"
+        placeholder="10-digit number"
+        keyboardType="phone-pad"
+        autoComplete="tel"
+        textContentType="telephoneNumber"
+        maxLength={14}
+        value={phoneInput}
+        onChangeText={(next) => {
+          setPhoneInput(next);
+          setPhoneError(null);
+        }}
+        error={phoneError ?? undefined}
+      />
+      <OtpInput
+        label="6-Digit Vendor Passcode"
+        value={passcode}
+        onChange={(next) => {
+          setPasscode(next);
+          setError(null);
+        }}
+        error={error ?? undefined}
+        autoFocus={false}
+      />
+      <Button label="Sign in" onPress={signIn} loading={pending} disabled={passcode.length !== 6} />
 
       <Text className="text-center font-body text-body-sm text-on-surface-variant">
-        Not whitelisted? Contact the DoSW office.
+        No passcode yet? Contact the DoSW office.
       </Text>
     </Card>
   );
