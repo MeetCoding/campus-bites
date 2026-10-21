@@ -1,6 +1,8 @@
 # Builds an installable Android APK (eas.json "preview" profile) on every push to master that
-# touches the mobile app. Runs on EAS; needs the GitHub repo linked on expo.dev with base directory
-# apps/mobile. iOS is left out until there is an Apple Developer account.
+# touches the mobile app, then publishes it as the latest GitHub Release (campus-bites.apk), so the
+# README's download link always serves the newest build. Runs on EAS; needs the GitHub repo linked
+# on expo.dev with base directory apps/mobile, and the EAS secret GITHUB_RELEASE_TOKEN in the
+# "preview" environment. iOS is left out until there is an Apple Developer account.
 name: Android build on push
 
 on:
@@ -17,3 +19,22 @@ jobs:
     params:
       platform: android
       profile: preview
+
+  publish_github_release:
+    name: Publish APK to GitHub Releases
+    needs: [build_android]
+    environment: preview
+    env:
+      BUILD_ID: ${{ needs.build_android.outputs.build_id }}
+      COMMIT: ${{ needs.build_android.outputs.git_commit_hash }}
+      APP_VERSION: ${{ needs.build_android.outputs.app_version }}
+      GITHUB_REPO: MeetCoding/campus-bites
+    steps:
+      - uses: eas/checkout
+      - id: apk
+        uses: eas/download_build
+        with:
+          build_id: ${{ needs.build_android.outputs.build_id }}
+          extensions: [apk]
+      - name: Create release and upload APK
+        run: node scripts/publish-github-release.mjs "${{ steps.apk.outputs.artifact_path }}"
