@@ -170,6 +170,7 @@ class InMemoryAdminRepository:
         location_tag: str | None,
         latitude: float | None = None,
         longitude: float | None = None,
+        contact_phone: str | None = None,
     ) -> EateryOut:
         if any(e.slug == slug for e in self.eateries.values()):
             raise DuplicateError("outlets_slug_key")
@@ -180,6 +181,7 @@ class InMemoryAdminRepository:
             location_tag=location_tag,
             latitude=latitude,
             longitude=longitude,
+            contact_phone=contact_phone,
         )
         self.eateries[row.id] = row
         return row
@@ -1058,3 +1060,35 @@ def test_students_cannot_make_master_vendors(
 
     assert response.status_code == 403
     assert repo.masters == set()
+
+
+# ─── Eatery contact number (021) ─────────────────────────────────────────────
+def test_eatery_contact_phone_is_normalised_changed_and_cleared(
+    client: TestClient, repo: InMemoryAdminRepository, admin_headers: dict[str, str]
+) -> None:
+    created = client.post(
+        "/v1/admin/eateries",
+        headers=admin_headers,
+        json={"name": "Nescafe", "contact_phone": "98765 43210"},
+    ).json()
+    url = f"/v1/admin/eateries/{created['id']}"
+
+    changed = client.patch(url, headers=admin_headers, json={"contact_phone": "+91 91234 56789"})
+    cleared = client.patch(url, headers=admin_headers, json={"contact_phone": ""})
+
+    assert created["contact_phone"] == "+919876543210"
+    assert changed.json()["contact_phone"] == "+919123456789"
+    assert cleared.json()["contact_phone"] is None
+    assert cleared.json()["name"] == "Nescafe"
+
+
+def test_invalid_eatery_contact_phone_is_422(
+    client: TestClient, repo: InMemoryAdminRepository, admin_headers: dict[str, str]
+) -> None:
+    response = client.post(
+        "/v1/admin/eateries",
+        headers=admin_headers,
+        json={"name": "Nescafe", "contact_phone": "123"},
+    )
+
+    assert response.status_code == 422

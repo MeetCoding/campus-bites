@@ -1,0 +1,19 @@
+# Builds an installable Android APK (eas.json "preview" profile) on every push to master that
+# touches the mobile app. Runs on EAS; needs the GitHub repo linked on expo.dev with base directory
+# apps/mobile. iOS is left out until there is an Apple Developer account.
+name: Android build on push
+
+on:
+  push:
+    branches: ['master']
+    paths:
+      - apps/mobile/**
+      - '!**/*.md'
+
+jobs:
+  build_android:
+    name: Build Android (preview APK)
+    type: build
+    params:
+      platform: android
+      profile: preview

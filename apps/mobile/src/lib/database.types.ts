@@ -564,6 +564,7 @@ export type Database = {
       outlets: {
         Row: {
           bhawan_id: string | null
+          contact_phone: string | null
           created_at: string
           id: string
           is_open: boolean
@@ -578,6 +579,7 @@ export type Database = {
         }
         Insert: {
           bhawan_id?: string | null
+          contact_phone?: string | null
           created_at?: string
           id?: string
           is_open?: boolean
@@ -592,6 +594,7 @@ export type Database = {
         }
         Update: {
           bhawan_id?: string | null
+          contact_phone?: string | null
           created_at?: string
           id?: string
           is_open?: boolean
@@ -1046,6 +1049,7 @@ export type Database = {
         Row: {
           bhawan_id: string | null
           closes_at: string | null
+          contact_phone: string | null
           is_open: boolean | null
           latitude: number | null
           location_tag: string | null

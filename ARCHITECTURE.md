@@ -11,7 +11,7 @@ Three deployable projects plus one managed backend. **No Docker anywhere** (no l
 
 | Layer | Tech | Hosting |
 | --- | --- | --- |
-| Mobile app (`apps/mobile`) | Expo SDK 58 (React Native 0.88, React 19.3, React Compiler) · Expo Router · NativeWind 4 (Tailwind 3.4) · TanStack Query · TypeScript strict | EAS Build |
+| Mobile app (`apps/mobile`) | Expo SDK 58 (React Native 0.88, React 19.3, React Compiler) · Expo Router · NativeWind 4 (Tailwind 3.4) · TanStack Query · TypeScript strict | EAS Build; EAS Workflow `apps/mobile/.eas/workflows/build-android-on-push.yml` builds a preview APK on every push to `master` touching `apps/mobile` |
 | Admin website (`apps/web`) | Vite · React 19 · React Router · TanStack Query · Tailwind 4 (same Alexandria tokens) · TypeScript strict | Any static host (SPA fallback to `index.html`) |
 | Business API (`apps/api`) | FastAPI · Pydantic v2 · Python 3.12 · `uv` · `supabase-py` (async) · `httpx` | Render web service, native Python runtime |
 | Data / Auth / Files / Realtime (`supabase/`) | Supabase Cloud: Postgres 17, GoTrue Auth, PostgREST, Storage, Realtime; extensions `pg_trgm`, `btree_gist`, `moddatetime`, `pg_cron`, `pg_net` | Supabase Cloud — dev project `sdjghovuyhsiyufhmlga` |
@@ -222,7 +222,7 @@ components/                ui.tsx (Alexandria primitives) · Layout.tsx
 Tailwind 4 loads `tailwind.config.js`, which reuses `apps/mobile/src/theme/tokens.js` (colors, sizes, radii, spacing); fonts come from Google Fonts. Types come from `apps/mobile/src/lib/database.types.ts`.
 
 ### 5.3 Database (`supabase/`)
-Migrations `001`–`020` are the only way the schema changes (applied to the linked project, version = file prefix); `seed.sql` holds the roster; `tests/*.sql` are regression scripts run inside a rolled-back transaction (`auth_rls`, `mess`, `canteens`, `rebates`, `complaints`, `admin_campus`, `maps`, `admin_web`, `master_vendors`) plus the read-only `hardening` check (RLS everywhere, no anon grants, API-only tables unwritable, indexed FKs, definer functions pin `search_path`, private buckets, cron scheduled). After each migration: regenerate `database.types.ts`, run the security + performance advisors.
+Migrations `001`–`021` are the only way the schema changes (applied to the linked project, version = file prefix); `seed.sql` holds the roster; `tests/*.sql` are regression scripts run inside a rolled-back transaction (`auth_rls`, `mess`, `canteens`, `rebates`, `complaints`, `admin_campus`, `maps`, `admin_web`, `master_vendors`) plus the read-only `hardening` check (RLS everywhere, no anon grants, API-only tables unwritable, indexed FKs, definer functions pin `search_path`, private buckets, cron scheduled). After each migration: regenerate `database.types.ts`, run the security + performance advisors.
 
 ### 5.4 Adding a feature (scales the same way)
 1. Migration: table + RLS + explicit grants (+ helper/trigger) in one file; extend a `supabase/tests/*.sql` script.
@@ -243,6 +243,7 @@ Migrations `001`–`020` are the only way the schema changes (applied to the lin
 - **Temporary change:** same override endpoint with `slot = null`, overnight allowed; canteens push residents only when `notify = true`; eateries never push. Push data carries `outlet_type` so a tap opens that canteen.
 - **Menu photos** (`menu_photos`, same stack as the mess, §6.1; no typed menu); **Institute Fixed-Rate Card** `fixed_rate_items` (Bhawan Secretary only — vendors cannot write it).
 - **Campus map** (migration `016`): `outlets.latitude/longitude` (both or neither) — set by the admin (API, above) or the eatery's own vendor (Staff console → Location; column grant + `app.can_run_outlet`). `outlet_live_status` carries the pin, so the map colours pins by live status (green open, grey closed) and Realtime/60 s refetch keep them current. `features/map/CampusMap` is Google Maps everywhere: `react-native-maps` with `PROVIDER_GOOGLE` on Android/iOS (`CampusMap.tsx`) and the Maps JavaScript API via `@vis.gl/react-google-maps` on web (`CampusMap.web.tsx`), sharing one minimal style (`mapStyle.ts`: no POI/transit, surface-tier land and roads). Screens: Home "Around campus" still map → `/eateries-map` (full map, tap a pin → status, View menu, Directions); eatery detail location card; "View on map" in the directory. Directions open Google Maps by URL (no key). Native maps need a development build with the keys in §3.5 (Expo Go on Android works without one).
+- **Contact number** (migration `021`): `outlets.contact_phone` — an eatery worker's number shown to students as *Call the counter* on the eatery page (tap → `tel:`). Not a login. Set on the admin website (Eateries → add / edit; `POST`/`PATCH /v1/admin/eateries` `contact_phone`, normalised to E.164, `""` / null clears it) or by the eatery's vendor (Staff console → Location; column grant + `app.can_run_outlet`). Exposed through `outlet_live_status`.
 - **Search** `search_food(q)`: canteen and eatery **names** (menus are photos since `020`): trigram-indexed substring match ranked first, fuzzy `word_similarity` for typos, messes excluded.
 
 ### 6.3 Push notifications
@@ -280,7 +281,7 @@ Enums: `app_role` · `outlet_type` (`mess`, `day_canteen`, `night_canteen`, `eat
 | --- | --- | --- |
 | `app_settings` | single row of business constants (§4.3) + `owner_admin_email` (§4.4) | migration only |
 | `bhawans` | `name`, `slug`, `sort_order` | seed; API (admin, via `admin_*_bhawan` RPCs) |
-| `outlets` | `type`, `bhawan_id?` (null = eatery), `name`, `slug`, `location_tag`, `latitude`/`longitude` (map pin), `is_open`, `status_updated_at` | seed; API (admin: Bhawan outlets via the RPCs, eateries directly); outlet managers: `is_open`, `location_tag`, `latitude`, `longitude` (column grants) |
+| `outlets` | `type`, `bhawan_id?` (null = eatery), `name`, `slug`, `location_tag`, `latitude`/`longitude` (map pin), `contact_phone` (public worker number, E.164), `is_open`, `status_updated_at` | seed; API (admin: Bhawan outlets via the RPCs, eateries directly); outlet managers: `is_open`, `location_tag`, `latitude`, `longitude`, `contact_phone` (column grants) |
 | `profiles` | `id → auth.users`, `email`, `phone`, `full_name`, `bhawan_id` (set once), `onboarded_at` | trigger; owner sets Bhawan once |
 | `role_assignments` | `user_id`, `role`, `bhawan_id?`, `assigned_by` — one Mess Secretary per Bhawan | API (admin) |
 | `whitelisted_vendors` | `phone_e164`, `outlet_id`, `label`, `active` | API (admin) |

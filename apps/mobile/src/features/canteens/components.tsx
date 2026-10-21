@@ -1,7 +1,7 @@
-import { BadgeCheck, Clock, Info, MapPin, type LucideIcon } from 'lucide-react-native';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { BadgeCheck, Clock, Info, MapPin, Phone, type LucideIcon } from 'lucide-react-native';
+import { ActivityIndicator, Linking, Text, View } from 'react-native';
 
-import { Card, HeroCard, LiveDot } from '@/components/ui';
+import { Card, HeroCard, IconBadge, LiveDot, PressableScale } from '@/components/ui';
 import {
   OUTLET_TYPE_LABEL,
   useFixedRates,
@@ -149,5 +149,32 @@ export function FixedRateCard({ bhawanId }: { bhawanId: string }) {
         </Text>
       </View>
     </View>
+  );
+}
+
+/** "+919876543210" → "+91 98765 43210"; other numbers unchanged. */
+export function formatPhone(e164: string): string {
+  const match = /^\+91(\d{5})(\d{5})$/.exec(e164);
+  return match ? `+91 ${match[1]} ${match[2]}` : e164;
+}
+
+/** Tap-to-call card for an outlet's public contact number (021); renders nothing when unset. */
+export function ContactCard({ outletId }: { outletId: string }) {
+  const status = useOutletStatus(outletId);
+  const phone = status.data?.contact_phone;
+  if (!phone) return null;
+  return (
+    <PressableScale
+      accessibilityRole="link"
+      accessibilityLabel={`Call ${formatPhone(phone)}`}
+      onPress={() => void Linking.openURL(`tel:${phone}`)}>
+      <Card className="flex-row items-center gap-space-md">
+        <IconBadge icon={Phone} tone="open" />
+        <View className="flex-1">
+          <Text className="font-body-semibold text-body-md text-on-surface">Call the counter</Text>
+          <Text className="font-body text-body-sm text-on-surface-variant">{formatPhone(phone)}</Text>
+        </View>
+      </Card>
+    </PressableScale>
   );
 }

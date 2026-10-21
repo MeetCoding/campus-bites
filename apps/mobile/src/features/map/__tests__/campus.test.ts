@@ -19,6 +19,7 @@ function status(overrides: Partial<OutletStatus>): OutletStatus {
     status_updated_at: null,
     latitude: 29.8649,
     longitude: 77.8966,
+    contact_phone: null,
     ...overrides,
   };
 }

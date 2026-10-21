@@ -4,6 +4,7 @@ import { ActivityIndicator, Text, View } from 'react-native';
 import { Card, Screen, SectionHeader } from '@/components/ui';
 import { useLiveUpdates } from '@/features/canteens/queries';
 import {
+  ContactEditor,
   LocationEditor,
   MenuPhotoUploader,
   OpenToggleCard,
@@ -62,6 +63,7 @@ export default function OutletConsole() {
         <View className="gap-space-sm">
           <SectionHeader title="Location" />
           <LocationEditor outletId={outlet.id} />
+          <ContactEditor outletId={outlet.id} />
           <PinEditor outletId={outlet.id} />
         </View>
       ) : null}

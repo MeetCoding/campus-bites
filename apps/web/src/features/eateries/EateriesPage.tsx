@@ -1,4 +1,4 @@
-import { MapPin, Pencil, Plus, Trash2 } from 'lucide-react';
+import { MapPin, Pencil, Phone, Plus, Trash2 } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 
 import { Button, Card, ConfirmButton, EmptyState, Loading, Notice, PageHeader, TextField } from '@/components/ui';
@@ -11,7 +11,7 @@ import {
 } from '@/features/eateries/queries';
 import { useVendors } from '@/features/vendors/queries';
 import { errorMessage } from '@/lib/api';
-import { formatPhone } from '@/lib/format';
+import { formatPhone, toIndianE164 } from '@/lib/format';
 
 export function EateriesPage() {
   const outlets = useOutlets();
@@ -46,19 +46,33 @@ export function EateriesPage() {
   );
 }
 
+const CONTACT_PROBLEM = 'Enter a 10-digit Indian mobile number, or leave it empty.';
+
+/** "" → null (no number), a valid mobile → E.164, anything else → undefined (invalid). */
+function parseContact(input: string): string | null | undefined {
+  if (!input.trim()) return null;
+  return toIndianE164(input) ?? undefined;
+}
+
 function AddEateryForm() {
   const create = useCreateEatery();
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
+  const [contact, setContact] = useState('');
+  const [contactProblem, setContactProblem] = useState<string | null>(null);
 
   function submit(event: FormEvent) {
     event.preventDefault();
+    const phone = parseContact(contact);
+    if (phone === undefined) return setContactProblem(CONTACT_PROBLEM);
+    setContactProblem(null);
     create.mutate(
-      { name: name.trim(), location_tag: location.trim() || null },
+      { name: name.trim(), location_tag: location.trim() || null, contact_phone: phone },
       {
         onSuccess: () => {
           setName('');
           setLocation('');
+          setContact('');
         },
       },
     );
@@ -86,6 +100,20 @@ function AddEateryForm() {
           onChange={(e) => setLocation(e.target.value)}
           className="flex-1"
         />
+        <TextField
+          label="Worker phone (optional)"
+          type="tel"
+          inputMode="tel"
+          placeholder="98765 43210"
+          hint="Shown to students to call"
+          value={contact}
+          onChange={(e) => {
+            setContact(e.target.value);
+            setContactProblem(null);
+          }}
+          error={contactProblem}
+          className="flex-1"
+        />
         <Button type="submit" variant="primary" loading={create.isPending} icon={<Plus className="size-4" aria-hidden />} className="sm:mt-6">
           Add eatery
         </Button>
@@ -105,6 +133,8 @@ function EateryItem({ eatery, vendorPhones }: { eatery: Outlet; vendorPhones: st
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(eatery.name);
   const [location, setLocation] = useState(eatery.location_tag ?? '');
+  const [contact, setContact] = useState(eatery.contact_phone ?? '');
+  const [contactProblem, setContactProblem] = useState<string | null>(null);
 
   if (editing) {
     return (
@@ -113,13 +143,29 @@ function EateryItem({ eatery, vendorPhones }: { eatery: Outlet; vendorPhones: st
           className="flex flex-col gap-space-md sm:flex-row sm:items-start"
           onSubmit={(event) => {
             event.preventDefault();
+            const phone = parseContact(contact);
+            if (phone === undefined) return setContactProblem(CONTACT_PROBLEM);
+            setContactProblem(null);
             update.mutate(
-              { id: eatery.id, name: name.trim(), location_tag: location.trim() || null },
+              { id: eatery.id, name: name.trim(), location_tag: location.trim() || null, contact_phone: phone },
               { onSuccess: () => setEditing(false) },
             );
           }}>
           <TextField label="Name" required minLength={2} maxLength={60} value={name} onChange={(e) => setName(e.target.value)} className="flex-1" />
           <TextField label="Location" maxLength={60} value={location} onChange={(e) => setLocation(e.target.value)} className="flex-1" />
+          <TextField
+            label="Worker phone"
+            type="tel"
+            inputMode="tel"
+            placeholder="Leave empty for none"
+            value={contact}
+            onChange={(e) => {
+              setContact(e.target.value);
+              setContactProblem(null);
+            }}
+            error={contactProblem}
+            className="flex-1"
+          />
           <div className="flex gap-space-xs sm:mt-6">
             <Button type="submit" variant="primary" size="sm" loading={update.isPending}>
               Save
@@ -131,6 +177,8 @@ function EateryItem({ eatery, vendorPhones }: { eatery: Outlet; vendorPhones: st
                 setEditing(false);
                 setName(eatery.name);
                 setLocation(eatery.location_tag ?? '');
+                setContact(eatery.contact_phone ?? '');
+                setContactProblem(null);
                 update.reset();
               }}>
               Cancel
@@ -155,6 +203,12 @@ function EateryItem({ eatery, vendorPhones }: { eatery: Outlet; vendorPhones: st
             <span className="inline-flex items-center gap-1">
               <MapPin className="size-3.5" aria-hidden />
               {eatery.location_tag}
+            </span>
+          ) : null}
+          {eatery.contact_phone ? (
+            <span className="inline-flex items-center gap-1">
+              <Phone className="size-3.5" aria-hidden />
+              Worker {formatPhone(eatery.contact_phone)}
             </span>
           ) : null}
           <span>

@@ -67,6 +67,7 @@ class AdminRepository(Protocol):
         location_tag: str | None,
         latitude: float | None = None,
         longitude: float | None = None,
+        contact_phone: str | None = None,
     ) -> EateryOut: ...
     async def update_eatery(self, eatery_id: UUID, changes: dict[str, Any]) -> EateryOut | None: ...
     async def delete_eatery(self, eatery_id: UUID) -> bool: ...
@@ -285,6 +286,7 @@ class SupabaseAdminRepository:
         location_tag: str | None,
         latitude: float | None = None,
         longitude: float | None = None,
+        contact_phone: str | None = None,
     ) -> EateryOut:
         try:
             res = await (
@@ -297,6 +299,7 @@ class SupabaseAdminRepository:
                         "location_tag": location_tag,
                         "latitude": latitude,
                         "longitude": longitude,
+                        "contact_phone": contact_phone,
                     }
                 )
                 .execute()

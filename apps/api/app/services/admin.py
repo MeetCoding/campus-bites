@@ -170,7 +170,12 @@ class AdminService:
         await self._ensure_admin(actor)
         try:
             return await self._repo.create_eatery(
-                body.name, slugify(body.name), body.location_tag, body.latitude, body.longitude
+                body.name,
+                slugify(body.name),
+                body.location_tag,
+                body.latitude,
+                body.longitude,
+                body.contact_phone,
             )
         except DuplicateError as exc:
             raise ApiError(
@@ -186,7 +191,7 @@ class AdminService:
         if changes.get("name", "") is None:
             del changes["name"]
         if not changes:
-            raise ApiError(422, "NOTHING_TO_UPDATE", "Change the name or the location.")
+            raise ApiError(422, "NOTHING_TO_UPDATE", "Change the name, location or contact number.")
         eatery = await self._repo.update_eatery(eatery_id, changes)
         if eatery is None:
             raise ApiError(404, "EATERY_NOT_FOUND", "That eatery does not exist.")

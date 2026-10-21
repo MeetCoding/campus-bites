@@ -105,6 +105,11 @@ Latitude = Annotated[float, Field(ge=-90, le=90)]
 Longitude = Annotated[float, Field(ge=-180, le=180)]
 
 
+def _contact_phone(value: str | None) -> str | None:
+    """Public contact number (not a login): blank clears it, anything else is normalised."""
+    return normalize_phone(value) if value else None
+
+
 def _check_pin(latitude: float | None, longitude: float | None) -> None:
     if (latitude is None) != (longitude is None):
         raise ValueError("Send latitude and longitude together (or both null to clear the pin).")
@@ -117,11 +122,19 @@ class EateryCreate(BaseModel):
     location_tag: str | None = Field(default=None, max_length=60)
     latitude: Latitude | None = None
     longitude: Longitude | None = None
+    contact_phone: str | None = Field(
+        default=None, description="Worker's number shown to students; normalised to E.164."
+    )
 
     @field_validator("location_tag")
     @classmethod
     def _blank_is_none(cls, value: str | None) -> str | None:
         return value or None
+
+    @field_validator("contact_phone")
+    @classmethod
+    def _normalize_contact(cls, value: str | None) -> str | None:
+        return _contact_phone(value)
 
     @model_validator(mode="after")
     def _pin_complete(self) -> "EateryCreate":
@@ -140,11 +153,19 @@ class EateryUpdate(BaseModel):
         default=None, description="Map pin; null with longitude clears it."
     )
     longitude: Longitude | None = None
+    contact_phone: str | None = Field(
+        default=None, description='Worker phone shown to students; null or "" clears it.'
+    )
 
     @field_validator("location_tag")
     @classmethod
     def _blank_is_none(cls, value: str | None) -> str | None:
         return value or None
+
+    @field_validator("contact_phone")
+    @classmethod
+    def _normalize_contact(cls, value: str | None) -> str | None:
+        return _contact_phone(value)
 
     @model_validator(mode="after")
     def _pin_complete(self) -> "EateryUpdate":
@@ -162,6 +183,7 @@ class EateryOut(BaseModel):
     location_tag: str | None = None
     latitude: float | None = None
     longitude: float | None = None
+    contact_phone: str | None = None
 
 
 class AdminCreate(BaseModel):

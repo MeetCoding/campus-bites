@@ -1,4 +1,4 @@
--- Map pins regression test (migration 016_outlet_coordinates).
+-- Map pins + contact number regression test (migrations 016_outlet_coordinates, 021_outlet_contact_phone).
 -- Runs inside a transaction that is rolled back. Success ends with "ALL MAP TESTS PASSED".
 
 begin;
@@ -45,6 +45,17 @@ begin
   update public.outlets set latitude = 29.1, longitude = 77.1 where slug = 'rajendra-mess';
   assert (select latitude from public.outlets where slug = 'rajendra-mess') is null, 'messes are not vendor-run';
 
+  -- Contact number (021): the eatery's own vendor sets it; E.164 only.
+  update public.outlets set contact_phone = '+919876543210' where slug = 'amul';
+  assert (select contact_phone from public.outlets where slug = 'amul') = '+919876543210', 'vendor sets contact';
+  update public.outlets set contact_phone = '+919876543210' where slug = 'map-test-kiosk';
+  assert (select contact_phone from public.outlets where slug = 'map-test-kiosk') is null, 'not on outlets they do not run';
+  begin
+    update public.outlets set contact_phone = '98765 43210' where slug = 'amul';
+    assert false, 'contact must be E.164';
+  exception when check_violation then null;
+  end;
+
   begin
     update public.outlets set name = 'Renamed' where slug = 'amul';
     assert false, 'only the granted columns are writable';
@@ -66,6 +77,11 @@ begin
     'view exposes the pin';
   update public.outlets set latitude = 1, longitude = 1 where slug = 'amul';
   assert (select latitude from public.outlets where slug = 'amul') = 29.8649, 'students cannot move pins';
+  assert (select contact_phone from public.outlet_live_status
+          where outlet_id = (select id from public.outlets where slug = 'amul')) = '+919876543210',
+    'view exposes the contact number';
+  update public.outlets set contact_phone = null where slug = 'amul';
+  assert (select contact_phone from public.outlets where slug = 'amul') = '+919876543210', 'students cannot change it';
 end $$;
 
 reset role;

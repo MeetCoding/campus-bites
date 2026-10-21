@@ -2,7 +2,7 @@ import { Link, useLocalSearchParams } from 'expo-router';
 
 import { Button, Screen } from '@/components/ui';
 import { useSession } from '@/features/auth/session';
-import { OutletHeader } from '@/features/canteens/components';
+import { ContactCard, OutletHeader } from '@/features/canteens/components';
 import { useLiveUpdates } from '@/features/canteens/queries';
 import { EateryLocationCard } from '@/features/map/components';
 import { NoticeboardCard, OverrideBanner } from '@/features/mess/components';
@@ -20,6 +20,7 @@ export default function EateryDetail() {
       <OutletHeader outletId={id} />
       <OverrideBanner overrides={overrides.data} />
       <EateryLocationCard outletId={id} />
+      <ContactCard outletId={id} />
       <NoticeboardCard outletId={id} title="Menu" canReport={claims?.roles.includes('student') ?? false} />
       <Link href={{ pathname: '/raise-complaint', params: { outlet: id } }} asChild>
         <Button label="Report an issue" variant="secondary" />

@@ -7,6 +7,7 @@ import {
   useOutletShift,
   useOutletStatus,
   useSaveShift,
+  useSetContact,
   useSetLocation,
   useSetOpen,
   useSetPin,
@@ -18,6 +19,7 @@ import { describeOverride, MenuPhotoStackEditor, useMenuPhotoStack } from '@/fea
 import { useActiveOverrides, useCreateOverride, useRevokeOverride, useUploadMenuPhoto } from '@/features/mess/queries';
 import type { Outlet } from '@/features/campus/queries';
 import { ImpactFeedbackStyle, impactTap } from '@/lib/haptics';
+import { toIndianE164 } from '@/lib/auth';
 import { pickImage } from '@/lib/images';
 import {
   DATE_PRESET_LABEL,
@@ -396,6 +398,44 @@ export function LocationEditor({ outletId }: { outletId: string }) {
         loading={setLocation.isPending}
         onPress={() => setLocation.mutate({ outletId, locationTag: current.trim() || null })}
       />
+    </Card>
+  );
+}
+
+// ─── Public contact number (eateries) ────────────────────────────────────────
+export function ContactEditor({ outletId }: { outletId: string }) {
+  const status = useOutletStatus(outletId);
+  const setContact = useSetContact();
+  const [value, setValue] = useState<string | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const current = value ?? status.data?.contact_phone?.replace(/^\+91/, '') ?? '';
+
+  function save() {
+    const phone = current.trim() ? toIndianE164(current) : null;
+    if (current.trim() && !phone) return setProblem('Enter a 10-digit mobile number, or clear the field.');
+    setProblem(null);
+    setContact.mutate({ outletId, phone });
+  }
+
+  return (
+    <Card className="gap-space-md">
+      <TextField
+        label="Worker phone shown to students"
+        prefix="+91"
+        placeholder="10-digit number (optional)"
+        keyboardType="phone-pad"
+        value={current}
+        onChangeText={(next) => {
+          setValue(next);
+          setProblem(null);
+        }}
+        maxLength={14}
+        error={problem ?? setContact.error?.message}
+      />
+      {setContact.isSuccess ? (
+        <Text className="font-body text-body-sm text-on-surface">Saved — students can tap to call.</Text>
+      ) : null}
+      <Button label="Save contact number" variant="secondary" loading={setContact.isPending} onPress={save} />
     </Card>
   );
 }

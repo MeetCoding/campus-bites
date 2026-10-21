@@ -26,6 +26,8 @@ export type OutletStatus = {
   /** Map pin (016); both null when unset. */
   latitude: number | null;
   longitude: number | null;
+  /** Worker's number shown to students (021); null when unset. */
+  contact_phone: string | null;
 };
 
 export type SearchHit = {
@@ -155,6 +157,23 @@ export function useSetOpen() {
         .select('id');
       if (error) throw error;
       if (data.length === 0) throw new Error("You don't manage this outlet.");
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: canteenKeys.status }),
+  });
+}
+
+/** Public contact number (021): column grant + RLS app.can_run_outlet. null removes it. */
+export function useSetContact() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { outletId: string; phone: string | null }) => {
+      const { data, error } = await supabase
+        .from('outlets')
+        .update({ contact_phone: params.phone })
+        .eq('id', params.outletId)
+        .select('id');
+      if (error) throw error;
+      if (data.length === 0) throw new Error("You can't change this outlet's contact number.");
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: canteenKeys.status }),
   });
