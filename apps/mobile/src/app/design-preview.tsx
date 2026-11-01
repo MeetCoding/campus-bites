@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
-import { Badge, Button, Card, Pill, Screen, SectionHeader, TextField } from '@/components/ui';
+import { Badge, BrandLogo, Button, Card, Pill, Screen, SectionHeader, TextField } from '@/components/ui';
 
 const surfaceTiers = [
   'bg-surface-container-lowest',
@@ -22,7 +22,7 @@ export default function DesignPreview() {
         <Text className="font-label text-label-sm uppercase text-on-surface-variant">
           IIT Roorkee · Design preview
         </Text>
-        <Text className="font-headline text-headline-lg-mobile text-primary">Campus Bites</Text>
+        <BrandLogo size={36} />
         <Text className="font-body text-body-md text-on-surface-variant">
           Noto Serif headlines, Inter body and Public Sans labels on Alexandria surface tiers.
         </Text>

@@ -1,8 +1,11 @@
 export { Badge } from './Badge';
+export { AnimatedBrandSymbol, BrandLogo, BrandSymbol, KineticWordmark } from './BrandMark';
 export { Button } from './Button';
 export { Card } from './Card';
+export { CountUp } from './CountUp';
 export { HeroCard } from './HeroCard';
 export { IconBadge, type IconTone } from './IconBadge';
+export { KineticText, RevealText } from './KineticText';
 export { LiveDot } from './LiveDot';
 export { Pill } from './Pill';
 export { PressableScale } from './PressableScale';
@@ -10,3 +13,4 @@ export { Screen } from './Screen';
 export { SectionHeader } from './SectionHeader';
 export { Segmented } from './Segmented';
 export { TextField } from './TextField';
+export { enterUp, popIn } from './motion';

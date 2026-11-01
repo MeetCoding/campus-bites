@@ -2,7 +2,7 @@ import { Link } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 
-import { Button, Card, HeroCard, Pill, Screen, Segmented } from '@/components/ui';
+import { Button, Card, CountUp, HeroCard, Pill, Screen, Segmented } from '@/components/ui';
 import { useSession } from '@/features/auth/session';
 import { useBhawans } from '@/features/campus/queries';
 import { BoardCard, ComplaintCard } from '@/features/complaints/components';
@@ -102,9 +102,9 @@ function IssueBoard() {
       ) : null}
 
       <HeroCard className="flex-row">
-        <Stat value={String(active.length)} label="Active" />
-        <Stat value={String(critical)} label="Long-standing" />
-        <Stat value={`${onTime}%`} label="On time" />
+        <Stat value={active.length} label="Active" />
+        <Stat value={critical} label="Long-standing" />
+        <Stat value={onTime} suffix="%" label="On time" />
       </HeroCard>
 
       {board.isPending ? (
@@ -123,10 +123,10 @@ function IssueBoard() {
   );
 }
 
-function Stat({ value, label }: { value: string; label: string }) {
+function Stat({ value, suffix, label }: { value: number; suffix?: string; label: string }) {
   return (
     <View className="flex-1 items-center gap-space-xs">
-      <Text className="font-headline text-headline-md text-on-primary">{value}</Text>
+      <CountUp value={value} suffix={suffix} className="font-headline text-headline-md text-on-primary" />
       <Text className="text-center font-label text-label-sm uppercase text-on-primary-container">{label}</Text>
     </View>
   );

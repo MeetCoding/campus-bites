@@ -1,7 +1,7 @@
 import { Link } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
-import { Card, Screen } from '@/components/ui';
+import { Card, KineticText, Screen } from '@/components/ui';
 import { AccountPanel } from '@/features/auth/AccountPanel';
 
 const SECTIONS = [
@@ -32,7 +32,7 @@ export default function AdminHome() {
     <Screen>
       <View className="gap-space-xs pt-space-md">
         <Text className="font-label text-label-sm uppercase text-on-surface-variant">System admin</Text>
-        <Text className="font-headline text-headline-lg-mobile text-on-surface">Administration</Text>
+        <KineticText text="Administration" className="font-headline text-headline-lg-mobile text-on-surface" />
       </View>
 
       <View className="gap-space-sm">

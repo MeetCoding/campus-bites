@@ -43,7 +43,7 @@ export default function EateriesDirectory() {
 
   return (
     <Screen>
-      <View className="min-h-12 flex-row items-center gap-space-sm rounded-full bg-surface-container-lowest px-space-md">
+      <View className="min-h-12 flex-row items-center gap-space-sm rounded-full border border-card-edge bg-surface-container-lowest px-space-md">
         <Search size={18} color={colors.outline} />
         <TextInput
           accessibilityLabel="Search canteens and eateries"

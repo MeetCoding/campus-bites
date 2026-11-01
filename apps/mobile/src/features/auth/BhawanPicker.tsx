@@ -58,7 +58,7 @@ export function BhawanPicker({ allowNoHostel = false, onDone }: { allowNoHostel?
                 onPress={() => setSelected(option.id)}
                 className={cn(
                   'min-h-12 justify-center rounded-xl px-space-md py-space-sm active:opacity-80',
-                  isSelected ? 'bg-primary' : option.id === NO_HOSTEL ? 'bg-surface-container-high' : 'bg-surface-container-lowest',
+                  isSelected ? 'border border-primary bg-primary' : option.id === NO_HOSTEL ? 'border border-surface-dim bg-surface-dim' : 'border border-card-edge bg-surface-container-lowest',
                 )}>
                 <Text
                   className={cn('font-body-semibold text-body-lg', isSelected ? 'text-on-primary' : 'text-on-surface')}>

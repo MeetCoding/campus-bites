@@ -24,7 +24,7 @@ const labelClass: Record<ButtonVariant, string> = {
 
 const contentClass = 'min-h-12 items-center justify-center px-5 py-3';
 
-/** Alexandria buttons: primary = gradient fill, secondary = surface-high, tertiary = text. */
+/** Alexandria buttons: primary = gradient fill, secondary = white panel with a hairline edge, tertiary = text. */
 export function Button({
   label,
   onPress,
@@ -51,7 +51,7 @@ export function Button({
       <View
         className={cn(
           'overflow-hidden rounded-full',
-          variant === 'secondary' && 'bg-surface-container-high',
+          variant === 'secondary' && 'border border-card-edge bg-surface-container-lowest',
           inactive && 'opacity-50',
         )}>
         {variant === 'primary' ? (

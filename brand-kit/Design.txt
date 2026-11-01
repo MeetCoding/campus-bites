@@ -1,0 +1,19 @@
+CampusBites Brand Assets
+======================
+Files:
+- CampusBites_Logo.svg — horizontal logo on cream
+- CampusBites_Logo_Transparent.svg — horizontal transparent logo
+- CampusBites_App_Icon.svg — square app icon
+- CampusBites_Brand_Guide.svg — palette and usage guide
+
+Color palette:
+(https://coolors.co/palette/dad7cd-a3b18a-588157-3a5a40-344e41)
+Background Timberwolf: #DAD7CD
+Soft accent Sage: #A3B18A (bite marks on dark)
+Accent Fern Green: #588157 (bite marks and "Bites" on light)
+Primary Hunter Green: #3A5A40
+Deep Brunswick Green: #344E41 (app icon background, inverse surfaces)
+
+Typography: Nunito Sans ExtraBold (800); fallback Nunito or Arial Rounded.
+Import SVG into Figma, Inkscape or Adobe Illustrator and edit vector paths and text.
+Note: This is a vector recreation of the previously generated raster logo, not the original layered source file.

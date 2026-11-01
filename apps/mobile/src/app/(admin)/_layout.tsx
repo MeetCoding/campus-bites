@@ -9,7 +9,7 @@ export default function AdminLayout() {
         headerShadowVisible: false,
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.primary,
-        headerTitleStyle: { fontFamily: 'NotoSerif_700Bold', color: colors['on-surface'] },
+        headerTitleStyle: { fontFamily: 'NunitoSans_800ExtraBold', color: colors['on-surface'] },
       }}>
       <Stack.Screen name="admin" options={{ headerShown: false }} />
       <Stack.Screen name="whitelist" options={{ title: 'Vendor whitelist' }} />

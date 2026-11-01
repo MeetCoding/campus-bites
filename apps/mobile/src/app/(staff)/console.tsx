@@ -13,7 +13,16 @@ import {
 } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 
-import { Card, HeroCard, IconBadge, PressableScale, Screen, SectionHeader, type IconTone } from '@/components/ui';
+import {
+  Card,
+  HeroCard,
+  IconBadge,
+  KineticText,
+  PressableScale,
+  Screen,
+  SectionHeader,
+  type IconTone,
+} from '@/components/ui';
 import { AccountPanel } from '@/features/auth/AccountPanel';
 import { ROLE_LABEL } from '@/features/auth/modes';
 import { useSession } from '@/features/auth/session';
@@ -60,9 +69,10 @@ export default function StaffConsole() {
           <Text className="font-label-bold text-label-sm uppercase text-on-primary-container">
             {myBhawans.map((b) => b.name).join(' · ') || 'Staff console'}
           </Text>
-          <Text className="font-headline text-headline-lg-mobile text-on-primary">
-            {staffRoles.map((r) => ROLE_LABEL[r]).join(' · ') || 'Staff'}
-          </Text>
+          <KineticText
+            text={staffRoles.map((r) => ROLE_LABEL[r]).join(' · ') || 'Staff'}
+            className="font-headline text-headline-lg-mobile text-on-primary"
+          />
         </View>
         {myOutlets.length > 0 ? (
           <View className="self-start rounded-full bg-on-primary/15 px-3 py-1">

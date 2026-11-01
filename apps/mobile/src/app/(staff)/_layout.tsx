@@ -9,7 +9,7 @@ export default function StaffLayout() {
         headerShadowVisible: false,
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.primary,
-        headerTitleStyle: { fontFamily: 'NotoSerif_700Bold', color: colors['on-surface'] },
+        headerTitleStyle: { fontFamily: 'NunitoSans_800ExtraBold', color: colors['on-surface'] },
       }}>
       <Stack.Screen name="console" options={{ headerShown: false }} />
       <Stack.Screen name="mess-photo" options={{ title: 'Menu photos' }} />

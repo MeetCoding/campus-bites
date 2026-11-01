@@ -1,87 +1,98 @@
-// Alexandria design tokens — single source for tailwind.config.js and non-className code
-// (e.g. LinearGradient colors). Colors, spacing and type sizes come from the Stitch export
-// tailwind.config in stitch-reference/*/code.html; font families follow
-// stitch-reference/alexandria/DESIGN.md (Noto Serif / Inter / Public Sans).
+// Design tokens — single source for tailwind.config.js and non-className code
+// (e.g. LinearGradient colors). Colors and typeface follow the Campus Bites brand kit
+// (brand-kit/: the five-green Timberwolf to Brunswick palette; Nunito Sans); spacing, type sizes and
+// radii keep the Alexandria scale from stitch-reference/.
 // CommonJS so tailwind.config.js can require it.
 
 const colors = {
-  primary: '#094cb2',
-  'on-primary': '#ffffff',
-  'primary-container': '#3366cc',
-  'on-primary-container': '#e7ebff',
-  'primary-fixed': '#d9e2ff',
-  'primary-fixed-dim': '#b1c5ff',
-  'on-primary-fixed': '#001946',
-  'on-primary-fixed-variant': '#00419d',
-  'inverse-primary': '#b1c5ff',
-  'surface-tint': '#2259bf',
+  // Palette (brand-kit/Design.txt, coolors.co/palette/dad7cd-a3b18a-588157-3a5a40-344e41):
+  // Timberwolf #DAD7CD (background), Sage #A3B18A, Fern #588157 (accent), Hunter #3A5A40
+  // (primary), Brunswick #344E41 (deep). Tonal tiers are derived from those five.
+  primary: '#3a5a40',
+  'on-primary': '#f5f4f0',
+  'primary-container': '#588157',
+  'on-primary-container': '#d5ddc8',
+  'primary-fixed': '#dde6d5',
+  'primary-fixed-dim': '#a3b18a',
+  'on-primary-fixed': '#132418',
+  'on-primary-fixed-variant': '#2c4432',
+  'inverse-primary': '#a3b18a',
+  'surface-tint': '#3a5a40',
 
-  secondary: '#5a5f63',
+  secondary: '#5d6656',
   'on-secondary': '#ffffff',
-  'secondary-container': '#dfe3e8',
-  'on-secondary-container': '#606569',
-  'secondary-fixed': '#dfe3e8',
-  'secondary-fixed-dim': '#c2c7cc',
-  'on-secondary-fixed': '#171c20',
-  'on-secondary-fixed-variant': '#42474b',
+  'secondary-container': '#e2e5da',
+  'on-secondary-container': '#40483b',
+  'secondary-fixed': '#e2e5da',
+  'secondary-fixed-dim': '#c4c9b8',
+  'on-secondary-fixed': '#191e15',
+  'on-secondary-fixed-variant': '#40483b',
 
-  tertiary: '#6d5e00',
+  // Sage family for official / verified; `tertiary` is a deeper olive-sage so it stays legible
+  // as text and reads apart from the hunter primary.
+  tertiary: '#66744e',
   'on-tertiary': '#ffffff',
-  'tertiary-container': '#bfab49',
-  'on-tertiary-container': '#4a3f00',
-  'tertiary-fixed': '#f9e37a',
-  'tertiary-fixed-dim': '#dcc661',
-  'on-tertiary-fixed': '#211b00',
-  'on-tertiary-fixed-variant': '#524600',
+  'tertiary-container': '#a3b18a',
+  'on-tertiary-container': '#232b14',
+  'tertiary-fixed': '#e6ebd9',
+  'tertiary-fixed-dim': '#c5cfb0',
+  'on-tertiary-fixed': '#1d2510',
+  'on-tertiary-fixed-variant': '#4b5734',
+  // Fern: logo bite marks and "Bites" in the wordmark on light surfaces.
+  accent: '#588157',
+  'accent-soft': '#e1eadb',
 
   error: '#ba1a1a',
   'on-error': '#ffffff',
   'error-container': '#ffdad6',
   'on-error-container': '#93000a',
 
-  // Cool off-white canvas (slightly darker than the export's #faf9fa) so lowest-tier cards read
-  // as raised through tonal contrast alone, without borders or shadows.
-  background: '#f1f2f6',
-  'on-background': '#1b1c1d',
-  surface: '#faf9fa',
-  'surface-bright': '#faf9fa',
-  'surface-dim': '#dbdadb',
-  'surface-variant': '#e3e2e3',
+  // Timberwolf canvas; white panels (surface-container-lowest) stand clear of it and also get a
+  // `card-edge` hairline and a soft `card-shadow`.
+  background: '#dad7cd',
+  'on-background': '#1b211c',
+  surface: '#f5f4f0',
+  'surface-bright': '#f8f7f4',
+  'surface-dim': '#c8c4b7',
+  'surface-variant': '#e3e1d8',
   'surface-container-lowest': '#ffffff',
-  'surface-container-low': '#f5f3f4',
-  'surface-container': '#efedee',
-  'surface-container-high': '#e9e8e9',
-  'surface-container-highest': '#e3e2e3',
-  'on-surface': '#1b1c1d',
-  'on-surface-variant': '#434653',
-  'inverse-surface': '#303031',
-  'inverse-on-surface': '#f2f0f1',
-  outline: '#737784',
-  'outline-variant': '#c3c6d5',
+  'surface-container-low': '#f7f6f2',
+  'surface-container': '#f1f0ea',
+  'surface-container-high': '#ebe9e2',
+  'surface-container-highest': '#e4e2da',
+  'on-surface': '#1b211c',
+  'on-surface-variant': '#4a5148',
+  'inverse-surface': '#344e41',
+  'inverse-on-surface': '#f5f4f0',
+  outline: '#757a6f',
+  'outline-variant': '#b8b4a6',
+  'card-edge': '#c6c2b4',
+  'card-shadow': 'rgba(38, 52, 40, 0.14)',
 
-  // Status semantics used across the Stitch screens
-  'status-open': '#10b981',
-  'status-open-container': '#ecfdf5',
-  'on-status-open-container': '#065f46',
-  'status-warning-container': '#fffbeb',
-  'on-status-warning-container': '#78350f',
-  'status-warning': '#f59e0b',
+  // Status semantics: a bright leaf green that reads apart from the hunter / fern greens, and a
+  // honey amber.
+  'status-open': '#22a06b',
+  'status-open-container': '#e3f5ea',
+  'on-status-open-container': '#11573a',
+  'status-warning-container': '#fff1d6',
+  'on-status-warning-container': '#6b4100',
+  'status-warning': '#e5a12e',
 
-  // Deep end of the hero gradient (hero cards run hero → primary).
-  hero: '#001946',
+  // Deep end of the hero gradient (hero cards run hero -> primary).
+  hero: '#1f3128',
 };
 
 // Each weight is its own family on Android, so weights are separate font-* utilities.
 const fontFamily = {
-  headline: ['NotoSerif_700Bold'],
-  'headline-medium': ['NotoSerif_500Medium'],
-  serif: ['NotoSerif_400Regular'],
-  body: ['Inter_400Regular'],
-  'body-medium': ['Inter_500Medium'],
-  'body-semibold': ['Inter_600SemiBold'],
-  'body-bold': ['Inter_700Bold'],
-  label: ['PublicSans_500Medium'],
-  'label-bold': ['PublicSans_700Bold'],
+  headline: ['NunitoSans_800ExtraBold'],
+  'headline-medium': ['NunitoSans_700Bold'],
+  serif: ['NunitoSans_400Regular'],
+  body: ['NunitoSans_400Regular'],
+  'body-medium': ['NunitoSans_500Medium'],
+  'body-semibold': ['NunitoSans_600SemiBold'],
+  'body-bold': ['NunitoSans_700Bold'],
+  label: ['NunitoSans_600SemiBold'],
+  'label-bold': ['NunitoSans_700Bold'],
 };
 
 // Sizes from the export; weights are carried by fontFamily above.

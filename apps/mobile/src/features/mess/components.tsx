@@ -2,8 +2,19 @@ import { Image } from 'expo-image';
 import { Camera, Flag, Megaphone, Moon, Pin, Sun, Sunrise, Trash2, ZoomIn, type LucideIcon } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View, type ScrollViewInstance } from 'react-native';
+import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
-import { Badge, Card, HeroCard, IconBadge, LiveDot, PressableScale, SectionHeader } from '@/components/ui';
+import {
+  Badge,
+  Card,
+  HeroCard,
+  IconBadge,
+  LiveDot,
+  popIn,
+  PressableScale,
+  RevealText,
+  SectionHeader,
+} from '@/components/ui';
 import { ZoomableImage } from '@/components/ui/ZoomableImage';
 import {
   MEAL_LABEL,
@@ -85,17 +96,21 @@ export function MealHero({
 
       {focus ? (
         <View className="flex-row items-center gap-space-md">
-          <IconBadge icon={MEAL_ICON[focus.slot]} tone="onDark" size="lg" />
+          <Animated.View key={focus.slot} entering={popIn(0, 300)}>
+            <IconBadge icon={MEAL_ICON[focus.slot]} tone="onDark" size="lg" />
+          </Animated.View>
           <View className="flex-1">
-            <Text className="font-headline text-headline-lg-mobile text-on-primary">{MEAL_LABEL[focus.slot]}</Text>
-            <Text className="font-body-medium text-body-md text-on-primary-container">
-              {formatWindow(focus.opens_at, focus.closes_at)}
-            </Text>
+            <RevealText text={MEAL_LABEL[focus.slot]} className="font-headline text-headline-lg-mobile text-on-primary" />
+            <Animated.View key={focus.slot} entering={FadeIn.delay(450).duration(500).reduceMotion(ReduceMotion.System)}>
+              <Text className="font-body-medium text-body-md text-on-primary-container">
+                {formatWindow(focus.opens_at, focus.closes_at)}
+              </Text>
+            </Animated.View>
           </View>
         </View>
       ) : (
         <View className="gap-space-xs">
-          <Text className="font-headline text-headline-lg-mobile text-on-primary">Kitchen&apos;s closed</Text>
+          <RevealText text="Kitchen's closed" className="font-headline text-headline-lg-mobile text-on-primary" />
           <Text className="font-body text-body-md text-on-primary-container">See you at breakfast.</Text>
         </View>
       )}

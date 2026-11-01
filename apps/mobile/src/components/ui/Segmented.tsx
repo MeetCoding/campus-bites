@@ -32,7 +32,7 @@ export function Segmented<T extends string>({
     <View
       accessibilityRole="tablist"
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
-      className="flex-row rounded-full bg-surface-container-high p-1">
+      className="flex-row rounded-full bg-surface-dim p-1">
       {segment > 0 ? (
         // Reanimated views aren't NativeWind-aware, so the thumb is styled from tokens directly.
         <Animated.View

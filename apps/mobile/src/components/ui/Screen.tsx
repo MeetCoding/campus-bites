@@ -1,17 +1,25 @@
-import type { ReactNode } from 'react';
+import { Children, type ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { enterUp } from '@/components/ui/motion';
 import { cn } from '@/lib/cn';
 
-/** Page shell: background surface, safe-area padding, optional scrolling. */
+/**
+ * Page shell: background surface, safe-area padding, optional scrolling. Scrolling screens bring
+ * their sections in with a staggered fade-up (`animateIn={false}` to opt out); fixed screens don't,
+ * since their children often rely on `flex-1`.
+ */
 export function Screen({
   children,
   scroll = true,
+  animateIn = true,
   className,
 }: {
   children: ReactNode;
   scroll?: boolean;
+  animateIn?: boolean;
   className?: string;
 }) {
   const insets = useSafeAreaInsets();
@@ -38,7 +46,17 @@ export function Screen({
         className="flex-1"
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: insets.bottom }}>
-        <View className={cn('py-space-md', body)}>{children}</View>
+        <View className={cn('py-space-md', body)}>
+          {animateIn
+            ? Children.toArray(children).map((child, index) => (
+                // toArray gives every child a stable key, so sections that appear later
+                // (after a query resolves) animate in on their own.
+                <Animated.View key={(child as { key?: string }).key ?? index} entering={enterUp(index)}>
+                  {child}
+                </Animated.View>
+              ))
+            : children}
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

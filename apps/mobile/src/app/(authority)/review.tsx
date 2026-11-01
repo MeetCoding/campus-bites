@@ -3,7 +3,7 @@ import { ChevronRight } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 
-import { Card, Pill, Screen, SectionHeader } from '@/components/ui';
+import { Card, KineticText, Pill, Screen, SectionHeader } from '@/components/ui';
 import { AccountPanel } from '@/features/auth/AccountPanel';
 import { useSession } from '@/features/auth/session';
 import { useBhawans } from '@/features/campus/queries';
@@ -27,7 +27,7 @@ export default function AuthorityHome() {
     <Screen>
       <View className="gap-space-xs pt-space-md">
         <Text className="font-label text-label-sm uppercase text-on-surface-variant">Authority</Text>
-        <Text className="font-headline text-headline-lg-mobile text-on-surface">Review desk</Text>
+        <KineticText text="Review desk" className="font-headline text-headline-lg-mobile text-on-surface" />
         <Text className="font-body text-body-md text-on-surface-variant">
           {bhawans.data
             ?.filter((b) => claims?.scope_bhawan_ids.includes(b.id))

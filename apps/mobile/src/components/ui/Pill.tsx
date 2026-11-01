@@ -27,7 +27,7 @@ export function Pill({
       }}
       className={cn(
         'flex-row items-center gap-1.5 rounded-full px-4 py-2 active:scale-95',
-        selected ? 'bg-primary' : 'bg-surface-container-lowest',
+        selected ? 'border border-primary bg-primary' : 'border border-card-edge bg-surface-container-lowest',
       )}>
       {Icon ? <Icon size={14} color={selected ? colors['on-primary'] : colors['on-surface-variant']} /> : null}
       <Text

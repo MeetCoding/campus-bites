@@ -9,7 +9,7 @@ export default function AuthorityLayout() {
         headerShadowVisible: false,
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.primary,
-        headerTitleStyle: { fontFamily: 'NotoSerif_700Bold', color: colors['on-surface'] },
+        headerTitleStyle: { fontFamily: 'NunitoSans_800ExtraBold', color: colors['on-surface'] },
       }}>
       <Stack.Screen name="review" options={{ headerShown: false }} />
       <Stack.Screen name="rebate/[id]" options={{ title: 'Rebate application' }} />

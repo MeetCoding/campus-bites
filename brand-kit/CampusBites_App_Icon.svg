@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="CampusBites app icon">
+<title>CampusBites · app icon</title>
+<rect width="512" height="512" rx="112" fill="#344E41"/>
+<!-- Timberwolf monogram with sage bites on Brunswick green -->
+<g transform="translate(31 49) scale(1.52)">
+<g id="campusbites-symbol">
+<path fill="#DAD7CD" d="M 148 40 C 89 40 42 87 42 146 C 42 206 89 252 148 252 C 193 252 226 231 245 196 Q 250 186 240 180 L 217 167 Q 208 162 202 172 C 191 191 173 201 148 201 C 118 201 94 178 94 146 C 94 114 118 91 148 91 C 174 91 192 102 204 122 Q 210 130 219 124 L 243 108 Q 251 103 245 93 C 226 59 192 40 148 40 Z"/>
+<!-- speech-bubble tail carved into interior via negative space -->
+<path fill="#344E41" d="M 111 192 L 105 221 Q 104 225 108 223 L 135 206 Z"/>
+<path fill="#A3B18A" d="M 249 132 L 279 115 Q 289 109 294 118 Q 298 126 287 132 L 258 149 Q 246 155 242 145 Q 239 138 249 132 Z"/>
+<path fill="#A3B18A" d="M 255 165 L 286 165 Q 299 165 299 176 Q 299 186 286 185 L 255 183 Q 244 182 244 173 Q 245 165 255 165 Z"/>
+</g>
+</g></svg>

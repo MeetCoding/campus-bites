@@ -37,7 +37,7 @@ campus-bites/
 │   │   │   │   ├── time.ts         # IST helpers, open-now / overnight shift logic
 │   │   │   │   ├── cn.ts           # className join helper
 │   │   │   │   └── database.types.ts # GENERATED — do not edit
-│   │   │   ├── theme/tokens.js     # Alexandria tokens (CommonJS; also imported from TS for hex values)
+│   │   │   ├── theme/tokens.js     # brand tokens (CommonJS; also imported from TS for hex values)
 │   │   │   └── global.css          # @tailwind directives
 │   │   ├── tailwind.config.js      # extends theme from src/theme/tokens.js
 │   │   ├── babel.config.js / metro.config.js / nativewind-env.d.ts
@@ -103,15 +103,16 @@ campus-bites/
 - Snake_case names, `id uuid default gen_random_uuid()`, `created_at timestamptz default now()`, `updated_at` via `moddatetime` trigger.
 - **Never** run `npx supabase db reset --linked` (it wipes the cloud DB; blocked in settings).
 
-## Design rules (Alexandria — `stitch-reference/alexandria/DESIGN.md`)
-- Colors / spacing / type-size / radius tokens come from the Stitch export `tailwind.config` (primary `#094cb2`, tertiary gold `#6d5e00`, surface tiers `surface-container-lowest → surface-dim`).
-- Where exports and DESIGN.md disagree, **DESIGN.md wins**:
-  - Fonts: Noto Serif (headlines), Inter (body), Public Sans (labels) — not Plus Jakarta Sans.
-  - **No-Line Rule**: no 1 px borders; separate with surface-tier shifts. If unavoidable, ghost border = `outline-variant` at 15 % opacity.
+## Design rules (brand kit `brand-kit/` + Alexandria layout rules in `stitch-reference/alexandria/DESIGN.md`)
+- **Brand** (`brand-kit/Design.txt`) wins on colour, type and logo. Palette (coolors `dad7cd-a3b18a-588157-3a5a40-344e41`): background Timberwolf `#DAD7CD`, primary Hunter `#3A5A40`, accent Fern `#588157` (bite marks, "Bites"), Sage `#A3B18A` (`tertiary-container`; bites on dark; `tertiary` is a deeper olive-sage for text), deep Brunswick `#344E41` (`inverse-surface`, app icon). Typeface **Nunito Sans** (headlines ExtraBold 800). Tokens live in `apps/mobile/src/theme/tokens.js`.
+- **Logo**: `BrandSymbol` / `BrandLogo` (`apps/mobile/src/components/ui/BrandMark.tsx`) and `BrandSymbol` / `Wordmark` (`apps/web/src/components/BrandMark.tsx`). The IIT Roorkee crest is no longer used.
+- Where Stitch exports and DESIGN.md disagree on layout, **DESIGN.md wins**:
+  - **No-Line Rule** (relaxed for contrast): white panels on the timberwolf `background` carry a 1 px `card-edge` hairline and a soft `card-shadow` (`Card`, secondary buttons, unselected pills, search fields). Elsewhere separate with surface-tier shifts; never put `surface-container-high/highest` directly on `background` (too close in tone; use `surface-dim`).
   - Depth via tonal layering, not shadows; modals only get a diffused 4–6 % shadow.
   - Minimum `sm` radius, no sharp corners. One primary action per view; primary buttons use the `primary → primary-container` gradient.
-- Status semantics: green pill = open/serving; amber/red `LONG-STANDING ISSUE` badge; tertiary gold for official/verified (institute rate card, signed noticeboard).
+- Status semantics: green pill = open/serving; amber/red `LONG-STANDING ISSUE` badge; tertiary (sage) for official/verified (institute rate card, signed noticeboard).
 - Use screen PNGs for layout intent, not pixel values.
+- **Motion**: the sign-in hero is the reference motion piece. Mobile uses Reanimated (`components/ui/motion.ts` `enterUp()` / `popIn()` springs; `Screen` staggers its sections in; `HeroCard` has drifting glows and a faint `AnimatedBrandSymbol` (`mark={false}` where the logo is already shown); screen and hero titles use `KineticText`, the meal label uses the calmer masked `RevealText`; also `KineticWordmark` / `CountUp`). Web uses `motion` (`motion/react`) under `<MotionConfig reducedMotion="user">`; `PageHeader` is a hero banner with `DriftingOrbs`, the animated logo and `KineticText` (`components/motion.tsx`). Every animation must respect the OS reduced-motion setting.
 
 ## Commands
 Run from the repo root unless noted. (Windows: use Git Bash or PowerShell; paths below are POSIX.)

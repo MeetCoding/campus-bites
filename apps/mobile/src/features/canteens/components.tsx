@@ -1,7 +1,7 @@
 import { BadgeCheck, Clock, Info, MapPin, Phone, type LucideIcon } from 'lucide-react-native';
 import { ActivityIndicator, Linking, Text, View } from 'react-native';
 
-import { Card, HeroCard, IconBadge, LiveDot, PressableScale } from '@/components/ui';
+import { Card, HeroCard, IconBadge, KineticText, LiveDot, PressableScale } from '@/components/ui';
 import {
   OUTLET_TYPE_LABEL,
   useFixedRates,
@@ -60,7 +60,7 @@ export function OutletHeader({ outletId }: { outletId: string }) {
       <Text className="font-label-bold text-label-sm uppercase text-on-primary-container">
         {OUTLET_TYPE_LABEL[s.type]}
       </Text>
-      <Text className="font-headline text-headline-lg-mobile text-on-primary">{s.name}</Text>
+      <KineticText text={s.name} className="font-headline text-headline-lg-mobile text-on-primary" />
       <OpenStatusPill status={s} />
       {s.shift_starts_at || s.location_tag ? (
         <View className="mt-space-xs flex-row flex-wrap gap-space-sm">

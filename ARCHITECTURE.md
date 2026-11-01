@@ -3,7 +3,7 @@
 > Official IIT Roorkee dining, mess, canteen & eatery platform.
 > Product scope: [`PRD.md`](./PRD.md) · Build order & status: [`TASKS.md`](./TASKS.md) · Repo rules: [`CLAUDE.md`](./CLAUDE.md).
 >
-> **Status (18 Oct 2026):** M0–M6 built — auth & roles, Mess Hub, canteens & eateries, mess rebates, complaints & accountability (state machine, nudges, 48 h escalation via `pg_cron`). Backend verified end to end against the dev project (51/51 checks); device checks, a production Supabase project and EAS builds remain (see `TASKS.md`).
+> **Status (21 Oct 2026):** M0–M8 built and verified on device against the dev project — auth & roles, Mess Hub, canteens & eateries, mess rebates, complaints & accountability, campus map, and the admin website (`apps/web`). Open: a production Supabase project and production API environment (`TASKS.md` M6.13, M6.14); eatery map pins are being dropped by another team.
 
 ## 1. Stack at a glance
 
@@ -12,7 +12,7 @@ Three deployable projects plus one managed backend. **No Docker anywhere** (no l
 | Layer | Tech | Hosting |
 | --- | --- | --- |
 | Mobile app (`apps/mobile`) | Expo SDK 58 (React Native 0.88, React 19.3, React Compiler) · Expo Router · NativeWind 4 (Tailwind 3.4) · TanStack Query · TypeScript strict | EAS Build; EAS Workflow `apps/mobile/.eas/workflows/build-android-on-push.yml` builds a preview APK on every push to `master` touching `apps/mobile` |
-| Admin website (`apps/web`) | Vite · React 19 · React Router · TanStack Query · Tailwind 4 (same Alexandria tokens) · TypeScript strict | Any static host (SPA fallback to `index.html`) |
+| Admin website (`apps/web`) | Vite · React 19 · React Router · TanStack Query · Tailwind 4 (same brand tokens) · TypeScript strict | Any static host (SPA fallback to `index.html`) |
 | Business API (`apps/api`) | FastAPI · Pydantic v2 · Python 3.12 · `uv` · `supabase-py` (async) · `httpx` | Render web service, native Python runtime |
 | Data / Auth / Files / Realtime (`supabase/`) | Supabase Cloud: Postgres 17, GoTrue Auth, PostgREST, Storage, Realtime; extensions `pg_trgm`, `btree_gist`, `moddatetime`, `pg_cron`, `pg_net` | Supabase Cloud — dev project `sdjghovuyhsiyufhmlga` |
 | Push | Expo Push Service | Expo |
@@ -194,7 +194,7 @@ features/<module>/         queries.ts (query keys + hooks + mutations), componen
 components/ui/             design-system primitives (Button, Card, Pill, Badge, Screen, TextField, ZoomableImage…)
 lib/                       supabase.ts (single client) · api.ts (single FastAPI client) · images.ts (compress,
                            pick, upload) · time.ts (IST) · money.ts · jwt.ts · database.types.ts (generated)
-theme/tokens.js            Alexandria design tokens (Tailwind + TS)
+theme/tokens.js            brand design tokens (Tailwind + TS; brand-kit/ palette, Nunito Sans)
 ```
 Rules: server state only in TanStack Query (keys in each `queries.ts`); Realtime only invalidates queries; FastAPI only via `lib/api.ts`; every upload through `compressForUpload()`; styling via NativeWind classes and tokens (no inline hex); IST logic via `lib/time.ts`.
 
@@ -310,7 +310,7 @@ Seeded with 11 Bhawans (admins add more in the app, §4.5) — Rajendra, Radhakr
 
 Render start command: `uv run fastapi run app/main.py --host 0.0.0.0 --port $PORT`. Redeploy the API whenever `apps/api` changes — the app's API features depend on the deployed version.
 
-**Mobile builds** (`apps/mobile/eas.json`): `development` (dev client, internal APK), `preview` (internal APK), `production` (store build, auto-incremented version). EAS does not upload git-ignored `.env.local`, so each profile carries the public `EXPO_PUBLIC_*` values. App id `in.ac.iitr.campusbites` (Android package + iOS bundle). Icons are generated from `assets/images/iitr-crest.png` (a 316 px source — replace with a vector or 1024 px crest for a crisp store icon). Run `eas init` once to link the project (adds `extra.eas.projectId`, needed for push).
+**Mobile builds** (`apps/mobile/eas.json`): `development` (dev client, internal APK), `preview` (internal APK), `production` (store build, auto-incremented version). EAS does not upload git-ignored `.env.local`, so each profile carries the public `EXPO_PUBLIC_*` values. App id `in.ac.iitr.campusbites` (Android package + iOS bundle). Icons, splash and favicons are rendered from the Campus Bites brand kit (`brand-kit/`, vector symbol: cream on Forest Green). Run `eas init` once to link the project (adds `extra.eas.projectId`, needed for push).
 
 ## 9. Decisions
 

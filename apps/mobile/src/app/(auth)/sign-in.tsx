@@ -1,16 +1,27 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { Image } from 'expo-image';
 import { Coffee, Moon, Store, Sunrise } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
+import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
-import { Button, Card, HeroCard, IconBadge, PressableScale, Screen, Segmented, TextField } from '@/components/ui';
+import {
+  AnimatedBrandSymbol,
+  Button,
+  Card,
+  enterUp,
+  HeroCard,
+  IconBadge,
+  KineticWordmark,
+  popIn,
+  PressableScale,
+  Screen,
+  Segmented,
+  TextField,
+} from '@/components/ui';
 import { OtpInput } from '@/features/auth/OtpInput';
 import { useSession } from '@/features/auth/session';
 import { signInVendor, toIndianE164 } from '@/lib/auth';
 import { colors } from '@/theme/tokens';
-
-const crest = require('@/assets/images/iitr-crest.png');
 
 type Audience = 'student' | 'vendor';
 
@@ -20,17 +31,21 @@ export default function SignIn() {
 
   return (
     <Screen className="gap-space-lg">
-      <HeroCard className="items-center">
-        <View className="rounded-full bg-surface-container-lowest p-space-sm">
-          <Image source={crest} style={{ width: 72, height: 72 }} accessibilityLabel="IIT Roorkee crest" />
-        </View>
+      <HeroCard className="items-center" mark={false}>
+        <AnimatedBrandSymbol size={72} tone="onDark" />
         <View className="items-center gap-space-xs">
-          <Text className="font-headline text-headline-xl-mobile text-on-primary">Campus Bites</Text>
-          <Text className="font-body text-body-md text-on-primary-container">Every meal at IIT Roorkee, live</Text>
+          <KineticWordmark tone="onDark" className="text-headline-xl-mobile" />
+          <Animated.View entering={FadeIn.delay(750).duration(500).reduceMotion(ReduceMotion.System)}>
+            <Text className="font-body text-body-md text-on-primary-container">Every meal at IIT Roorkee, live</Text>
+          </Animated.View>
         </View>
         <View className="flex-row gap-space-sm">
           {[Sunrise, Coffee, Store, Moon].map((icon, i) => (
-            <IconBadge key={i} icon={icon} tone="onDark" size="sm" />
+            <Animated.View
+              key={i}
+              entering={popIn(i, 900)}>
+              <IconBadge icon={icon} tone="onDark" size="sm" />
+            </Animated.View>
           ))}
         </View>
       </HeroCard>
@@ -44,7 +59,9 @@ export default function SignIn() {
         onChange={setAudience}
       />
 
-      {audience === 'student' ? <StudentSignIn /> : <VendorSignIn />}
+      <Animated.View key={audience} entering={enterUp(0)}>
+        {audience === 'student' ? <StudentSignIn /> : <VendorSignIn />}
+      </Animated.View>
 
       <Text className="pb-space-lg text-center font-label text-label-sm uppercase text-on-surface-variant">
         CoSA · DoSW · IIT Roorkee

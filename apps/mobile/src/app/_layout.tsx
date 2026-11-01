@@ -1,8 +1,12 @@
 import '../global.css';
 
-import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
-import { NotoSerif_400Regular, NotoSerif_500Medium, NotoSerif_700Bold } from '@expo-google-fonts/noto-serif';
-import { PublicSans_500Medium, PublicSans_700Bold } from '@expo-google-fonts/public-sans';
+import {
+  NunitoSans_400Regular,
+  NunitoSans_500Medium,
+  NunitoSans_600SemiBold,
+  NunitoSans_700Bold,
+  NunitoSans_800ExtraBold,
+} from '@expo-google-fonts/nunito-sans';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import * as Notifications from 'expo-notifications';
@@ -68,7 +72,7 @@ function RootNavigator() {
             headerShadowVisible: false,
             headerStyle: { backgroundColor: colors.background },
             headerTintColor: colors.primary,
-            headerTitleStyle: { fontFamily: 'NotoSerif_700Bold', color: colors['on-surface'] },
+            headerTitleStyle: { fontFamily: 'NunitoSans_800ExtraBold', color: colors['on-surface'] },
           }}
         />
       </Stack.Protected>
@@ -118,15 +122,11 @@ function SplashGate({ fontsReady }: { fontsReady: boolean }) {
 export default function RootLayout() {
   // Keys must match fontFamily values in src/theme/tokens.js.
   const [fontsLoaded, fontError] = useFonts({
-    NotoSerif_400Regular,
-    NotoSerif_500Medium,
-    NotoSerif_700Bold,
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-    PublicSans_500Medium,
-    PublicSans_700Bold,
+    NunitoSans_400Regular,
+    NunitoSans_500Medium,
+    NunitoSans_600SemiBold,
+    NunitoSans_700Bold,
+    NunitoSans_800ExtraBold,
   });
 
   return (

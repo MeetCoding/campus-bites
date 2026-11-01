@@ -3,8 +3,19 @@ import { Link } from 'expo-router';
 import { CalendarX2, FileText, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
-import { Button, Card, HeroCard, IconBadge, Screen, SectionHeader, TextField } from '@/components/ui';
+import {
+  Button,
+  Card,
+  HeroCard,
+  IconBadge,
+  KineticText,
+  popIn,
+  Screen,
+  SectionHeader,
+  TextField,
+} from '@/components/ui';
 import { useSession } from '@/features/auth/session';
 import { RebatePass, rebateDays as daysBetween } from '@/features/rebates/components';
 import { rebateErrorMessage } from '@/features/rebates/errors';
@@ -32,9 +43,11 @@ export default function RebatesScreen() {
     <Screen>
       <HeroCard>
         <View className="flex-row items-center gap-space-md">
-          <IconBadge icon={CalendarX2} tone="onDark" size="lg" />
+          <Animated.View entering={popIn(0, 300)}>
+            <IconBadge icon={CalendarX2} tone="onDark" size="lg" />
+          </Animated.View>
           <View className="flex-1">
-            <Text className="font-headline text-headline-md text-on-primary">Going away?</Text>
+            <KineticText text="Going away?" className="font-headline text-headline-md text-on-primary" />
             <Text className="font-body text-body-md text-on-primary-container">
               Claim a rebate for {rules.data ? `${rules.data.min_rebate_days}+ ` : ''}days off the mess
             </Text>

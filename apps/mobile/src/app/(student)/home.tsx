@@ -13,7 +13,16 @@ import {
 } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 
-import { Button, Card, IconBadge, PressableScale, Screen, SectionHeader, type IconTone } from '@/components/ui';
+import {
+  Button,
+  Card,
+  IconBadge,
+  KineticText,
+  PressableScale,
+  Screen,
+  SectionHeader,
+  type IconTone,
+} from '@/components/ui';
 import { AccountPanel } from '@/features/auth/AccountPanel';
 import { useSession } from '@/features/auth/session';
 import { useBhawans } from '@/features/campus/queries';
@@ -78,7 +87,7 @@ export default function StudentHome() {
           {DAY_LABEL[today.dayKey]}
           {bhawan ? ` · ${bhawan.name}` : ''}
         </Text>
-        <Text className="font-headline text-headline-lg-mobile text-on-surface">What&apos;s cooking</Text>
+        <KineticText text="What's cooking" className="font-headline text-headline-lg-mobile text-on-surface" />
       </View>
 
       <OverrideBanner overrides={overrides.data} />
