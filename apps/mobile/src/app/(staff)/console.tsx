@@ -101,7 +101,7 @@ export default function StaffConsole() {
         </>
       ) : null}
 
-      {isMessSecretary || managed.isBhawanSecretary ? (
+      {isMessSecretary || managed.isBhawanSecretary || claims?.is_master_vendor ? (
         <ToolRow href="/complaints" title="Complaints routed to you" detail="Escalates after 48 h" icon={MessageSquareWarning} tone="error" />
       ) : null}
 

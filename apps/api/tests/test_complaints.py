@@ -30,6 +30,8 @@ CANTEEN_SECY = uuid.uuid4()  # Rajendra Bhawan Secretary
 ADOSW = uuid.uuid4()
 WARDEN = uuid.uuid4()  # Rajendra Mess Authority
 REVOKED_SECY = uuid.uuid4()  # JWT still says mess_secretary; DB row deleted
+MASTER_VENDOR = uuid.uuid4()  # phone in master_vendors
+REVOKED_MASTER = uuid.uuid4()  # JWT says master vendor; removed since
 
 S = ComplaintStatus
 
@@ -46,6 +48,7 @@ class InMemoryComplaintRepository:
             (WARDEN, AppRole.MESS_AUTHORITY, RAJENDRA),
         }
         self.global_roles = {(ADOSW, AppRole.ADOSW)}
+        self.master_vendors = {MASTER_VENDOR}
         self.complaints: dict[UUID, ComplaintOut] = {}
         self.events: list[dict[str, Any]] = []
         self.race = False  # simulate a concurrent change between read and write
@@ -61,6 +64,12 @@ class InMemoryComplaintRepository:
 
     async def has_role(self, user_id: UUID, role: AppRole) -> bool:
         return (user_id, role) in self.global_roles
+
+    async def is_master_vendor(self, user_id: UUID) -> bool:
+        return user_id in self.master_vendors
+
+    async def master_vendor_ids(self) -> list[UUID]:
+        return list(self.master_vendors)
 
     async def users_with_role(self, role: AppRole, bhawan_id: UUID | None) -> list[UUID]:
         if bhawan_id is None:
@@ -224,7 +233,7 @@ def test_transition_matrix(
         assert notifier.calls[0]["user_ids"] == [STUDENT]  # the other party
     elif actor == "complainant" and student_ok:
         assert response.status_code == 200
-        assert notifier.calls[0]["user_ids"] == [MESS_SECY]
+        assert notifier.calls[0]["user_ids"] == [MESS_SECY, MASTER_VENDOR]
     else:
         assert response.status_code in (403, 409)
         assert notifier.calls == []
@@ -383,7 +392,7 @@ def test_nudge_after_seven_days_notifies_handlers_high_priority(
     assert response.status_code == 200
     assert response.json()["nudge_count"] == 1
     call = notifier.calls[0]
-    assert call["user_ids"] == [CANTEEN_SECY]
+    assert call["user_ids"] == [CANTEEN_SECY, MASTER_VENDOR]
     assert call["priority"] == "high" and call["channel"] == "nudges"
     assert call["title"] == "Nudge: unresolved complaint (nudged 1 times)"
 
@@ -491,10 +500,67 @@ def test_escalation_runs_once_and_alerts_handlers_and_warden(
     assert first.json()["escalated"] == 2
     assert set(first.json()["complaint_ids"]) == {str(canteen.id), str(eatery.id)}
     audiences = {tuple(c["user_ids"]) for c in notifier.calls}
-    assert audiences == {(CANTEEN_SECY, WARDEN), (ADOSW,)}
+    assert audiences == {(CANTEEN_SECY, MASTER_VENDOR, WARDEN), (ADOSW, MASTER_VENDOR)}
     assert all(c["priority"] == "high" for c in notifier.calls)
     assert notifier.calls[0]["body"].endswith("has been unresolved for 48 h and is now escalated.")
 
     second = client.post("/internal/escalations/run", headers=SECRET)
     assert second.json()["escalated"] == 0
     assert len(notifier.calls) == 2  # running twice sends one notification set
+
+
+@pytest.mark.parametrize("domain", list(ComplaintDomain))
+def test_master_vendor_handles_every_domain(
+    client: TestClient,
+    repo: InMemoryComplaintRepository,
+    notifier: RecordingNotifier,
+    make_token: TokenFactory,
+    domain: ComplaintDomain,
+) -> None:
+    complaint = make_complaint(repo, S.OPEN, domain)
+    headers = bearer(
+        make_token(sub=MASTER_VENDOR, roles=["vendor"], is_master_vendor=True),
+    )
+    response = act(client, headers, complaint, to_status="in_progress", message="On it")
+    assert response.status_code == 200
+    assert notifier.calls[0]["user_ids"] == [STUDENT]
+
+
+def test_removed_master_vendor_loses_access(
+    client: TestClient, repo: InMemoryComplaintRepository, make_token: TokenFactory
+) -> None:
+    complaint = make_complaint(repo, S.OPEN)
+    headers = bearer(make_token(sub=REVOKED_MASTER, roles=["vendor"], is_master_vendor=True))
+    response = act(client, headers, complaint, to_status="in_progress", message="On it")
+    assert response.status_code == 403
+    assert code(response) == "FORBIDDEN"
+
+
+def test_plain_vendor_cannot_handle_complaints(
+    client: TestClient, repo: InMemoryComplaintRepository, make_token: TokenFactory
+) -> None:
+    complaint = make_complaint(repo, S.OPEN)
+    headers = bearer(make_token(sub=MASTER_VENDOR, roles=["vendor"]))  # claim absent
+    response = act(client, headers, complaint, to_status="in_progress", message="On it")
+    assert response.status_code == 403
+
+
+def test_long_standing_mess_complaint_alerts_secretary_and_bhawan_management(
+    client: TestClient, repo: InMemoryComplaintRepository, notifier: RecordingNotifier
+) -> None:
+    make_complaint(repo, S.OPEN, ComplaintDomain.MESS, timedelta(hours=49))
+    assert client.post("/internal/escalations/run", headers=SECRET).json()["escalated"] == 1
+    audiences = {tuple(c["user_ids"]) for c in notifier.calls}
+    assert audiences == {(MESS_SECY, MASTER_VENDOR, WARDEN)}
+
+
+def test_handler_cannot_nudge_even_their_own_complaint(
+    client: TestClient, repo: InMemoryComplaintRepository, make_token: TokenFactory
+) -> None:
+    complaint = make_complaint(
+        repo, S.OPEN, age=timedelta(days=8), created_by=MESS_SECY, bhawan_id=RAJENDRA
+    )
+    headers = token(make_token, MESS_SECY, "student", "mess_secretary")
+    response = client.post(f"/v1/complaints/{complaint.id}/nudge", headers=headers)
+    assert response.status_code == 403
+    assert code(response) == "HANDLER_CANNOT_NUDGE"

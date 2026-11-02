@@ -36,8 +36,16 @@ export function ComplaintQueue({
   const [filter, setFilter] = useState<Filter>(initialFilter);
   useComplaintsLive();
 
+  // Own complaints are left out of oversight lists, but not when they are routed to the viewer
+  // (a Mess Secretary who also filed one for their own Bhawan still has to act on it).
+  const routedToMe = (c: Complaint) =>
+    !!domains &&
+    domains.includes(c.domain) &&
+    (c.bhawan_id === null || (claims?.scope_bhawan_ids.includes(c.bhawan_id) ?? false));
   const scoped =
-    complaints.data?.filter((c) => c.created_by !== claims?.sub && (!domains || domains.includes(c.domain))) ?? [];
+    complaints.data?.filter(
+      (c) => (c.created_by !== claims?.sub || routedToMe(c)) && (!domains || domains.includes(c.domain)),
+    ) ?? [];
   const long = (c: Complaint) => (rules.data ? isLongStanding(c, rules.data, now) : false);
   const matches: Record<Filter, (c: Complaint) => boolean> = {
     active: (c) => c.status === 'open' || c.status === 'in_progress' || c.status === 'reopened',

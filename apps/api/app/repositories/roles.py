@@ -49,6 +49,29 @@ class SupabaseRoleChecks:
         res = await query.execute()
         return [UUID(row["user_id"]) for row in res.data]
 
+    async def is_master_vendor(self, user_id: UUID) -> bool:
+        """Live: the user's phone is in master_vendors (they handle every complaint)."""
+        res = await self._db.table("profiles").select("phone").eq("id", str(user_id)).execute()
+        phone = res.data[0].get("phone") if res.data else None
+        if not phone:
+            return False
+        phone = "+" + phone.lstrip("+")
+        found = await (
+            self._db.table("master_vendors").select("phone_e164").eq("phone_e164", phone).execute()
+        )
+        return bool(found.data)
+
+    async def master_vendor_ids(self) -> list[UUID]:
+        """Who to notify besides the routed handler: every signed-up master vendor."""
+        masters = await self._db.table("master_vendors").select("phone_e164").execute()
+        phones = [row["phone_e164"] for row in masters.data]
+        if not phones:
+            return []
+        # profiles.phone may be stored with or without the leading '+'.
+        variants = phones + [p.lstrip("+") for p in phones]
+        res = await self._db.table("profiles").select("id").in_("phone", variants).execute()
+        return [UUID(row["id"]) for row in res.data]
+
     async def vendor_owns_outlet(self, phone_e164: str, outlet_id: UUID) -> bool:
         res = await (
             self._db.table("whitelisted_vendors")

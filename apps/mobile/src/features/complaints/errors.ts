@@ -4,7 +4,8 @@ import { ApiError } from '@/lib/api';
 const COPY: Record<string, string> = {
   FORBIDDEN: "You can't act on this complaint.",
   ONLY_COMPLAINANT: 'Only the student who raised it can do that.',
-  ONLY_HANDLER: 'Only the assigned secretary or ADoSW can do that.',
+  HANDLER_CANNOT_NUDGE: 'Only students can nudge — you handle this complaint.',
+  ONLY_HANDLER: 'Only the assigned secretary, ADoSW or a master vendor can do that.',
   ILLEGAL_TRANSITION: 'This complaint has moved on — it has been refreshed.',
   COMPLAINT_STALE: 'Someone else just updated this complaint. It has been refreshed.',
   COMPLAINT_NOT_FOUND: 'This complaint no longer exists.',

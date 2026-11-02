@@ -1,4 +1,4 @@
-import { Building2, LogOut, Shield, Store, UtensilsCrossed } from 'lucide-react';
+import { Building2, LogOut, Shield, Store, UserCog, UtensilsCrossed } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router';
@@ -12,6 +12,7 @@ const NAV = [
   { to: '/vendors', label: 'Vendors', icon: Store },
   { to: '/hostels', label: 'Hostels', icon: Building2 },
   { to: '/eateries', label: 'Eateries', icon: UtensilsCrossed },
+  { to: '/roles', label: 'Roles', icon: UserCog },
   { to: '/admins', label: 'Admins', icon: Shield },
 ];
 

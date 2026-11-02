@@ -75,7 +75,11 @@ class ComplaintService:
         return complaint
 
     async def is_handler(self, user: CurrentUser, complaint: ComplaintOut) -> bool:
-        """JWT role first (cheap), then a live DB check so a removed secretary loses access."""
+        """JWT role first (cheap), then a live DB check so a removed secretary loses access.
+
+        Master vendors handle every complaint, whatever its domain."""
+        if user.is_master_vendor and await self._repo.is_master_vendor(user.id):
+            return True
         role = HANDLER_ROLE[complaint.domain]
         if not user.has_role(role):
             return False
@@ -84,7 +88,11 @@ class ComplaintService:
         return await self._repo.has_bhawan_role(user.id, role, complaint.bhawan_id)
 
     async def handler_ids(self, complaint: ComplaintOut) -> list[UUID]:
-        return await self._repo.users_with_role(HANDLER_ROLE[complaint.domain], complaint.bhawan_id)
+        routed = await self._repo.users_with_role(
+            HANDLER_ROLE[complaint.domain], complaint.bhawan_id
+        )
+        masters = await self._repo.master_vendor_ids()
+        return list(dict.fromkeys(routed + masters))
 
     async def escalation_audience(self, complaint: ComplaintOut) -> list[UUID]:
         """Handlers plus, for Bhawan complaints, the Bhawan's Warden office (Mess Authority)."""
@@ -116,7 +124,11 @@ class ComplaintService:
                 403, "ONLY_COMPLAINANT", "Only the student who raised it can confirm or reopen."
             )
         elif handler_ok:
-            raise ApiError(403, "ONLY_HANDLER", "Only the assigned secretary or ADoSW can do this.")
+            raise ApiError(
+                403,
+                "ONLY_HANDLER",
+                "Only the assigned secretary, ADoSW or a master vendor can do this.",
+            )
         else:
             raise ApiError(
                 409,
@@ -148,6 +160,8 @@ class ComplaintService:
         complaint = await self._get(complaint_id)
         if complaint.created_by != user.id:
             raise ApiError(403, "ONLY_COMPLAINANT", "Only the student who raised it can nudge.")
+        if await self.is_handler(user, complaint):
+            raise ApiError(403, "HANDLER_CANNOT_NUDGE", "Handlers can't nudge their own queue.")
         if complaint.status is S.RESOLVED:
             raise ApiError(409, "COMPLAINT_RESOLVED", "This complaint is already resolved.")
 

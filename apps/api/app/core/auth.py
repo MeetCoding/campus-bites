@@ -29,6 +29,7 @@ class CurrentUser(BaseModel):
     bhawan_id: UUID | None = None
     scope_bhawan_ids: frozenset[UUID] = frozenset()
     outlet_ids: frozenset[UUID] = frozenset()
+    is_master_vendor: bool = False
 
     def has_role(self, role: AppRole) -> bool:
         return role in self.roles
@@ -45,6 +46,7 @@ class CurrentUser(BaseModel):
             bhawan_id=claims.get("bhawan_id") or None,
             scope_bhawan_ids=frozenset(claims.get("scope_bhawan_ids") or []),
             outlet_ids=frozenset(claims.get("outlet_ids") or []),
+            is_master_vendor=claims.get("is_master_vendor") is True,
         )
 
 

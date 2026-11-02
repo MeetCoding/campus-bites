@@ -103,6 +103,7 @@ Every access token Supabase issues carries:
 | `onboarded` | First-login choice made: a Bhawan or "I don't live in a hostel" (`profiles.onboarded_at` set, migration `020`) | profile |
 | `scope_bhawan_ids[]` | Bhawans of all Bhawan-scoped role assignments | `role_assignments` |
 | `outlet_ids[]` | Outlets the vendor phone is whitelisted for | `whitelisted_vendors` |
+| `is_master_vendor` | The phone is a master vendor (handles every complaint, migration `022`); UI only | `master_vendors` |
 
 Claims are computed when a token is issued, so a change (new role, Bhawan chosen) reaches the token on the next refresh: automatically within the token lifetime (1 h by default), immediately after onboarding (the app calls `refreshSession()`), on "Refresh access" on the no-access screen, or on sign-out/in. **Claims drive UI only.** Every privileged write re-checks the database live (§3.4), so a removed role loses write access immediately even with an old token.
 
@@ -139,7 +140,7 @@ Templates: `apps/mobile/.env.example`, `apps/web/.env.example`, `apps/api/env.ex
 ## 4. Admin operations (runbook)
 
 All admin actions go through FastAPI (`/v1/admin/*`), which re-checks `admin` in the database on **every** call. Two front ends use it:
-- **Admin website** (`apps/web`, §4.6): Vendors (phones, their outlets, passcodes, master vendors, delete), Hostels and Eateries (add / rename / remove), Admins (by email).
+- **Admin website** (`apps/web`, §4.6): Vendors (phones, their outlets, passcodes, master vendors, delete), Hostels and Eateries (add / rename / remove), Roles (assign / remove Mess Secretary, Bhawan Secretary, Bhawan Administration = `mess_authority`, and ADoSW; the page doubles as the contact list per Bhawan), Admins (by email).
 - **App → `(admin)` area:** Whitelist, Roles, Bhawans and Campus eateries (incl. map pins).
 
 ### 4.1 Onboard a vendor (canteen owner / eatery staff)
@@ -222,7 +223,7 @@ components/                ui.tsx (Alexandria primitives) · Layout.tsx
 Tailwind 4 loads `tailwind.config.js`, which reuses `apps/mobile/src/theme/tokens.js` (colors, sizes, radii, spacing); fonts come from Google Fonts. Types come from `apps/mobile/src/lib/database.types.ts`.
 
 ### 5.3 Database (`supabase/`)
-Migrations `001`–`021` are the only way the schema changes (applied to the linked project, version = file prefix); `seed.sql` holds the roster; `tests/*.sql` are regression scripts run inside a rolled-back transaction (`auth_rls`, `mess`, `canteens`, `rebates`, `complaints`, `admin_campus`, `maps`, `admin_web`, `master_vendors`) plus the read-only `hardening` check (RLS everywhere, no anon grants, API-only tables unwritable, indexed FKs, definer functions pin `search_path`, private buckets, cron scheduled). After each migration: regenerate `database.types.ts`, run the security + performance advisors.
+Migrations `001`–`022` are the only way the schema changes (applied to the linked project, version = file prefix); `seed.sql` holds the roster; `tests/*.sql` are regression scripts run inside a rolled-back transaction (`auth_rls`, `mess`, `canteens`, `rebates`, `complaints`, `admin_campus`, `maps`, `admin_web`, `master_vendors`) plus the read-only `hardening` check (RLS everywhere, no anon grants, API-only tables unwritable, indexed FKs, definer functions pin `search_path`, private buckets, cron scheduled). After each migration: regenerate `database.types.ts`, run the security + performance advisors.
 
 ### 5.4 Adding a feature (scales the same way)
 1. Migration: table + RLS + explicit grants (+ helper/trigger) in one file; extend a `supabase/tests/*.sql` script.
@@ -263,7 +264,7 @@ App registers an Expo token per device (`push_tokens`, needs `eas init` + a deve
 
 ### 6.6 Complaints & accountability (migrations `011`–`013`)
 1. **Raise** (student, direct insert): outlet + category + title + description + ≤ 2 photos (compressed ≤ 1600 px → private `complaint-attachments/{uid}/…`). Column grants allow only those five fields; trigger `complaints_prepare` pins `status = open`, `created_by`, `opened_at` and **routes** by outlet type: mess → Mess Secretary of that Bhawan, hostel canteen → Bhawan Secretary, eatery → ADoSW (`domain`, `bhawan_id`, `assignee_role`). A "created" event is logged.
-2. **Who can read** (RLS): the complainant, the routed handler (`app.can_handle_complaint`, live), the Bhawan's Mess Authority (Warden office) and ADoSW (all). Photos follow the same rule through storage RLS.
+2. **Who can read** (RLS): the complainant, the routed handler (`app.can_handle_complaint`, live) **or any master vendor** (migration `022`: a master vendor can act on, and is pushed about, complaints of every domain; `app.is_master_vendor()`, API `is_master_vendor` live check), the Bhawan's Mess Authority (Warden office) and ADoSW (all). Photos follow the same rule through storage RLS.
 3. **State machine** — `POST /v1/complaints/{id}/transition` (FastAPI):
    - handler: `open | reopened → in_progress` (reply required), `in_progress → in_progress` ("Post update"), `in_progress → awaiting_confirmation` ("Mark fixed", optional proof photo);
    - complainant only: `awaiting_confirmation → resolved` ("Confirm resolved", final) or `→ reopened` ("Still unresolved").

@@ -114,6 +114,18 @@ campus-bites/
 - Use screen PNGs for layout intent, not pixel values.
 - **Motion**: the sign-in hero is the reference motion piece. Mobile uses Reanimated (`components/ui/motion.ts` `enterUp()` / `popIn()` springs; `Screen` staggers its sections in; `HeroCard` has drifting glows and a faint `AnimatedBrandSymbol` (`mark={false}` where the logo is already shown); screen and hero titles use `KineticText`, the meal label uses the calmer masked `RevealText`; also `KineticWordmark` / `CountUp`). Web uses `motion` (`motion/react`) under `<MotionConfig reducedMotion="user">`; `PageHeader` is a hero banner with `DriftingOrbs`, the animated logo and `KineticText` (`components/motion.tsx`). Every animation must respect the OS reduced-motion setting.
 
+## Code graph (graphify)
+A knowledge graph of the codebase (AST-extracted, no LLM; Python, TS/TSX and SQL) lives in `graphify-out/` (`graph.json`, `graph.html`, `GRAPH_REPORT.md`). **Before searching the code broadly, consult it**: read `graphify-out/GRAPH_REPORT.md` for hubs/communities, then query instead of grepping:
+```bash
+graphify query "how does a rebate transition work"   # BFS over the graph for a question
+graphify explain "RebateService"                      # a node and its neighbours
+graphify path "useSession()" "CurrentUser"            # shortest path between two nodes
+graphify affected "AppRole"                           # what a change would impact
+graphify god-nodes --top 10                           # most connected hubs
+graphify update .                                     # refresh after code changes (free, no LLM)
+```
+Installed with `uv tool install "graphifyy[sql]"`. The graph is stale if `GRAPH_REPORT.md`'s "Built from commit" differs from `git rev-parse HEAD` — run `graphify update .` after meaningful changes. `graphify-out/cache/` is git-ignored; the rest may be committed.
+
 ## Commands
 Run from the repo root unless noted. (Windows: use Git Bash or PowerShell; paths below are POSIX.)
 

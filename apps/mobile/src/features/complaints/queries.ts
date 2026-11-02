@@ -130,6 +130,7 @@ export function useIsHandler(complaint: Pick<Complaint, 'domain' | 'bhawan_id'> 
   const messSecretaryOf = useSecretaryBhawans('mess_secretary');
   const bhawanSecretaryOf = useSecretaryBhawans('bhawan_secretary');
   if (!complaint) return false;
+  if (claims?.is_master_vendor) return true;
   if (complaint.domain === 'campus_eatery') return claims?.roles.includes('adosw') ?? false;
   const scope = complaint.domain === 'mess' ? messSecretaryOf.data : bhawanSecretaryOf.data;
   return scope?.some((b) => b.id === complaint.bhawan_id) ?? false;

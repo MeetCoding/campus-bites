@@ -111,7 +111,7 @@ export default function ComplaintDetail() {
         ) : null}
       </Card>
 
-      {isOwner && rules.data ? (
+      {isOwner && !isHandler && rules.data ? (
         <View className="gap-space-xs">
           <NudgeButton complaint={c} rules={rules.data} />
           {c.nudge_count === 0 && c.status !== 'resolved' && c.status !== 'awaiting_confirmation' ? (

@@ -14,6 +14,8 @@ export type AppClaims = {
   onboarded: boolean;
   scope_bhawan_ids: string[];
   outlet_ids: string[];
+  /** Phone is in master_vendors: handles every complaint (022). */
+  is_master_vendor: boolean;
 };
 
 function base64UrlDecode(segment: string): string {
@@ -49,5 +51,6 @@ export function decodeClaims(accessToken: string): AppClaims {
     onboarded: payload.onboarded === true,
     scope_bhawan_ids: stringArray(payload.scope_bhawan_ids),
     outlet_ids: stringArray(payload.outlet_ids),
+    is_master_vendor: payload.is_master_vendor === true,
   };
 }
