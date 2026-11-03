@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
 import { Pressable, type PressableProps } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { impactTap, selectionTap } from '@/lib/haptics';
 
-const PRESSED_SCALE = 0.97;
-const SPRING = { damping: 18, stiffness: 320, mass: 0.6 };
+const PRESSED_SCALE = 0.98;
+const PRESS_MS = 80;
 
 type PressableScaleProps = Omit<PressableProps, 'children'> & {
   children: ReactNode;
@@ -16,7 +16,7 @@ type PressableScaleProps = Omit<PressableProps, 'children'> & {
 };
 
 /**
- * Pressable whose content springs down to 97 % while held, with a haptic tick on press.
+ * Pressable whose content dips to 98 % while held, with a haptic tick on press.
  * Forwards every Pressable prop, so it works as an expo-router `<Link asChild>` child.
  */
 export function PressableScale({ children, haptic = 'impact', onPress, onPressIn, onPressOut, ...rest }: PressableScaleProps) {
@@ -27,11 +27,11 @@ export function PressableScale({ children, haptic = 'impact', onPress, onPressIn
     <Pressable
       {...rest}
       onPressIn={(event) => {
-        scale.set(withSpring(PRESSED_SCALE, SPRING));
+        scale.set(withTiming(PRESSED_SCALE, { duration: PRESS_MS }));
         onPressIn?.(event);
       }}
       onPressOut={(event) => {
-        scale.set(withSpring(1, SPRING));
+        scale.set(withTiming(1, { duration: PRESS_MS }));
         onPressOut?.(event);
       }}
       onPress={(event) => {

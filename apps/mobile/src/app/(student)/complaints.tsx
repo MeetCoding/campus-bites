@@ -1,6 +1,6 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
 import { Button, Card, CountUp, HeroCard, Pill, Screen, Segmented } from '@/components/ui';
 import { useSession } from '@/features/auth/session';
@@ -13,6 +13,7 @@ import {
   useComplaintsLive,
   useMyComplaints,
 } from '@/features/complaints/queries';
+import { SkeletonList } from '@/components/ui/Skeleton';
 
 type Tab = 'mine' | 'board';
 const DOMAINS: { value: ComplaintDomain; label: string }[] = [
@@ -49,7 +50,7 @@ function MyComplaints() {
   const mine = useMyComplaints(claims?.sub);
   const rules = useComplaintRules();
 
-  if (mine.isPending) return <ActivityIndicator />;
+  if (mine.isPending) return <SkeletonList />;
   if (mine.isError) return <Text className="font-body text-body-md text-error">{mine.error.message}</Text>;
   if (mine.data.length === 0) {
     return (
@@ -108,7 +109,7 @@ function IssueBoard() {
       </HeroCard>
 
       {board.isPending ? (
-        <ActivityIndicator />
+        <SkeletonList />
       ) : board.isError ? (
         <Text className="font-body text-body-md text-error">{board.error.message}</Text>
       ) : rows.length === 0 ? (

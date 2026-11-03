@@ -14,12 +14,12 @@ const BITE_PATHS = [
 
 type Tone = 'color' | 'onDark';
 
-const LOGO_SPRING: Transition = { type: 'spring', damping: 11, stiffness: 120, mass: 0.9 };
+const LOGO_SPRING: Transition = { type: 'spring', damping: 18, stiffness: 260, mass: 0.7 };
 
 /**
  * The Campus Bites symbol. `onDark` is the app-icon colouring: timberwolf "C", sage bites.
- * `animated`: the "C" spins and springs in, the bite marks shoot out of its mouth, then they
- * give a small "chomp" every few seconds (MotionConfig turns this off for reduced motion).
+ * `animated`: a quick entrance (the "C" turns in, the bites slide out), then it stays still
+ * (MotionConfig turns even that off for reduced motion).
  */
 export function BrandSymbol({
   className,
@@ -34,7 +34,7 @@ export function BrandSymbol({
   return (
     <svg viewBox="40 38 262 216" className={cn('h-9 w-auto overflow-visible', className)} role="img" aria-label="Campus Bites logo">
       <motion.g
-        initial={animated ? { scale: 0.4, rotate: -120, opacity: 0 } : false}
+        initial={animated ? { scale: 0.7, rotate: -45, opacity: 0 } : false}
         animate={{ scale: 1, rotate: 0, opacity: 1 }}
         transition={LOGO_SPRING}>
         <path className={onDark ? 'fill-background' : 'fill-primary'} d={C_PATH} />
@@ -44,22 +44,8 @@ export function BrandSymbol({
         <motion.g
           key={d}
           initial={animated ? { x: -46, opacity: 0 } : false}
-          animate={animated ? { x: [-46, 0, 0, 10, 0], opacity: 1 } : undefined}
-          transition={
-            animated
-              ? {
-                  x: {
-                    duration: 3.6,
-                    times: [0, 0.14, 0.78, 0.84, 1],
-                    ease: ['backOut', 'linear', 'easeOut', 'backOut'],
-                    delay: 0.38 + i * 0.12,
-                    repeat: Infinity,
-                    repeatDelay: 0,
-                  },
-                  opacity: { duration: 0.3, delay: 0.38 + i * 0.12 },
-                }
-              : undefined
-          }>
+          animate={animated ? { x: 0, opacity: 1 } : undefined}
+          transition={animated ? { ...LOGO_SPRING, delay: 0.1 + i * 0.06 } : undefined}>
           <path className={onDark ? 'fill-tertiary-container' : 'fill-accent'} d={d} />
         </motion.g>
       ))}
@@ -76,7 +62,7 @@ const LETTERS = [
  * "CampusBites" wordmark in Nunito Sans ExtraBold, "Bites" in fern. `kinetic` springs the
  * letters up one after another.
  */
-export function Wordmark({ className, kinetic = false, delay = 0.25 }: { className?: string; kinetic?: boolean; delay?: number }) {
+export function Wordmark({ className, kinetic = false, delay = 0.05 }: { className?: string; kinetic?: boolean; delay?: number }) {
   if (!kinetic) {
     return (
       <span className={cn('font-headline font-extrabold tracking-tight text-primary', className)}>
@@ -91,9 +77,9 @@ export function Wordmark({ className, kinetic = false, delay = 0.25 }: { classNa
           key={i}
           aria-hidden
           className={cn('inline-block', accent && 'text-accent')}
-          initial={{ y: '0.6em', opacity: 0, rotate: 8 }}
-          animate={{ y: 0, opacity: 1, rotate: 0 }}
-          transition={{ type: 'spring', damping: 12, stiffness: 180, delay: delay + i * 0.038 }}>
+          initial={{ y: '0.3em', opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.2, ease: 'easeOut', delay: delay + i * 0.018 }}>
           {ch}
         </motion.span>
       ))}

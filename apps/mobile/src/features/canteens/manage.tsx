@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Switch, Text, View } from 'react-native';
+import { Switch, Text, View } from 'react-native';
 
 import { Button, Card, Pill, TextField } from '@/components/ui';
 import { OpenStatusPill } from '@/features/canteens/components';
@@ -32,6 +32,7 @@ import {
 } from '@/lib/time';
 import { useNow } from '@/lib/useNow';
 import { colors } from '@/theme/tokens';
+import { SkeletonList } from '@/components/ui/Skeleton';
 
 const switchColors = { true: colors.primary, false: colors['surface-dim'] };
 
@@ -41,7 +42,7 @@ export function OpenToggleCard({ outletId }: { outletId: string }) {
   const setOpen = useSetOpen();
   const now = useNow();
 
-  if (!status.data) return <ActivityIndicator />;
+  if (!status.data) return <SkeletonList />;
   // The switch reflects what students see (schedule or toggle), not the raw stored flag.
   const live = describeLiveStatus(status.data, now).tone !== 'closed';
 
@@ -74,7 +75,7 @@ export function OpenToggleCard({ outletId }: { outletId: string }) {
 // ─── Regular hours (outlet_shifts, direct RLS write) ─────────────────────────
 export function ShiftEditor({ outletId }: { outletId: string }) {
   const shift = useOutletShift(outletId);
-  if (shift.isPending) return <ActivityIndicator />;
+  if (shift.isPending) return <SkeletonList />;
   // Re-keyed so the form starts from the stored hours after every save.
   return <ShiftForm key={shift.data?.updated_at ?? 'none'} outletId={outletId} shift={shift.data ?? null} />;
 }
@@ -451,7 +452,7 @@ export function PinEditor({ outletId }: { outletId: string }) {
   const [draft, setDraft] = useState<LatLng | null>(null);
   const value = draft ?? saved;
 
-  if (status.isPending) return <ActivityIndicator />;
+  if (status.isPending) return <SkeletonList />;
   return (
     <Card>
       <PinPicker

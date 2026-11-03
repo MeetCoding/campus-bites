@@ -117,10 +117,10 @@ const borderRadius = {
   sm: '2px',
   DEFAULT: '2px',
   lg: '4px',
-  xl: '8px',
-  '2xl': '12px',
-  '3xl': '20px',
-  '4xl': '28px',
+  xl: '6px',
+  '2xl': '10px',
+  '3xl': '14px',
+  '4xl': '20px',
   full: '9999px',
 };
 

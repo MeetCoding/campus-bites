@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Card, Screen, SectionHeader } from '@/components/ui';
 import { useLiveUpdates } from '@/features/canteens/queries';
@@ -13,6 +13,7 @@ import {
   ShiftEditor,
 } from '@/features/canteens/manage';
 import { useManagedOutlets } from '@/features/canteens/useManagedOutlets';
+import { SkeletonList } from '@/components/ui/Skeleton';
 
 /** Vendor / Bhawan Secretary console for one canteen or eatery (TASKS M4.7, M4.8). */
 export default function OutletConsole() {
@@ -23,7 +24,7 @@ export default function OutletConsole() {
   if (managed.isPending) {
     return (
       <Screen>
-        <ActivityIndicator />
+        <SkeletonList />
       </Screen>
     );
   }

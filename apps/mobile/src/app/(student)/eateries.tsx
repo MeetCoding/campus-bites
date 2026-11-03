@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { Link, type Href } from 'expo-router';
 import { ChevronRight, Coffee, Map as MapIcon, MapPin, Moon, Search, Sun, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 
 import { Card, IconBadge, PressableScale, Screen, Segmented } from '@/components/ui';
 import { useSession } from '@/features/auth/session';
@@ -18,6 +18,7 @@ import {
 import { useMenuPhotos } from '@/features/mess/queries';
 import { noticeboardUrl } from '@/lib/images';
 import { colors } from '@/theme/tokens';
+import { SkeletonList } from '@/components/ui/Skeleton';
 
 type Tab = 'bhawan' | 'eateries';
 
@@ -65,7 +66,7 @@ export default function EateriesDirectory() {
       {searching ? (
         <View className="gap-space-sm">
           {search.isPending ? (
-            <ActivityIndicator />
+            <SkeletonList />
           ) : search.isError ? (
             <Text className="font-body text-body-md text-error">{search.error.message}</Text>
           ) : search.data.length === 0 ? (
@@ -110,7 +111,7 @@ export default function EateriesDirectory() {
             </Link>
           ) : null}
           {status.isPending ? (
-            <ActivityIndicator />
+            <SkeletonList />
           ) : status.isError ? (
             <Text className="font-body text-body-md text-error">{status.error.message}</Text>
           ) : (

@@ -1,7 +1,7 @@
 import { Link } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { Card, KineticText, Pill, Screen, SectionHeader } from '@/components/ui';
 import { AccountPanel } from '@/features/auth/AccountPanel';
@@ -12,6 +12,7 @@ import { REBATE_STATUS_LABEL, RebateStatusBadge } from '@/features/rebates/compo
 import { useRebateQueue, type RebateStatus } from '@/features/rebates/queries';
 import { formatDateRange, timeAgo } from '@/lib/time';
 import { colors } from '@/theme/tokens';
+import { SkeletonList } from '@/components/ui/Skeleton';
 
 type Filter = RebateStatus | 'all';
 const FILTERS: Filter[] = ['pending_verification', 'biometric_cross_checked', 'approved', 'rejected', 'all'];
@@ -89,7 +90,7 @@ function RebateQueue() {
       ) : null}
 
       {queue.isPending ? (
-        <ActivityIndicator />
+        <SkeletonList />
       ) : queue.isError ? (
         <Text className="font-body text-body-md text-error">{queue.error.message}</Text>
       ) : rows.length === 0 ? (

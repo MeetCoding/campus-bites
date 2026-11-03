@@ -35,6 +35,7 @@ import { noticeboardUrl } from '@/lib/images';
 import { currentMeal, formatDateRange, formatDuration, formatTime, formatWindow, istNow, timeAgo } from '@/lib/time';
 import { useNow } from '@/lib/useNow';
 import { colors } from '@/theme/tokens';
+import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
 
 export const MEAL_ICON: Record<MealSlot, LucideIcon> = {
   breakfast: Sunrise,
@@ -202,9 +203,7 @@ export function NoticeboardCard({
 
   if (photos.isPending) {
     return (
-      <Card>
-        <ActivityIndicator />
-      </Card>
+      <SkeletonCard />
     );
   }
   if (!current) {
@@ -332,7 +331,7 @@ export function MenuPhotoStackEditor({ outletId, kind = 'menu' }: { outletId: st
   const [confirming, setConfirming] = useState<string | null>(null);
   const [zoomed, setZoomed] = useState<MenuPhoto | null>(null);
 
-  if (photos.isPending) return <ActivityIndicator />;
+  if (photos.isPending) return <Skeleton className="h-64 w-full" />;
   const list = photos.data ?? [];
 
   return (

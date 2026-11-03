@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
 import { Check, Ticket, X, ZoomIn } from 'lucide-react-native';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Badge, Button, Card, IconBadge } from '@/components/ui';
 import { ZoomableImage } from '@/components/ui/ZoomableImage';
@@ -10,6 +10,7 @@ import { useDocumentUrl, type Rebate, type RebateEvent, type RebateStatus } from
 import { cn } from '@/lib/cn';
 import { formatDateRange, timeAgo } from '@/lib/time';
 import { colors } from '@/theme/tokens';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 export const REBATE_STATUS_LABEL: Record<RebateStatus, string> = {
   pending_verification: 'Pending verification',
@@ -94,7 +95,7 @@ export function RebateDocument({ path }: { path: string }) {
   const [zoomed, setZoomed] = useState(false);
   const isPdf = path.endsWith('.pdf');
 
-  if (url.isPending) return <ActivityIndicator />;
+  if (url.isPending) return <Skeleton className="h-40 w-full" />;
   if (url.isError) return <Text className="font-body text-body-sm text-error">{url.error.message}</Text>;
 
   if (isPdf) {

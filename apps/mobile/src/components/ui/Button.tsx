@@ -50,7 +50,7 @@ export function Button({
       className={className}>
       <View
         className={cn(
-          'overflow-hidden rounded-full',
+          'overflow-hidden rounded-2xl',
           variant === 'secondary' && 'border border-card-edge bg-surface-container-lowest',
           inactive && 'opacity-50',
         )}>

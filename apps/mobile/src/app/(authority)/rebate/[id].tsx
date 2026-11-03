@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button, Card, Screen, SectionHeader, TextField } from '@/components/ui';
 import { useBhawans } from '@/features/campus/queries';
@@ -8,6 +8,7 @@ import { RebateDocument, RebateStatusBadge, RebateTimeline } from '@/features/re
 import { rebateErrorMessage } from '@/features/rebates/errors';
 import { useRebate, useTransitionRebate, type RebateStatus } from '@/features/rebates/queries';
 import { formatDateRange, timeAgo } from '@/lib/time';
+import { SkeletonList } from '@/components/ui/Skeleton';
 
 /** Rebate detail: cross-check against biometric records, then approve or reject (TASKS M5.5). */
 export default function RebateReview() {
@@ -21,7 +22,7 @@ export default function RebateReview() {
   if (rebate.isPending) {
     return (
       <Screen>
-        <ActivityIndicator />
+        <SkeletonList />
       </Screen>
     );
   }

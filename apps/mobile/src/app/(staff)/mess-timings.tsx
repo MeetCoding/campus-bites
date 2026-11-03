@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Switch, Text, View } from 'react-native';
+import { Switch, Text, View } from 'react-native';
 
 import { Button, Card, Pill, Screen, SectionHeader, TextField } from '@/components/ui';
 import { describeOverride, MealHero } from '@/features/mess/components';
@@ -24,6 +24,7 @@ import {
   type DatePreset,
 } from '@/lib/time';
 import { colors } from '@/theme/tokens';
+import { SkeletonList } from '@/components/ui/Skeleton';
 
 export default function MessTimingsScreen() {
   return (
@@ -92,7 +93,7 @@ function TimingsEditor({ bhawanId, bhawanName }: { bhawanId: string; bhawanName:
 
       <SectionHeader title="Live overrides" />
       {overrides.isPending ? (
-        <ActivityIndicator />
+        <SkeletonList />
       ) : !overrides.data?.length ? (
         <Text className="font-body text-body-md text-on-surface-variant">None — the standard schedule applies.</Text>
       ) : (

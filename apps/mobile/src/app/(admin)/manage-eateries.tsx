@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button, Card, Screen, SectionHeader, TextField } from '@/components/ui';
 import {
@@ -11,6 +11,7 @@ import {
 } from '@/features/admin/queries';
 import type { LatLng } from '@/features/map/campus';
 import { PinPicker } from '@/features/map/components';
+import { SkeletonList } from '@/components/ui/Skeleton';
 
 /** Admin master list of campus eateries (PRD §2 System Admin, Module C). */
 export default function EateriesAdminScreen() {
@@ -56,7 +57,7 @@ export default function EateriesAdminScreen() {
 
       <SectionHeader title={`Eateries${eateries.data ? ` · ${eateries.data.length}` : ''}`} />
       {eateries.isPending ? (
-        <ActivityIndicator />
+        <SkeletonList />
       ) : eateries.isError ? (
         <Text className="font-body text-body-md text-error">{eateries.error.message}</Text>
       ) : eateries.data.length === 0 ? (

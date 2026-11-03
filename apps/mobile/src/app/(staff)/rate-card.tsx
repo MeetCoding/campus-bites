@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button, Card, Screen, SectionHeader, TextField } from '@/components/ui';
 import { FixedRateCard } from '@/features/canteens/components';
@@ -11,6 +11,7 @@ import {
 } from '@/features/canteens/queries';
 import { SecretaryScope } from '@/features/mess/SecretaryScope';
 import { formatPaise, parseRupeesToPaise } from '@/lib/money';
+import { SkeletonList } from '@/components/ui/Skeleton';
 
 /** Bhawan Secretary: Institute Fixed-Rate Card editor (TASKS M4.8). Vendors cannot write it (RLS). */
 export default function RateCardScreen() {
@@ -93,7 +94,7 @@ function RateCardEditor({ bhawanId }: { bhawanId: string }) {
 
       <SectionHeader title="Published items" />
       {rates.isPending ? (
-        <ActivityIndicator />
+        <SkeletonList />
       ) : (
         rates.data?.map((item) => (
           <Card key={item.id} className="gap-space-xs">

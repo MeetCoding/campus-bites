@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Text } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 
-const DURATION_MS = 900;
+const DURATION_MS = 350;
 
 /** A number that rolls from its previous value to `value` (ease-out cubic). */
 export function CountUp({ value, suffix = '', className }: { value: number; suffix?: string; className?: string }) {

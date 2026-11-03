@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Card, Pill } from '@/components/ui';
 import { useMessManagerBhawans, useSecretaryBhawans, type SecretaryRole } from '@/features/mess/queries';
+import { SkeletonList } from '@/components/ui/Skeleton';
 
 type Bhawan = { id: string; name: string };
 
@@ -32,7 +33,7 @@ export function SecretaryScope({
   const bhawans = role === 'mess_manager' ? managerOf : secretaryOf;
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  if (bhawans.isPending) return <ActivityIndicator />;
+  if (bhawans.isPending) return <SkeletonList />;
   if (bhawans.error || !bhawans.data) {
     return <Text className="font-body text-body-md text-error">{bhawans.error?.message ?? 'Could not load.'}</Text>;
   }

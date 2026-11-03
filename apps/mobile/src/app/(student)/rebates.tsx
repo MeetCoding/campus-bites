@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { CalendarX2, FileText, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import {
@@ -28,6 +28,7 @@ import {
 } from '@/features/rebates/queries';
 import { addDays, formatDateRange, isValidDateInput, istNow } from '@/lib/time';
 import { colors } from '@/theme/tokens';
+import { SkeletonList } from '@/components/ui/Skeleton';
 
 /** Student mess rebate form + history with status timeline (TASKS M5.4). */
 export default function RebatesScreen() {
@@ -68,7 +69,7 @@ export default function RebatesScreen() {
 
       <SectionHeader title="Your passes" />
       {rebates.isPending ? (
-        <ActivityIndicator />
+        <SkeletonList />
       ) : rebates.isError ? (
         <Text className="font-body text-body-md text-error">{rebates.error.message}</Text>
       ) : rebates.data.length === 0 ? (

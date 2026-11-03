@@ -1,7 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
 import { X } from 'lucide-react-native';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Button, Card, Screen, SectionHeader, TextField } from '@/components/ui';
 import { useSession } from '@/features/auth/session';
@@ -34,6 +34,7 @@ import { pickImage, type PickedImage } from '@/lib/images';
 import { timeAgo } from '@/lib/time';
 import { useNow } from '@/lib/useNow';
 import { colors } from '@/theme/tokens';
+import { SkeletonList } from '@/components/ui/Skeleton';
 
 /**
  * Complaint detail per stitch-reference/accountability_complaint_hub (TASKS M6.9, M6.11):
@@ -52,7 +53,7 @@ export default function ComplaintDetail() {
   if (complaint.isPending) {
     return (
       <Screen>
-        <ActivityIndicator />
+        <SkeletonList />
       </Screen>
     );
   }

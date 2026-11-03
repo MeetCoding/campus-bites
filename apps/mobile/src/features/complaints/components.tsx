@@ -13,7 +13,7 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Badge, Button, Card, IconBadge, PressableScale } from '@/components/ui';
 import { ZoomableImage } from '@/components/ui/ZoomableImage';
@@ -36,6 +36,7 @@ import { ImpactFeedbackStyle, impactTap, successTap } from '@/lib/haptics';
 import { formatDuration, timeAgo } from '@/lib/time';
 import { useNow } from '@/lib/useNow';
 import { colors } from '@/theme/tokens';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 const STATUS_TONE = {
   open: 'warning',
@@ -149,7 +150,7 @@ export function ComplaintTimeline({ complaint }: { complaint: Complaint }) {
 export function AttachmentThumb({ path, label }: { path: string; label: string }) {
   const url = useAttachmentUrl(path);
   const [zoomed, setZoomed] = useState(false);
-  if (url.isPending) return <ActivityIndicator />;
+  if (url.isPending) return <Skeleton className="h-40 w-full" />;
   if (url.isError) return <Text className="font-body text-body-sm text-error">{url.error.message}</Text>;
   return (
     <>

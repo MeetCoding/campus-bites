@@ -1,22 +1,19 @@
-import { FadeInDown, ReduceMotion, ZoomIn } from 'react-native-reanimated';
+import { Easing, FadeIn, FadeInDown, ReduceMotion } from 'react-native-reanimated';
 
-/** Shared spring for entrances: quick settle, a touch of overshoot. */
-export const ENTER_SPRING = { damping: 18, stiffness: 170, mass: 0.8 };
+const EASE_OUT = Easing.out(Easing.cubic);
 
-/** Staggered fade-up entrance; later items cap at the 8th slot so long lists don't lag. */
+/** Fast fade-up entrance (≈200 ms). The stagger caps at the 5th slot so long lists never lag. */
 export function enterUp(index: number, baseDelay = 0) {
-  return FadeInDown.delay(baseDelay + Math.min(index, 8) * 60)
-    .springify()
-    .damping(ENTER_SPRING.damping)
-    .stiffness(ENTER_SPRING.stiffness)
-    .mass(ENTER_SPRING.mass)
+  return FadeInDown.delay(baseDelay + Math.min(index, 5) * 30)
+    .duration(200)
+    .easing(EASE_OUT)
     .reduceMotion(ReduceMotion.System);
 }
 
-/** Springy zoom-in (the sign-in hero's icon row); stagger with `index`. */
+/** Quick fade for icons and small elements; stagger with `index`. */
 export function popIn(index: number, baseDelay = 0) {
-  return ZoomIn.delay(baseDelay + Math.min(index, 8) * 90)
-    .springify()
-    .damping(10)
+  return FadeIn.delay(baseDelay + Math.min(index, 5) * 40)
+    .duration(180)
+    .easing(EASE_OUT)
     .reduceMotion(ReduceMotion.System);
 }

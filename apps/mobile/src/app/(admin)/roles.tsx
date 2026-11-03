@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Badge, Button, Card, Pill, Screen, SectionHeader, TextField } from '@/components/ui';
 import {
@@ -12,6 +12,7 @@ import {
 import { ROLE_LABEL } from '@/features/auth/modes';
 import { useSession } from '@/features/auth/session';
 import { useBhawans } from '@/features/campus/queries';
+import { SkeletonList } from '@/components/ui/Skeleton';
 
 const ASSIGNABLE: AssignableRole[] = [
   'mess_secretary',
@@ -86,7 +87,7 @@ export default function RolesScreen() {
 
       <SectionHeader title="Current roles" />
       {assignments.isPending ? (
-        <ActivityIndicator />
+        <SkeletonList />
       ) : assignments.isError ? (
         <Text className="font-body text-body-md text-error">{assignments.error.message}</Text>
       ) : (

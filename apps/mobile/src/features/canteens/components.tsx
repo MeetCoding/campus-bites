@@ -14,6 +14,7 @@ import { formatPaise } from '@/lib/money';
 import { formatDateRange } from '@/lib/time';
 import { useNow } from '@/lib/useNow';
 import { colors } from '@/theme/tokens';
+import { SkeletonList } from '@/components/ui/Skeleton';
 
 // ─── M4.4 OpenStatusPill ─────────────────────────────────────────────────────
 const toneClass: Record<StatusTone, { container: string; text: string }> = {
@@ -97,7 +98,7 @@ export function PriceChip({ paise, official = false }: { paise: number; official
 export function FixedRateCard({ bhawanId }: { bhawanId: string }) {
   const rates = useFixedRates(bhawanId);
 
-  if (rates.isPending) return <ActivityIndicator />;
+  if (rates.isPending) return <SkeletonList />;
   if (rates.isError) return <Text className="font-body text-body-md text-error">{rates.error.message}</Text>;
 
   const refs = [...new Set(rates.data.map((r) => r.circular_ref).filter((r): r is string => !!r))];

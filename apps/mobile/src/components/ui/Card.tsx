@@ -5,7 +5,7 @@ import { cn } from '@/lib/cn';
 import { colors } from '@/theme/tokens';
 
 // RN `boxShadow` (new architecture) renders the same on Android, iOS and web.
-const PANEL_SHADOW = { boxShadow: `0 4px 14px -6px ${colors['card-shadow']}` };
+const PANEL_SHADOW = { boxShadow: `0 1px 2px ${colors['card-shadow']}, 0 6px 16px -10px ${colors['card-shadow']}` };
 
 type CardTone = 'lowest' | 'low' | 'container';
 
@@ -32,7 +32,7 @@ export function Card({
 }) {
   return (
     <View
-      className={cn('rounded-3xl', padded && 'p-space-md', toneClass[tone], className)}
+      className={cn('rounded-2xl', padded && 'p-space-md', toneClass[tone], className)}
       style={tone === 'lowest' ? PANEL_SHADOW : undefined}>
       {children}
     </View>

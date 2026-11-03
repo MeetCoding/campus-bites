@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button, Card, Screen, SectionHeader, TextField } from '@/components/ui';
 import {
@@ -9,6 +9,7 @@ import {
   useUpdateBhawan,
   type AdminBhawan,
 } from '@/features/admin/queries';
+import { SkeletonList } from '@/components/ui/Skeleton';
 
 /** Admin master list of Bhawans (PRD §2 System Admin). Each Bhawan comes with its Mess, Day Canteen
  *  and Night Canteen; renaming renames them too. */
@@ -40,7 +41,7 @@ export default function BhawansScreen() {
 
       <SectionHeader title={`Bhawans${bhawans.data ? ` · ${bhawans.data.length}` : ''}`} />
       {bhawans.isPending ? (
-        <ActivityIndicator />
+        <SkeletonList />
       ) : bhawans.isError ? (
         <Text className="font-body text-body-md text-error">{bhawans.error.message}</Text>
       ) : (

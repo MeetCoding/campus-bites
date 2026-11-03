@@ -1,12 +1,13 @@
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui';
 import { useSession } from '@/features/auth/session';
 import { useBhawans } from '@/features/campus/queries';
 import { cn } from '@/lib/cn';
 import { supabase } from '@/lib/supabase';
+import { SkeletonList } from '@/components/ui/Skeleton';
 
 const NO_HOSTEL = 'none';
 
@@ -43,7 +44,7 @@ export function BhawanPicker({ allowNoHostel = false, onDone }: { allowNoHostel?
   return (
     <View className="gap-space-md">
       {bhawans.isPending ? (
-        <ActivityIndicator />
+        <SkeletonList />
       ) : bhawans.isError ? (
         <Text className="font-body text-body-md text-error">{bhawans.error.message}</Text>
       ) : (

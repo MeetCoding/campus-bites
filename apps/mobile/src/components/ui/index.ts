@@ -11,6 +11,7 @@ export { Pill } from './Pill';
 export { PressableScale } from './PressableScale';
 export { Screen } from './Screen';
 export { SectionHeader } from './SectionHeader';
+export { Skeleton, SkeletonCard, SkeletonList } from './Skeleton';
 export { Segmented } from './Segmented';
 export { TextField } from './TextField';
 export { enterUp, popIn } from './motion';

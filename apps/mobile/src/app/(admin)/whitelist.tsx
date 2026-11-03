@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Button, Card, Pill, Screen, SectionHeader, TextField } from '@/components/ui';
 import {
@@ -10,6 +10,7 @@ import {
 } from '@/features/admin/queries';
 import { useOutlets } from '@/features/campus/queries';
 import { toIndianE164 } from '@/lib/auth';
+import { SkeletonList } from '@/components/ui/Skeleton';
 
 export default function WhitelistScreen() {
   const whitelist = useWhitelist();
@@ -69,7 +70,7 @@ export default function WhitelistScreen() {
         <View className="gap-space-sm">
           <Text className="font-label text-label-md text-on-surface-variant">Outlet</Text>
           {outlets.isPending ? (
-            <ActivityIndicator />
+            <SkeletonList />
           ) : (
             <View className="flex-row flex-wrap gap-space-xs">
               {vendorOutlets.map((o) => (
@@ -89,7 +90,7 @@ export default function WhitelistScreen() {
 
       <SectionHeader title="Whitelisted numbers" />
       {whitelist.isPending ? (
-        <ActivityIndicator />
+        <SkeletonList />
       ) : whitelist.isError ? (
         <Text className="font-body text-body-md text-error">{whitelist.error.message}</Text>
       ) : byPhone.length === 0 ? (

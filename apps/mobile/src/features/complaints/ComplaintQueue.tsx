@@ -1,12 +1,15 @@
 import { useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
-import { Card, Pill, SectionHeader } from '@/components/ui';
+import { Button, Card, Pill, SectionHeader } from '@/components/ui';
 import { useSession } from '@/features/auth/session';
 import { ComplaintCard } from '@/features/complaints/components';
 import { isLongStanding, type ComplaintDomain } from '@/features/complaints/logic';
 import { useComplaintRules, useComplaintsLive, useVisibleComplaints, type Complaint } from '@/features/complaints/queries';
 import { useNow } from '@/lib/useNow';
+import { SkeletonList } from '@/components/ui/Skeleton';
+
+const PAGE_SIZE = 20;
 
 type Filter = 'active' | 'long' | 'awaiting' | 'resolved';
 const FILTER_LABEL: Record<Filter, string> = {
@@ -34,6 +37,7 @@ export function ComplaintQueue({
   const rules = useComplaintRules();
   const now = useNow();
   const [filter, setFilter] = useState<Filter>(initialFilter);
+  const [visible, setVisible] = useState(PAGE_SIZE);
   useComplaintsLive();
 
   // Own complaints are left out of oversight lists, but not when they are routed to the viewer
@@ -64,12 +68,15 @@ export function ComplaintQueue({
             key={f}
             label={`${FILTER_LABEL[f]} (${scoped.filter(matches[f]).length})`}
             selected={f === filter}
-            onPress={() => setFilter(f)}
+            onPress={() => {
+              setFilter(f);
+              setVisible(PAGE_SIZE);
+            }}
           />
         ))}
       </ScrollView>
       {complaints.isPending ? (
-        <ActivityIndicator />
+        <SkeletonList />
       ) : complaints.isError ? (
         <Text className="font-body text-body-md text-error">{complaints.error.message}</Text>
       ) : rows.length === 0 ? (
@@ -77,7 +84,18 @@ export function ComplaintQueue({
           <Text className="font-body text-body-md text-on-surface-variant">Nothing here.</Text>
         </Card>
       ) : (
-        rows.map((c) => <ComplaintCard key={c.id} complaint={c} rules={rules.data} />)
+        <>
+          {rows.slice(0, visible).map((c) => (
+            <ComplaintCard key={c.id} complaint={c} rules={rules.data} />
+          ))}
+          {rows.length > visible ? (
+            <Button
+              label={`Show more (${rows.length - visible})`}
+              variant="secondary"
+              onPress={() => setVisible((n) => n + PAGE_SIZE)}
+            />
+          ) : null}
+        </>
       )}
     </View>
   );

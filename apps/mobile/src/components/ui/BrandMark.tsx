@@ -1,17 +1,13 @@
 import { useEffect, type ReactNode } from 'react';
 import { Text, View, type ViewStyle } from 'react-native';
 import Animated, {
-  Easing,
   FadeInDown,
   ReduceMotion,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
   withDelay,
-  withRepeat,
-  withSequence,
   withSpring,
-  withTiming,
   type AnimatedStyle,
   type SharedValue,
 } from 'react-native-reanimated';
@@ -55,7 +51,7 @@ export function BrandSymbol({ size = 48, tone = 'color' }: { size?: number; tone
   );
 }
 
-const LOGO_SPRING = { damping: 11, stiffness: 120, mass: 0.9 };
+const LOGO_SPRING = { damping: 16, stiffness: 260, mass: 0.7 };
 
 /** One full-size SVG layer so each part of the symbol can move on its own. */
 function Layer({ size, style, children }: { size: number; style: AnimatedStyle<ViewStyle>; children: ReactNode }) {
@@ -77,9 +73,8 @@ function useBiteStyle(progress: SharedValue<number>, chomp: SharedValue<number>,
 }
 
 /**
- * The symbol as a short motion piece: the "C" spins and springs in, the two bite marks shoot
- * out of its mouth, then the bites give a small "chomp" every few seconds. Static when the
- * system asks for reduced motion.
+ * The symbol's entrance: the "C" turns in and the two bite marks slide out of its mouth in
+ * under half a second, then it stays still. Static when the system asks for reduced motion.
  */
 export function AnimatedBrandSymbol({ size = 72, tone = 'color' }: { size?: number; tone?: Tone }) {
   const reduceMotion = useReducedMotion();
@@ -87,31 +82,19 @@ export function AnimatedBrandSymbol({ size = 72, tone = 'color' }: { size?: numb
   const c = useSharedValue(reduceMotion ? 1 : 0);
   const bite1 = useSharedValue(reduceMotion ? 1 : 0);
   const bite2 = useSharedValue(reduceMotion ? 1 : 0);
+  // Entrance only: no looping animation.
   const chomp = useSharedValue(0);
 
   useEffect(() => {
     if (reduceMotion) return;
     c.set(withSpring(1, LOGO_SPRING));
-    bite1.set(withDelay(380, withSpring(1, LOGO_SPRING)));
-    bite2.set(withDelay(500, withSpring(1, LOGO_SPRING)));
-    chomp.set(
-      withDelay(
-        1600,
-        withRepeat(
-          withSequence(
-            withTiming(1, { duration: 180, easing: Easing.out(Easing.quad) }),
-            withTiming(0, { duration: 420, easing: Easing.out(Easing.back(3)) }),
-            withTiming(0, { duration: 2600 }),
-          ),
-          -1,
-        ),
-      ),
-    );
-  }, [reduceMotion, c, bite1, bite2, chomp]);
+    bite1.set(withDelay(150, withSpring(1, LOGO_SPRING)));
+    bite2.set(withDelay(220, withSpring(1, LOGO_SPRING)));
+  }, [reduceMotion, c, bite1, bite2]);
 
   const cStyle = useAnimatedStyle(() => ({
     opacity: Math.min(1, c.value * 1.5),
-    transform: [{ scale: 0.4 + 0.6 * c.value }, { rotate: `${-120 * (1 - c.value)}deg` }],
+    transform: [{ scale: 0.7 + 0.3 * c.value }, { rotate: `${-45 * (1 - c.value)}deg` }],
   }));
   const bite1Style = useBiteStyle(bite1, chomp, size);
   const bite2Style = useBiteStyle(bite2, chomp, size);
@@ -138,13 +121,13 @@ const WORDMARK = [
 ];
 
 /**
- * Kinetic "CampusBites" wordmark: each letter springs up in turn ("Bites" in fern, sage on dark).
+ * Kinetic "CampusBites" wordmark: each letter fades up in quick succession ("Bites" in fern, sage on dark).
  * `className` sets the type size; the color follows `tone`.
  */
 export function KineticWordmark({
   tone = 'color',
   className,
-  delay = 250,
+  delay = 80,
 }: {
   tone?: Tone;
   className?: string;
@@ -155,10 +138,8 @@ export function KineticWordmark({
       {WORDMARK.map(({ ch, accent }, i) => (
         <Animated.View
           key={i}
-          entering={FadeInDown.delay(delay + i * 38)
-            .springify()
-            .damping(12)
-            .stiffness(180)
+          entering={FadeInDown.delay(delay + i * 18)
+            .duration(200)
             .reduceMotion(ReduceMotion.System)}>
           <Text
             className={cn(
