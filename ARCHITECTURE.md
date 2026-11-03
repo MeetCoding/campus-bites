@@ -311,7 +311,7 @@ Seeded with 11 Bhawans (admins add more in the app, §4.5) — Rajendra, Radhakr
 
 Render start command: `uv run fastapi run app/main.py --host 0.0.0.0 --port $PORT`. Redeploy the API whenever `apps/api` changes — the app's API features depend on the deployed version.
 
-**Mobile builds** (`apps/mobile/eas.json`): `development` (dev client, internal APK), `preview` (internal APK), `production` (store build, auto-incremented version). EAS does not upload git-ignored `.env.local`, so each profile carries the public `EXPO_PUBLIC_*` values. App id `in.ac.iitr.campusbites` (Android package + iOS bundle). Icons, splash and favicons are rendered from the Campus Bites brand kit (`brand-kit/`, vector symbol: cream on Forest Green). Run `eas init` once to link the project (adds `extra.eas.projectId`, needed for push).
+**Mobile builds** (`apps/mobile/eas.json`): `development` (dev client, internal APK), `preview` (internal APK), `production` (store build, auto-incremented version). EAS does not upload git-ignored `.env.local`, so each profile carries the public `EXPO_PUBLIC_*` values. Android package `com.campusbites.iitr` (Play Store id; permanent once published); iOS bundle id `in.ac.iitr.campusbites`. Icons, splash and favicons are rendered from the Campus Bites brand kit (`brand-kit/`, vector symbol: cream on Forest Green). Run `eas init` once to link the project (adds `extra.eas.projectId`, needed for push).
 
 ## 9. Decisions
 

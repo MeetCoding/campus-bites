@@ -20,7 +20,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "in.ac.iitr.campusbites"
+      "package": "com.campusbites.iitr"
     },
     "web": {
       "output": "single",
